@@ -8,6 +8,7 @@ import { ReferenceQueryBuilder } from './builders/reference-query.builder';
 import { StringQueryBuilder } from './builders/string-query.builder';
 import { TokenQueryBuilder } from './builders/token-query.builder';
 import { UriQueryBuilder } from './builders/uri-query.builder';
+import { escapeRegex } from './sanitize';
 import { SearchParameterRegistry } from './search-parameter-registry.service';
 import { SearchParamType } from './search-parameter.types';
 
@@ -117,17 +118,14 @@ export class QueryBuilderService {
 
     // Full-text search: _text searches narrative, _content searches full resource JSON
     if (code === '_text') {
-      const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-      return { 'text.div': { $regex: escaped, $options: 'i' } };
+      return { 'text.div': { $regex: escapeRegex(value), $options: 'i' } };
     }
 
     if (code === '_content') {
-      // Search across the entire resource as serialized JSON — use $where for flexibility
-      // This is not performant on large datasets but correct; MongoDB text index can be added for production
-      const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Search narrative and common top-level text fields. Avoids $where (server-side JS injection risk).
+      const escaped = escapeRegex(value);
 
-      return { $or: [{ 'text.div': { $regex: escaped, $options: 'i' } }, { $where: `JSON.stringify(this).match(/${escaped}/i) !== null` }] };
+      return { $or: [{ 'text.div': { $regex: escaped, $options: 'i' } }, { 'text.status': { $regex: escaped, $options: 'i' } }] };
     }
 
     // Common parameters with hardcoded paths

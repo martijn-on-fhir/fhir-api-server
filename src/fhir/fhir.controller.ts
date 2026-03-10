@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
 import { buildCapabilityStatement } from './capability-statement.builder';
 import { FhirService } from './fhir.service';
+import { sanitizeSearchParams } from './search/sanitize';
 import { SearchParameterRegistry } from './search/search-parameter-registry.service';
 import { applySummary, applyElements } from './search/summary.utils';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
@@ -59,7 +60,7 @@ export class FhirController {
   @ApiResponse({ status: 200, description: 'Bundle (history)' })
   async systemHistory(@Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
-    const { entries, total } = await this.fhirService.systemHistory(queryParams);
+    const { entries, total } = await this.fhirService.systemHistory(sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
     return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/_history`, baseUrl));
@@ -142,7 +143,7 @@ export class FhirController {
   @ApiResponse({ status: 200, description: 'Bundle (history)' })
   async typeHistory(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
-    const { entries, total } = await this.fhirService.typeHistory(resourceType, queryParams);
+    const { entries, total } = await this.fhirService.typeHistory(resourceType, sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
     return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/_history`, baseUrl));
@@ -249,7 +250,7 @@ export class FhirController {
   @ApiResponse({ status: 200, description: 'Bundle (history)' })
   async instanceHistory(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
-    const { entries, total } = await this.fhirService.instanceHistory(resourceType, id, queryParams);
+    const { entries, total } = await this.fhirService.instanceHistory(resourceType, id, sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
     return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/${id}/_history`, baseUrl));
@@ -468,6 +469,9 @@ export class FhirController {
 
   /** Shared search execution for GET and POST _search. */
   private async executeSearch(resourceType: string, params: Record<string, string>, req: Request, res: Response) {
+
+    // Sanitize all search params to prevent NoSQL injection via Express bracket notation
+    params = sanitizeSearchParams(params);
 
     const { resources, total, included } = await this.fhirService.search(resourceType, params);
     const baseUrl = this.getBaseUrl(req);

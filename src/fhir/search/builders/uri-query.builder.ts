@@ -1,3 +1,4 @@
+import { escapeRegex } from '../sanitize';
 import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interface';
 
 /**
@@ -27,7 +28,7 @@ export class UriQueryBuilder implements SearchQueryBuilder {
 
   private buildPathFilter(path: string, value: string, modifier?: string): Record<string, any> {
 
-    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = escapeRegex(value);
 
     if (modifier === 'below') {
       return { [path]: { $regex: `^${escaped}` } };

@@ -59,11 +59,11 @@ export class QuantityQueryBuilder implements SearchQueryBuilder {
     }
 
     if (system) {
-      conditions[`${path}.system`] = system;
+      conditions[`${path}.system`] = { $eq: system };
     }
 
     if (code) {
-      conditions[`${path}.code`] = code;
+      conditions[`${path}.code`] = { $eq: code };
     }
 
     return conditions;

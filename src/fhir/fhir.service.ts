@@ -9,6 +9,7 @@ import { FhirResource } from './fhir-resource.schema';
 import { ChainingService } from './search/chaining.service';
 import { IncludeService } from './search/include.service';
 import { QueryBuilderService } from './search/query-builder.service';
+import { sanitizeValue } from './search/sanitize';
 import { SearchParameterRegistry } from './search/search-parameter-registry.service';
 import { FhirResourceEvent } from './subscriptions/subscription.types';
 
@@ -154,11 +155,11 @@ export class FhirService {
     const filter: Record<string, any> = { resourceType, id };
 
     if (params._since) {
-filter['meta.lastUpdated'] = { $gte: params._since };
+filter['meta.lastUpdated'] = { $gte: sanitizeValue(params._since) };
 }
 
     if (params._at) {
-filter['meta.lastUpdated'] = params._at;
+filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
 }
 
     const total = await this.historyModel.countDocuments(filter).exec();
@@ -178,11 +179,11 @@ filter['meta.lastUpdated'] = params._at;
     const filter: Record<string, any> = { resourceType };
 
     if (params._since) {
-filter['meta.lastUpdated'] = { $gte: params._since };
+filter['meta.lastUpdated'] = { $gte: sanitizeValue(params._since) };
 }
 
     if (params._at) {
-filter['meta.lastUpdated'] = params._at;
+filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
 }
 
     const total = await this.historyModel.countDocuments(filter).exec();
@@ -202,11 +203,11 @@ filter['meta.lastUpdated'] = params._at;
     const filter: Record<string, any> = {};
 
     if (params._since) {
-filter['meta.lastUpdated'] = { $gte: params._since };
+filter['meta.lastUpdated'] = { $gte: sanitizeValue(params._since) };
 }
 
     if (params._at) {
-filter['meta.lastUpdated'] = params._at;
+filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
 }
 
     const total = await this.historyModel.countDocuments(filter).exec();

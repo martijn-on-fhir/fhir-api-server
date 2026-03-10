@@ -1,3 +1,4 @@
+import { escapeRegex } from '../sanitize';
 import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interface';
 
 /**
@@ -54,11 +55,11 @@ export class ReferenceQueryBuilder implements SearchQueryBuilder {
 
     // If value contains a slash, it's Type/id — match exact or as suffix of absolute URL
     if (normalizedValue.includes('/')) {
-      return { $or: [{ [refPath]: normalizedValue }, { [refPath]: { $regex: `/${normalizedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$` } }] };
+      return { $or: [{ [refPath]: normalizedValue }, { [refPath]: { $regex: `/${escapeRegex(normalizedValue)}$` } }] };
     }
 
     // Bare id — match any reference ending with /id
-    return { [refPath]: { $regex: `/${normalizedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$` } };
+    return { [refPath]: { $regex: `/${escapeRegex(normalizedValue)}$` } };
   }
 
   private buildIdentifierQuery(ctx: QueryBuilderContext, values: string[]): Record<string, any> {
