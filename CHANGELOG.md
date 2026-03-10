@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.3.1...fhir-api-server-v0.3.2) (2026-03-10)
+
+
+### Tests
+
+* add 75 comprehensive search e2e tests ([e4405dd](https://github.com/martijn-on-fhir/fhir-api-server/commit/e4405dd6fcc72000f82141e601c0e80eaabdf6cb))
+
 ## [0.3.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.3.0...fhir-api-server-v0.3.1) (2026-03-10)
 
 
