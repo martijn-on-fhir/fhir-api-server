@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.4.0...fhir-api-server-v0.5.0) (2026-03-10)
+
+
+### Features
+
+* add SMART on FHIR / OAuth2 authentication and authorization ([cd26bf1](https://github.com/martijn-on-fhir/fhir-api-server/commit/cd26bf1df6aec74947ceb61fc8951bd6010cc379))
+
+
+### Bug Fixes
+
+* increase SMART e2e test beforeAll timeout to 60s for CI ([173a421](https://github.com/martijn-on-fhir/fhir-api-server/commit/173a421cd2b75255baed1c3ba61da3bce1be8ce4))
+* use explicit module composition in SMART e2e tests for CI ([201ba47](https://github.com/martijn-on-fhir/fhir-api-server/commit/201ba475a5b50babe67a33eee626650522f24538))
+
 ## [0.4.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.3.2...fhir-api-server-v0.4.0) (2026-03-10)
 
 
