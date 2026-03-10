@@ -64,6 +64,8 @@ export class TokenQueryBuilder implements SearchQueryBuilder {
         { [`${path}.code`]: code },                   // Coding.code
         { [`${path}.coding.code`]: code },            // CodeableConcept.coding[].code
         { [`${path}.value`]: code },                  // Identifier.value, ContactPoint.value
+        { [`${path}.system`]: code },                 // Identifier.system (e.g. search by NamingSystem URL)
+        { [`${path}.coding.system`]: code },          // CodeableConcept.coding[].system
       ] };
     }
 

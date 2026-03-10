@@ -3,10 +3,14 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import { AppModule } from './app.module';
 import { FhirExceptionFilter } from './fhir/filters/fhir-exception.filter';
+import { JsonLoggerService } from './logging/json-logger.service';
 
 /** Bootstraps the NestJS application with FHIR-specific middleware and global filters. */
 const bootstrap = async () => {
-  const app = await NestFactory.create(AppModule);
+
+  const useJsonLogger = process.env.LOG_FORMAT === 'json';
+  const app = await NestFactory.create(AppModule, useJsonLogger ? { logger: new JsonLoggerService() } : {});
+
   app.use(express.json({ type: ['application/json', 'application/fhir+json'] }));
   app.use(express.urlencoded({ extended: true }));
   app.useGlobalFilters(new FhirExceptionFilter());
@@ -19,10 +23,10 @@ const bootstrap = async () => {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
 };
 
 bootstrap();

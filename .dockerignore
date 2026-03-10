@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.git
+.github
+.vscode
+.idea
+*.md
+.env*
+config/app-config.json
+insomnia-collection.json
