@@ -13,5 +13,14 @@
     "password": "",
     "clientId": "cli_client",
     "grantType": "password"
+  },
+  "smart": {
+    "enabled": false,
+    "issuer": "",
+    "audience": "fhir-api",
+    "jwksUri": "",
+    "scopeClaim": "scope",
+    "authorizeUrl": "",
+    "tokenUrl": ""
   }
 }
