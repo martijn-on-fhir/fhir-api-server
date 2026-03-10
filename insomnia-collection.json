@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-03-10T14:00:00.000Z",
+  "__export_date": "2026-03-10T16:00:00.000Z",
   "__export_source": "insomnia.importers:v0.1.0",
   "resources": [
     {
@@ -57,6 +57,37 @@
       "_type": "request_group",
       "parentId": "wrk_fhir",
       "name": "$meta"
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Health & Monitoring"
+    },
+
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Health Check",
+      "method": "GET",
+      "url": "http://localhost:3000/health",
+      "headers": [
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_swagger_json",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Swagger/OpenAPI JSON spec",
+      "method": "GET",
+      "url": "http://localhost:3000/api-json",
+      "headers": [
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {}
     },
 
     {
@@ -178,6 +209,23 @@
     },
 
     {
+      "_id": "req_create_condition",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Create Condition",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Condition",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Condition\",\n  \"meta\": {\n    \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-Problem\"]\n  },\n  \"clinicalStatus\": {\n    \"coding\": [{\"system\": \"http://terminology.hl7.org/CodeSystem/condition-clinical\", \"code\": \"active\", \"display\": \"Active\"}]\n  },\n  \"verificationStatus\": {\n    \"coding\": [{\"system\": \"http://terminology.hl7.org/CodeSystem/condition-ver-status\", \"code\": \"confirmed\", \"display\": \"Confirmed\"}]\n  },\n  \"category\": [{\n    \"coding\": [{\"system\": \"http://snomed.info/sct\", \"code\": \"282291009\", \"display\": \"Diagnosis\"}]\n  }],\n  \"code\": {\n    \"coding\": [{\"system\": \"http://snomed.info/sct\", \"code\": \"73211009\", \"display\": \"Diabetes mellitus\"}]\n  },\n  \"subject\": {\n    \"reference\": \"Patient/{{ _.patient_id }}\",\n    \"display\": \"Martijn Schimmel\"\n  },\n  \"onsetDateTime\": \"2020-06-15\",\n  \"recordedDate\": \"2020-06-15\"\n}"
+      }
+    },
+
+    {
       "_id": "req_search_patient_all",
       "_type": "request",
       "parentId": "fld_search",
@@ -268,6 +316,54 @@
       "name": "Search Patient by birthdate range",
       "method": "GET",
       "url": "{{ _.base_url }}/Patient?birthdate=ge1960-01-01&birthdate=le1970-12-31",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_identifier_system_value",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient by identifier (system|value)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?identifier=http://fhir.nl/fhir/NamingSystem/bsn|1430789234",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_identifier_system",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient by identifier (system only)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?identifier=http://fhir.nl/fhir/NamingSystem/bsn",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_condition_patient",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Condition by patient",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Condition?subject=Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_condition_code",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Condition by code (SNOMED)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Condition?code=http://snomed.info/sct|73211009",
       "headers": [
         { "name": "Accept", "value": "application/fhir+json" }
       ],
