@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.3.0...fhir-api-server-v0.3.1) (2026-03-10)
+
+
+### Performance
+
+* add MongoDB compound indexes for common FHIR search patterns ([d9b9104](https://github.com/martijn-on-fhir/fhir-api-server/commit/d9b9104de967094c60c1b47859873e125c79da28))
+
 ## [0.3.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.2.0...fhir-api-server-v0.3.0) (2026-03-10)
 
 
