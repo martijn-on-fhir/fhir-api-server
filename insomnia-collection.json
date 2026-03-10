@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-03-10T12:00:00.000Z",
+  "__export_date": "2026-03-10T14:00:00.000Z",
   "__export_source": "insomnia.importers:v0.1.0",
   "resources": [
     {
@@ -41,6 +41,12 @@
       "name": "Search"
     },
     {
+      "_id": "fld_search_advanced",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Search (Advanced)"
+    },
+    {
       "_id": "fld_validate",
       "_type": "request_group",
       "parentId": "wrk_fhir",
@@ -52,6 +58,7 @@
       "parentId": "wrk_fhir",
       "name": "$meta"
     },
+
     {
       "_id": "req_metadata",
       "_type": "request",
@@ -64,6 +71,7 @@
       ],
       "body": {}
     },
+
     {
       "_id": "req_read_patient",
       "_type": "request",
@@ -168,8 +176,9 @@
         "text": "{\n  \"resourceType\": \"AllergyIntolerance\",\n  \"meta\": {\n    \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-AllergyIntolerance\"]\n  },\n  \"clinicalStatus\": { \"coding\": [{ \"system\": \"http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical\", \"code\": \"active\" }] },\n  \"verificationStatus\": { \"coding\": [{ \"system\": \"http://terminology.hl7.org/CodeSystem/allergyintolerance-verification\", \"code\": \"confirmed\" }] },\n  \"type\": \"allergy\",\n  \"category\": [\"medication\"],\n  \"criticality\": \"high\",\n  \"code\": { \"coding\": [{ \"system\": \"http://snomed.info/sct\", \"code\": \"372687004\", \"display\": \"Amoxicilline\" }] },\n  \"patient\": { \"reference\": \"Patient/{{ _.patient_id }}\", \"display\": \"Martijn Schimmel\" },\n  \"recordedDate\": \"2026-03-10\"\n}"
       }
     },
+
     {
-      "_id": "req_search_patient",
+      "_id": "req_search_patient_all",
       "_type": "request",
       "parentId": "fld_search",
       "name": "Search Patient (all)",
@@ -193,12 +202,156 @@
       "body": {}
     },
     {
-      "_id": "req_search_count",
+      "_id": "req_search_patient_name",
       "_type": "request",
       "parentId": "fld_search",
-      "name": "Search with _count and _offset",
+      "name": "Search Patient by name",
       "method": "GET",
-      "url": "{{ _.base_url }}/Patient?_count=5&_offset=0",
+      "url": "{{ _.base_url }}/Patient?name=Schimmel",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_patient_name_exact",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient by name:exact",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?name:exact=Schimmel",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_patient_name_contains",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient by name:contains",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?name:contains=schim",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_patient_gender",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient by gender (token)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?gender=male",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_patient_birthdate",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient by birthdate (date)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?birthdate=1967",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_patient_birthdate_range",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient by birthdate range",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?birthdate=ge1960-01-01&birthdate=le1970-12-31",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_observation_code",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Observation by code (token)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation?code=http://loinc.org|85354-9",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_observation_subject",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Observation by subject (reference)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation?subject=Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_allergy_patient",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search AllergyIntolerance by patient",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AllergyIntolerance?patient=Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_allergy_criticality",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search AllergyIntolerance by criticality",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AllergyIntolerance?criticality=high",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_lastupdated",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search by _lastUpdated",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_lastUpdated=ge2026-03-01",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_profile",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search by _profile",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_profile=http://nictiz.nl/fhir/StructureDefinition/nl-core-Patient",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_count_offset",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search with pagination (_count, _offset)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_count=2&_offset=0",
       "headers": [
         { "name": "Accept", "value": "application/fhir+json" }
       ],
@@ -210,12 +363,189 @@
       "parentId": "fld_search",
       "name": "Search with _sort",
       "method": "GET",
-      "url": "{{ _.base_url }}/Patient?_sort=-meta.lastUpdated",
+      "url": "{{ _.base_url }}/Patient?_sort=-_lastUpdated",
       "headers": [
         { "name": "Accept", "value": "application/fhir+json" }
       ],
       "body": {}
     },
+
+    {
+      "_id": "req_search_summary_true",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _summary=true",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_summary=true",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_summary_count",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _summary=count",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_summary=count",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_summary_text",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _summary=text",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_summary=text",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_summary_data",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _summary=data",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_summary=data",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_elements",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _elements",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_elements=name,gender,birthDate",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_include",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _include",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation?subject=Patient/{{ _.patient_id }}&_include=Observation:subject",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_revinclude",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _revinclude",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_id={{ _.patient_id }}&_revinclude=Observation:subject",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_chaining",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with chaining",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation?subject:Patient.name=Schimmel",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_has",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _has (reverse chaining)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_has:Observation:subject:code=85354-9",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_text",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _text (narrative)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_text=Schimmel",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_content",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with _content (full resource)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_content=Schimmel",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_post",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search via POST _search",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/_search",
+      "headers": [
+        { "name": "Content-Type", "value": "application/x-www-form-urlencoded" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/x-www-form-urlencoded",
+        "params": [
+          { "name": "name", "value": "Schimmel" },
+          { "name": "gender", "value": "male" }
+        ]
+      }
+    },
+    {
+      "_id": "req_search_missing",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with :missing modifier",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?general-practitioner:missing=true",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_token_not",
+      "_type": "request",
+      "parentId": "fld_search_advanced",
+      "name": "Search with :not modifier (token)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?gender:not=female",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+
     {
       "_id": "req_validate_type",
       "_type": "request",
@@ -280,6 +610,7 @@
         "text": "{\n  \"resourceType\": \"Patient\",\n  \"gender\": \"onbekend\",\n  \"birthDate\": \"niet-een-datum\"\n}"
       }
     },
+
     {
       "_id": "req_meta_system",
       "_type": "request",

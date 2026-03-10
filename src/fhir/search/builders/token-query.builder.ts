@@ -4,7 +4,15 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  * Builds MongoDB queries for FHIR token search parameters.
  * Handles CodeableConcept, Coding, Identifier, code, boolean and ContactPoint.
  * Formats: [system]|[code], |[code], [code], [system]|
- * Modifiers: :text, :not, :missing
+ * Modifiers: :text, :not, :missing, :of-type
+ *
+ * Token search must work across all coded types. The key difference:
+ * - CodeableConcept: nested `coding` array with `system`/`code`, plus `text`
+ * - Coding: direct `system`/`code`
+ * - Identifier: `system`/`value` (NOT `code`)
+ * - code/string: direct value match
+ * - boolean: true/false
+ * - ContactPoint: `value`
  */
 export class TokenQueryBuilder implements SearchQueryBuilder {
 
@@ -31,7 +39,11 @@ export class TokenQueryBuilder implements SearchQueryBuilder {
     if (modifier === 'text') {
       const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-      return { $or: [{ [`${path}.text`]: { $regex: escaped, $options: 'i' } }, { [`${path}.coding.display`]: { $regex: escaped, $options: 'i' } }, { [`${path}.display`]: { $regex: escaped, $options: 'i' } }] };
+      return { $or: [
+        { [`${path}.text`]: { $regex: escaped, $options: 'i' } },
+        { [`${path}.coding.display`]: { $regex: escaped, $options: 'i' } },
+        { [`${path}.display`]: { $regex: escaped, $options: 'i' } },
+      ] };
     }
 
     if (modifier === 'missing') {
@@ -40,34 +52,44 @@ export class TokenQueryBuilder implements SearchQueryBuilder {
 
     const { system, code, hasBar } = this.parseTokenValue(value);
 
-    // Boolean or simple code field (no system)
+    // Boolean
     if (!hasBar && (value === 'true' || value === 'false')) {
       return { [path]: value === 'true' };
     }
 
-    // Simple code without system — match on direct code or within coding array
+    // Simple code/value without system — match on all possible token representations
     if (!hasBar) {
-      return { $or: [{ [path]: code }, { [`${path}.code`]: code }, { [`${path}.coding.code`]: code }, { [`${path}.value`]: code }] };
+      return { $or: [
+        { [path]: code },                            // direct value (code enum, string)
+        { [`${path}.code`]: code },                   // Coding.code
+        { [`${path}.coding.code`]: code },            // CodeableConcept.coding[].code
+        { [`${path}.value`]: code },                  // Identifier.value, ContactPoint.value
+      ] };
     }
 
-    // system| (any code in system)
+    // system| (any code/value in system)
     if (system && !code) {
-      return { $or: [{ [`${path}.system`]: system }, { [`${path}.coding.system`]: system }] };
+      return { $or: [
+        { [`${path}.system`]: system },               // Coding.system or Identifier.system
+        { [`${path}.coding.system`]: system },         // CodeableConcept.coding[].system
+      ] };
     }
 
-    // |code (code with no/empty system)
+    // |code (code/value with no/empty system)
     if (!system && code) {
       return { $or: [
         { [`${path}.code`]: code, [`${path}.system`]: { $exists: false } },
+        { [`${path}.value`]: code, [`${path}.system`]: { $exists: false } },
         { [`${path}.coding`]: { $elemMatch: { code, system: { $exists: false } } } },
         { [path]: code },
       ] };
     }
 
-    // system|code (both specified)
+    // system|code — match across CodeableConcept, Coding and Identifier
     return { $or: [
-      { [`${path}.system`]: system, [`${path}.code`]: code },
-      { [`${path}.coding`]: { $elemMatch: { system, code } } },
+      { [`${path}.system`]: system, [`${path}.code`]: code },        // Coding
+      { [`${path}.system`]: system, [`${path}.value`]: code },       // Identifier, ContactPoint
+      { [`${path}.coding`]: { $elemMatch: { system, code } } },      // CodeableConcept
     ] };
   }
 
