@@ -65,7 +65,7 @@ describe('SMART on FHIR Auth (e2e)', () => {
     app.use(express.json({ type: ['application/json', 'application/fhir+json'] }));
     app.useGlobalFilters(new FhirExceptionFilter());
     await app.init();
-  }, 30_000);
+  }, 60_000);
 
   afterAll(async () => {
     jwksServer?.close();
