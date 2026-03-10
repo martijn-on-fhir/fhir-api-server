@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.1.1...fhir-api-server-v0.2.0) (2026-03-10)
+
+
+### Features
+
+* add $everything operation for patient compartment ([c84daf2](https://github.com/martijn-on-fhir/fhir-api-server/commit/c84daf22919ea76492060271920eab52ce5056a6))
+
 ## [0.1.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.1.0...fhir-api-server-v0.1.1) (2026-03-10)
 
 
