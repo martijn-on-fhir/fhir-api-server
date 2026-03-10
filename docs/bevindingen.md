@@ -24,7 +24,7 @@ Het project heeft een werkende generieke FHIR R4 REST API met:
 1. ~~**Versie-historie (vHistory)** — `GET /Patient/123/_history` en `GET /Patient/_history`. Soft deletes, oude versies bewaren, vRead (`GET /Patient/123/_history/2`)~~ ✅ geïmplementeerd
 2. ~~**Conditional CRUD** — `PUT /Patient?identifier=bsn|123` (create-or-update op basis van search), conditional delete, `If-Match` / `If-None-Match` headers~~ ✅ geïmplementeerd
 3. ~~**Batch/Transaction Bundle** — `POST /fhir` met een Bundle van type `batch` of `transaction`, atomaire transacties met rollback~~ ✅ geïmplementeerd (zonder MongoDB transacties, vereist replica set)
-4. **Subscription** — FHIR R4 Subscriptions voor real-time notificaties (webhooks) bij resource wijzigingen
+4. ~~**Subscription** — FHIR R4 Subscriptions voor real-time notificaties (webhooks) bij resource wijzigingen~~ ✅ geïmplementeerd
 
 ### Kwaliteit & betrouwbaarheid
 

@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
 import { Model, ClientSession } from 'mongoose';
@@ -9,6 +10,7 @@ import { ChainingService } from './search/chaining.service';
 import { IncludeService } from './search/include.service';
 import { QueryBuilderService } from './search/query-builder.service';
 import { SearchParameterRegistry } from './search/search-parameter-registry.service';
+import { FhirResourceEvent } from './subscriptions/subscription.types';
 
 /**
  * Service responsible for all FHIR resource persistence operations.
@@ -22,6 +24,7 @@ export class FhirService {
     @InjectModel(FhirResourceHistory.name) private readonly historyModel: Model<FhirResourceHistory>,
     private readonly queryBuilder: QueryBuilderService, private readonly searchRegistry: SearchParameterRegistry,
     private readonly includeService: IncludeService, private readonly chainingService: ChainingService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -39,6 +42,8 @@ export class FhirService {
     // Write version 1 to history
     const snapshot = this.toPlainResource(saved);
     await new this.historyModel({ ...snapshot, request: { method: 'POST', url: resourceType }, response: { status: '201 Created', etag: `W/"1"`, lastModified: now } }).save({ session });
+
+    this.emitResourceEvent('create', resourceType, id, snapshot);
 
     return saved;
   }
@@ -234,6 +239,8 @@ filter['meta.lastUpdated'] = params._at;
     const snapshot = this.toPlainResource(updated);
     await new this.historyModel({ ...snapshot, request: { method: 'PUT', url: `${resourceType}/${id}` }, response: { status: '200 OK', etag: `W/"${newVersionId}"`, lastModified: now } }).save({ session });
 
+    this.emitResourceEvent('update', resourceType, id, snapshot);
+
     return updated;
   }
 
@@ -260,6 +267,8 @@ filter['meta.lastUpdated'] = params._at;
     }).save({ session });
 
     await this.resourceModel.deleteOne({ resourceType, id }, { session }).exec();
+
+    this.emitResourceEvent('delete', resourceType, id, null);
   }
 
   /**
@@ -449,6 +458,11 @@ map.set(`${item.system}|${item.code}`, item);
     const { _id, __v, ...resource } = obj;
 
     return resource;
+  }
+
+  /** Emits a fhir.resource.changed event for subscription evaluation. */
+  private emitResourceEvent(action: FhirResourceEvent['action'], resourceType: string, id: string, resource: any): void {
+    this.eventEmitter.emit('fhir.resource.changed', { action, resourceType, id, resource } as FhirResourceEvent);
   }
 
   private createOutcome(severity: IssueSeverity, code: IssueType, diagnostics: string): OperationOutcome {
