@@ -28,7 +28,12 @@ const SEARCH_PARAMS = [
   new CapabilityStatementRestResourceSearchParam({ name: '_offset', type: SearchParamType.Number, documentation: 'Offset for pagination' }),
 ];
 
-const VALIDATE_OPERATION = new CapabilityStatementRestResourceOperation({ name: 'validate', definition: 'http://hl7.org/fhir/OperationDefinition/Resource-validate' });
+const OPERATIONS = [
+  new CapabilityStatementRestResourceOperation({ name: 'validate', definition: 'http://hl7.org/fhir/OperationDefinition/Resource-validate' }),
+  new CapabilityStatementRestResourceOperation({ name: 'meta', definition: 'http://hl7.org/fhir/OperationDefinition/Resource-meta' }),
+  new CapabilityStatementRestResourceOperation({ name: 'meta-add', definition: 'http://hl7.org/fhir/OperationDefinition/Resource-meta-add' }),
+  new CapabilityStatementRestResourceOperation({ name: 'meta-delete', definition: 'http://hl7.org/fhir/OperationDefinition/Resource-meta-delete' }),
+];
 
 /**
  * Builds a FHIR CapabilityStatement for this server based on the resource types currently stored.
@@ -42,7 +47,7 @@ export const buildCapabilityStatement = (baseUrl: string, resourceTypes: string[
       type,
       interaction: INTERACTIONS.map((code) => new CapabilityStatementRestResourceInteraction({ code })),
       searchParam: SEARCH_PARAMS,
-      operation: [VALIDATE_OPERATION],
+      operation: OPERATIONS,
     });
 
     const nlProfile = NL_CORE_PROFILES[type];

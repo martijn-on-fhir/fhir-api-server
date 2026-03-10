@@ -1,0 +1,368 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-03-10T12:00:00.000Z",
+  "__export_source": "insomnia.importers:v0.1.0",
+  "resources": [
+    {
+      "_id": "wrk_fhir",
+      "_type": "workspace",
+      "name": "FHIR R4 API Server",
+      "description": "FHIR R4 REST API met nl-core profiel ondersteuning",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_fhir",
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:3000/fhir",
+        "patient_id": "1d5c8c6c-1405-4c69-80d0-3f1734451444",
+        "practitioner_id": "033049df-cf26-4212-804e-e107cef1bc0c"
+      }
+    },
+    {
+      "_id": "fld_capabilities",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Capabilities"
+    },
+    {
+      "_id": "fld_crud",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "CRUD"
+    },
+    {
+      "_id": "fld_search",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Search"
+    },
+    {
+      "_id": "fld_validate",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$validate"
+    },
+    {
+      "_id": "fld_meta",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$meta"
+    },
+    {
+      "_id": "req_metadata",
+      "_type": "request",
+      "parentId": "fld_capabilities",
+      "name": "CapabilityStatement (metadata)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/metadata",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_read_patient",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Read Patient",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_create_patient",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Create Patient",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Patient\",\n  \"meta\": {\n    \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-Patient\"]\n  },\n  \"name\": [{\n    \"use\": \"official\",\n    \"family\": \"Jansen\",\n    \"given\": [\"Pieter\"]\n  }],\n  \"gender\": \"male\",\n  \"birthDate\": \"1990-01-15\"\n}"
+      }
+    },
+    {
+      "_id": "req_update_patient",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Update Patient",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Patient\",\n  \"meta\": {\n    \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-Patient\"]\n  },\n  \"name\": [{\n    \"use\": \"official\",\n    \"family\": \"Schimmel\",\n    \"given\": [\"Martijn\"]\n  }],\n  \"gender\": \"male\",\n  \"birthDate\": \"1967-08-09\"\n}"
+      }
+    },
+    {
+      "_id": "req_delete_patient",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Delete Patient",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_create_practitioner",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Create Practitioner",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Practitioner",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Practitioner\",\n  \"meta\": {\n    \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-HealthProfessional-Practitioner\"]\n  },\n  \"name\": [{\n    \"use\": \"official\",\n    \"family\": \"Botje\",\n    \"given\": [\"B.\"],\n    \"prefix\": [\"Dr.\"]\n  }],\n  \"qualification\": [{\n    \"code\": {\n      \"coding\": [{\n        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0360|2.7\",\n        \"code\": \"MD\",\n        \"display\": \"Doctor of Medicine\"\n      }]\n    }\n  }]\n}"
+      }
+    },
+    {
+      "_id": "req_create_observation",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Create Observation",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Observation",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Observation\",\n  \"status\": \"final\",\n  \"code\": {\n    \"coding\": [{\n      \"system\": \"http://loinc.org\",\n      \"code\": \"85354-9\",\n      \"display\": \"Blood pressure panel\"\n    }]\n  },\n  \"subject\": {\n    \"reference\": \"Patient/{{ _.patient_id }}\"\n  },\n  \"effectiveDateTime\": \"2026-03-10\",\n  \"component\": [\n    {\n      \"code\": { \"coding\": [{ \"system\": \"http://loinc.org\", \"code\": \"8480-6\", \"display\": \"Systolic\" }] },\n      \"valueQuantity\": { \"value\": 120, \"unit\": \"mmHg\", \"system\": \"http://unitsofmeasure.org\", \"code\": \"mm[Hg]\" }\n    },\n    {\n      \"code\": { \"coding\": [{ \"system\": \"http://loinc.org\", \"code\": \"8462-4\", \"display\": \"Diastolic\" }] },\n      \"valueQuantity\": { \"value\": 80, \"unit\": \"mmHg\", \"system\": \"http://unitsofmeasure.org\", \"code\": \"mm[Hg]\" }\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_create_allergy",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Create AllergyIntolerance",
+      "method": "POST",
+      "url": "{{ _.base_url }}/AllergyIntolerance",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"AllergyIntolerance\",\n  \"meta\": {\n    \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-AllergyIntolerance\"]\n  },\n  \"clinicalStatus\": { \"coding\": [{ \"system\": \"http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical\", \"code\": \"active\" }] },\n  \"verificationStatus\": { \"coding\": [{ \"system\": \"http://terminology.hl7.org/CodeSystem/allergyintolerance-verification\", \"code\": \"confirmed\" }] },\n  \"type\": \"allergy\",\n  \"category\": [\"medication\"],\n  \"criticality\": \"high\",\n  \"code\": { \"coding\": [{ \"system\": \"http://snomed.info/sct\", \"code\": \"372687004\", \"display\": \"Amoxicilline\" }] },\n  \"patient\": { \"reference\": \"Patient/{{ _.patient_id }}\", \"display\": \"Martijn Schimmel\" },\n  \"recordedDate\": \"2026-03-10\"\n}"
+      }
+    },
+    {
+      "_id": "req_search_patient",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient (all)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_patient_id",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search Patient by _id",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_id={{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_count",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search with _count and _offset",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_count=5&_offset=0",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_search_sort",
+      "_type": "request",
+      "parentId": "fld_search",
+      "name": "Search with _sort",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?_sort=-meta.lastUpdated",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_validate_type",
+      "_type": "request",
+      "parentId": "fld_validate",
+      "name": "$validate (type-level)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/$validate",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Patient\",\n  \"meta\": {\n    \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-Patient\"]\n  },\n  \"name\": [{\n    \"use\": \"official\",\n    \"family\": \"Test\",\n    \"given\": [\"Validatie\"]\n  }],\n  \"gender\": \"male\",\n  \"birthDate\": \"2000-01-01\"\n}"
+      }
+    },
+    {
+      "_id": "req_validate_type_params",
+      "_type": "request",
+      "parentId": "fld_validate",
+      "name": "$validate (Parameters format)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/$validate",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    {\n      \"name\": \"resource\",\n      \"resource\": {\n        \"resourceType\": \"Patient\",\n        \"name\": [{ \"family\": \"Test\" }]\n      }\n    },\n    {\n      \"name\": \"profile\",\n      \"valueUri\": \"http://nictiz.nl/fhir/StructureDefinition/nl-core-Patient\"\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_validate_instance",
+      "_type": "request",
+      "parentId": "fld_validate",
+      "name": "$validate (instance-level)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$validate",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{}"
+      }
+    },
+    {
+      "_id": "req_validate_invalid",
+      "_type": "request",
+      "parentId": "fld_validate",
+      "name": "$validate (invalid resource)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/$validate",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Patient\",\n  \"gender\": \"onbekend\",\n  \"birthDate\": \"niet-een-datum\"\n}"
+      }
+    },
+    {
+      "_id": "req_meta_system",
+      "_type": "request",
+      "parentId": "fld_meta",
+      "name": "$meta (system-level)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/$meta",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_meta_type",
+      "_type": "request",
+      "parentId": "fld_meta",
+      "name": "$meta (type-level Patient)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/$meta",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_meta_instance",
+      "_type": "request",
+      "parentId": "fld_meta",
+      "name": "$meta (instance-level)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$meta",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_meta_add",
+      "_type": "request",
+      "parentId": "fld_meta",
+      "name": "$meta-add (add tag)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$meta-add",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [{\n    \"name\": \"meta\",\n    \"valueMeta\": {\n      \"tag\": [{\n        \"system\": \"http://example.org/tags\",\n        \"code\": \"reviewed\",\n        \"display\": \"Reviewed by clinician\"\n      }],\n      \"security\": [{\n        \"system\": \"http://terminology.hl7.org/CodeSystem/v3-Confidentiality\",\n        \"code\": \"R\",\n        \"display\": \"Restricted\"\n      }]\n    }\n  }]\n}"
+      }
+    },
+    {
+      "_id": "req_meta_delete",
+      "_type": "request",
+      "parentId": "fld_meta",
+      "name": "$meta-delete (remove tag)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$meta-delete",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [{\n    \"name\": \"meta\",\n    \"valueMeta\": {\n      \"tag\": [{\n        \"system\": \"http://example.org/tags\",\n        \"code\": \"reviewed\"\n      }]\n    }\n  }]\n}"
+      }
+    },
+    {
+      "_id": "req_meta_add_profile",
+      "_type": "request",
+      "parentId": "fld_meta",
+      "name": "$meta-add (add profile)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$meta-add",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [{\n    \"name\": \"meta\",\n    \"valueMeta\": {\n      \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-Patient\"]\n    }\n  }]\n}"
+      }
+    }
+  ]
+}

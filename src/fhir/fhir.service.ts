@@ -135,6 +135,98 @@ export class FhirService {
    * @param diagnostics - Human-readable diagnostic message.
    * @returns A populated OperationOutcome instance.
    */
+  /** Returns aggregated meta (profiles, tags, security) for a resource type or the whole system. */
+  async getAggregatedMeta(resourceType?: string): Promise<{ profile: string[]; tag: any[]; security: any[] }> {
+
+    const filter: Record<string, any> = resourceType ? { resourceType } : {};
+    const docs = await this.resourceModel.find(filter).select('meta').lean().exec();
+    const profiles = new Set<string>();
+    const tagMap = new Map<string, any>();
+    const securityMap = new Map<string, any>();
+
+    for (const doc of docs) {
+      for (const p of doc.meta?.profile || []) {
+profiles.add(p);
+}
+
+      for (const t of doc.meta?.tag || []) {
+tagMap.set(`${t.system}|${t.code}`, t);
+}
+
+      for (const s of doc.meta?.security || []) {
+securityMap.set(`${s.system}|${s.code}`, s);
+}
+    }
+
+    return { profile: [...profiles], tag: [...tagMap.values()], security: [...securityMap.values()] };
+  }
+
+  /** Adds profiles, tags and security labels to an existing resource's meta. Returns the updated meta. */
+  async metaAdd(resourceType: string, id: string, meta: any): Promise<any> {
+
+    const resource = await this.findById(resourceType, id);
+    const current: any = resource.meta || {};
+    const merged = {
+      ...current,
+      profile: this.mergeArrays(current.profile, meta.profile),
+      tag: this.mergeCoded(current.tag, meta.tag),
+      security: this.mergeCoded(current.security, meta.security),
+    };
+
+    const updated = await this.resourceModel.findOneAndUpdate({ resourceType, id }, { meta: merged }, { returnDocument: 'after' }).exec();
+
+    return updated.meta;
+  }
+
+  /** Removes profiles, tags and security labels from an existing resource's meta. Returns the updated meta. */
+  async metaDelete(resourceType: string, id: string, meta: any): Promise<any> {
+
+    const resource = await this.findById(resourceType, id);
+    const current: any = resource.meta || {};
+    const profilesToRemove = new Set(meta.profile || []);
+    const tagsToRemove = new Set((meta.tag || []).map((t: any) => `${t.system}|${t.code}`));
+    const securityToRemove = new Set((meta.security || []).map((s: any) => `${s.system}|${s.code}`));
+
+    const merged = {
+      ...current,
+      profile: (current.profile || []).filter((p: string) => !profilesToRemove.has(p)),
+      tag: (current.tag || []).filter((t: any) => !tagsToRemove.has(`${t.system}|${t.code}`)),
+      security: (current.security || []).filter((s: any) => !securityToRemove.has(`${s.system}|${s.code}`)),
+    };
+
+    const updated = await this.resourceModel.findOneAndUpdate({ resourceType, id }, { 'meta': merged }, { returnDocument: 'after' }).exec();
+
+    return updated.meta;
+  }
+
+  /** Merges two string arrays, deduplicating by value. */
+  private mergeArrays(existing: string[] = [], additions: string[] = []): string[] {
+
+    const set = new Set(existing);
+
+    for (const item of additions) {
+set.add(item);
+}
+
+    return [...set];
+  }
+
+  /** Merges two coded arrays (tag/security), deduplicating by system|code. */
+  private mergeCoded(existing: any[] = [], additions: any[] = []): any[] {
+
+    const map = new Map<string, any>();
+
+    for (const item of existing) {
+map.set(`${item.system}|${item.code}`, item);
+}
+
+    for (const item of additions) {
+map.set(`${item.system}|${item.code}`, item);
+}
+
+    return [...map.values()];
+  }
+
   /** Returns all distinct resourceType values currently stored in the database. */
   async getResourceTypes(): Promise<string[]> {
 

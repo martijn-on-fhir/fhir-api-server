@@ -16,13 +16,14 @@ export class FhirResource extends Document {
   @Prop({ required: true })
   id: string;
 
-  /** Resource metadata containing version tracking and timestamps. */
+  /** FHIR resource metadata: version tracking, timestamps, profiles, tags and security labels. */
   @Prop({ type: Object, required: true })
   meta: {
-    /** Sequential version number, incremented on each update. */
     versionId: string;
-    /** ISO 8601 timestamp of the last modification. */
     lastUpdated: string;
+    profile?: string[];
+    tag?: { system?: string; code?: string; display?: string }[];
+    security?: { system?: string; code?: string; display?: string }[];
   };
 }
 

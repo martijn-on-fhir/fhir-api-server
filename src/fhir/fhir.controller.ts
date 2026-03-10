@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleLink, BundleType, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
 import { buildCapabilityStatement } from './capability-statement.builder';
@@ -10,6 +11,7 @@ import { FhirValidationService } from './validation/fhir-validation.service';
  * Generic FHIR REST controller that handles all resource types via dynamic `:resourceType` routes.
  * All responses use `application/fhir+json` content type and conform to the FHIR R4 REST specification.
  */
+@ApiTags('FHIR R4')
 @Controller('fhir')
 export class FhirController {
   /**
@@ -35,6 +37,8 @@ export class FhirController {
    * FHIR capabilities interaction. Returns a CapabilityStatement describing this server's supported resources, interactions and operations.
    */
   @Get('metadata')
+  @ApiOperation({ summary: 'CapabilityStatement', description: 'Returns the server CapabilityStatement describing supported resources, interactions and operations.' })
+  @ApiResponse({ status: 200, description: 'CapabilityStatement resource' })
   async metadata(@Req() req: Request, @Res() res: Response) {
 
     const baseUrl = this.getBaseUrl(req);
@@ -44,11 +48,25 @@ export class FhirController {
     res.set('Content-Type', 'application/fhir+json').json(statement);
   }
 
+  /** FHIR $meta operation (system-level). Returns aggregated meta across all resources. */
+  @Get('\\$meta')
+  @ApiOperation({ summary: '$meta (system)', description: 'Returns aggregated profiles, tags and security labels across all resources.' })
+  @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
+  async metaSystem(@Res() res: Response) {
+
+    const meta = await this.fhirService.getAggregatedMeta();
+
+    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
+  }
+
   /**
    * FHIR $validate operation (type-level). Validates a resource against the R4 spec and optionally a specific profile.
    * Always returns HTTP 200 with an OperationOutcome — validation errors are reported as issues, not HTTP errors.
    */
   @Post(':resourceType/\\$validate')
+  @ApiOperation({ summary: '$validate (type-level)', description: 'Validates a resource against the FHIR R4 spec and optionally a specific profile. Always returns HTTP 200.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiResponse({ status: 200, description: 'OperationOutcome with validation results' })
   async validateType(@Param('resourceType') resourceType: string, @Body() body: any, @Res() res: Response) {
 
     const { resource, profile } = this.extractValidateParams(body);
@@ -74,6 +92,10 @@ export class FhirController {
    * Always returns HTTP 200 with an OperationOutcome.
    */
   @Post(':resourceType/:id/\\$validate')
+  @ApiOperation({ summary: '$validate (instance-level)', description: 'Validates a stored resource or provided body against a profile.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiResponse({ status: 200, description: 'OperationOutcome with validation results' })
   async validateInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
 
     const { resource: bodyResource, profile } = this.extractValidateParams(body);
@@ -94,6 +116,59 @@ export class FhirController {
     res.set('Content-Type', 'application/fhir+json').json(this.validationResultToOutcome(result));
   }
 
+  /** FHIR $meta operation (type-level). Returns aggregated meta for all resources of a given type. */
+  @Get(':resourceType/\\$meta')
+  @ApiOperation({ summary: '$meta (type-level)', description: 'Returns aggregated profiles, tags and security labels for a resource type.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
+  async metaType(@Param('resourceType') resourceType: string, @Res() res: Response) {
+
+    const meta = await this.fhirService.getAggregatedMeta(resourceType);
+
+    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
+  }
+
+  /** FHIR $meta operation (instance-level). Returns the meta element for a specific resource. */
+  @Get(':resourceType/:id/\\$meta')
+  @ApiOperation({ summary: '$meta (instance-level)', description: 'Returns the meta element for a specific resource.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
+  async metaInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
+
+    const resource = await this.fhirService.findById(resourceType, id);
+
+    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: resource.meta }] });
+  }
+
+  /** FHIR $meta-add operation. Adds profiles, tags and security labels to a resource's meta. */
+  @Post(':resourceType/:id/\\$meta-add')
+  @ApiOperation({ summary: '$meta-add', description: 'Adds profiles, tags and security labels to a resource.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiResponse({ status: 200, description: 'Parameters resource with updated Meta' })
+  async metaAdd(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+
+    const inputMeta = body?.resourceType === 'Parameters' ? body.parameter?.find((p: any) => p.name === 'meta')?.valueMeta : body;
+    const updatedMeta = await this.fhirService.metaAdd(resourceType, id, inputMeta || {});
+
+    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: updatedMeta }] });
+  }
+
+  /** FHIR $meta-delete operation. Removes profiles, tags and security labels from a resource's meta. */
+  @Post(':resourceType/:id/\\$meta-delete')
+  @ApiOperation({ summary: '$meta-delete', description: 'Removes profiles, tags and security labels from a resource.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiResponse({ status: 200, description: 'Parameters resource with updated Meta' })
+  async metaDelete(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+
+    const inputMeta = body?.resourceType === 'Parameters' ? body.parameter?.find((p: any) => p.name === 'meta')?.valueMeta : body;
+    const updatedMeta = await this.fhirService.metaDelete(resourceType, id, inputMeta || {});
+
+    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: updatedMeta }] });
+  }
+
   /**
    * FHIR search interaction. Returns a Bundle of type `searchset` with matching resources.
    * Supports `_id`, `_sort`, `_count` and `_offset` search parameters.
@@ -103,6 +178,13 @@ export class FhirController {
    * @param res - The Express response.
    */
   @Get(':resourceType')
+  @ApiOperation({ summary: 'Search', description: 'Search for resources of a given type. Returns a Bundle of type searchset.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiQuery({ name: '_id', required: false, description: 'Filter by logical id' })
+  @ApiQuery({ name: '_sort', required: false, description: 'Sort fields (comma-separated, prefix with - for descending)' })
+  @ApiQuery({ name: '_count', required: false, description: 'Maximum number of results', type: Number })
+  @ApiQuery({ name: '_offset', required: false, description: 'Offset for pagination', type: Number })
+  @ApiResponse({ status: 200, description: 'Bundle (searchset)' })
   async search(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
 
@@ -129,6 +211,11 @@ export class FhirController {
    * @param res - The Express response. Includes `ETag` header with the current versionId.
    */
   @Get(':resourceType/:id')
+  @ApiOperation({ summary: 'Read', description: 'Read a single resource by logical id.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiResponse({ status: 200, description: 'The FHIR resource' })
+  @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
   async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
 
@@ -148,6 +235,10 @@ export class FhirController {
    * @param res - The Express response.
    */
   @Post(':resourceType')
+  @ApiOperation({ summary: 'Create', description: 'Create a new resource. Validates the body and assigns a server-generated id.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiResponse({ status: 201, description: 'Created resource with Location and ETag headers' })
+  @ApiResponse({ status: 400, description: 'OperationOutcome (validation error)' })
   async create(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
 
@@ -169,6 +260,12 @@ export class FhirController {
    * @param res - The Express response.
    */
   @Put(':resourceType/:id')
+  @ApiOperation({ summary: 'Update', description: 'Update an existing resource. Validates the body and increments versionId.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiResponse({ status: 200, description: 'Updated resource with ETag header' })
+  @ApiResponse({ status: 400, description: 'OperationOutcome (validation error)' })
+  @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
   async update(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
 
@@ -187,6 +284,11 @@ export class FhirController {
    * @param res - The Express response.
    */
   @Delete(':resourceType/:id')
+  @ApiOperation({ summary: 'Delete', description: 'Delete a resource by logical id.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiResponse({ status: 200, description: 'OperationOutcome (success)' })
+  @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
   async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
 
 
