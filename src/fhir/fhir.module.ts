@@ -1,5 +1,8 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { BundleProcessorService } from './bundle-processor.service';
+import { BundleMiddleware } from './bundle.middleware';
+import { FhirResourceHistory, FhirResourceHistorySchema } from './fhir-resource-history.schema';
 import { FhirResource, FhirResourceSchema } from './fhir-resource.schema';
 import { FhirController } from './fhir.controller';
 import { FhirService } from './fhir.service';
@@ -15,8 +18,12 @@ import { FhirValidationService } from './validation/fhir-validation.service';
  * resource persistence service, and FHIR validation pipeline.
  */
 @Module({
-  imports: [MongooseModule.forFeature([{ name: FhirResource.name, schema: FhirResourceSchema }])],
+  imports: [MongooseModule.forFeature([{ name: FhirResource.name, schema: FhirResourceSchema }, { name: FhirResourceHistory.name, schema: FhirResourceHistorySchema }])],
   controllers: [FhirController],
-  providers: [FhirService, FhirValidationService, FhirValidationPipe, SearchParameterRegistry, QueryBuilderService, IncludeService, ChainingService],
+  providers: [FhirService, FhirValidationService, FhirValidationPipe, SearchParameterRegistry, QueryBuilderService, IncludeService, ChainingService, BundleProcessorService],
 })
-export class FhirModule {}
+export class FhirModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(BundleMiddleware).forRoutes({ path: 'fhir', method: RequestMethod.POST });
+  }
+}

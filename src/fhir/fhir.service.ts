@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
-import { Model } from 'mongoose';
+import { Model, ClientSession } from 'mongoose';
+import { FhirResourceHistory } from './fhir-resource-history.schema';
 import { FhirResource } from './fhir-resource.schema';
 import { ChainingService } from './search/chaining.service';
 import { IncludeService } from './search/include.service';
@@ -11,37 +12,39 @@ import { SearchParameterRegistry } from './search/search-parameter-registry.serv
 
 /**
  * Service responsible for all FHIR resource persistence operations.
- * Handles CRUD and search against the MongoDB `fhir_resources` collection.
+ * Handles CRUD, search, version history and meta operations against MongoDB.
  */
 @Injectable()
 export class FhirService {
 
   constructor(
     @InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>,
+    @InjectModel(FhirResourceHistory.name) private readonly historyModel: Model<FhirResourceHistory>,
     private readonly queryBuilder: QueryBuilderService, private readonly searchRegistry: SearchParameterRegistry,
     private readonly includeService: IncludeService, private readonly chainingService: ChainingService,
   ) {}
 
   /**
    * Creates a new FHIR resource with a server-assigned id and meta.
-   * @param resourceType - The FHIR resource type (e.g. "Patient").
-   * @param body - The resource payload without id or meta.
-   * @returns The persisted resource including server-assigned id, versionId and lastUpdated.
+   * Also writes the initial version to the history collection.
    */
-  async create(resourceType: string, body: any): Promise<FhirResource> {
+  async create(resourceType: string, body: any, session?: ClientSession): Promise<FhirResource> {
 
     const id = randomUUID();
     const now = new Date().toISOString();
-    const resource = new this.resourceModel({ ...body, resourceType, id, meta: { ...body.meta, versionId: '1', lastUpdated: now } });
+    const meta = { ...body.meta, versionId: '1', lastUpdated: now };
+    const resource = new this.resourceModel({ ...body, resourceType, id, meta });
+    const saved = await resource.save({ session });
 
-    return resource.save();
+    // Write version 1 to history
+    const snapshot = this.toPlainResource(saved);
+    await new this.historyModel({ ...snapshot, request: { method: 'POST', url: resourceType }, response: { status: '201 Created', etag: `W/"1"`, lastModified: now } }).save({ session });
+
+    return saved;
   }
 
   /**
    * Searches for resources matching the given type and FHIR search parameters.
-   * @param resourceType - The FHIR resource type to search within.
-   * @param params - FHIR search parameters: `_id`, `_sort`, `_count`, `_offset`.
-   * @returns An object containing the matched resources and the total count (independent of `_count`).
    */
   async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number; included: FhirResource[] }> {
 
@@ -101,10 +104,7 @@ export class FhirService {
 
   /**
    * Retrieves a single resource by type and logical id.
-   * @param resourceType - The FHIR resource type.
-   * @param id - The logical resource id.
-   * @returns The matching resource.
-   * @throws NotFoundException with an OperationOutcome if the resource does not exist.
+   * @throws NotFoundException if the resource does not exist.
    */
   async findById(resourceType: string, id: string): Promise<FhirResource> {
 
@@ -118,48 +118,232 @@ export class FhirService {
   }
 
   /**
-   * Updates an existing resource. Increments versionId and sets a new lastUpdated timestamp.
-   * @param resourceType - The FHIR resource type.
-   * @param id - The logical resource id.
-   * @param body - The updated resource payload.
-   * @returns The updated resource with incremented versionId.
-   * @throws NotFoundException if the resource does not exist.
+   * FHIR vRead: retrieves a specific version of a resource from history.
+   * @throws NotFoundException if the version does not exist.
+   * @throws GoneException if the version is a deleted tombstone.
    */
-  async update(resourceType: string, id: string, body: any): Promise<FhirResource> {
+  async vRead(resourceType: string, id: string, versionId: string): Promise<any> {
+
+    const entry = await this.historyModel.findOne({ resourceType, id, 'meta.versionId': versionId }).lean().exec();
+
+    if (!entry) {
+      throw new NotFoundException(this.createOutcome(IssueSeverity.Error, IssueType.NotFound, `${resourceType}/${id}/_history/${versionId} not found`));
+    }
+
+    if ((entry as any)._deleted) {
+      throw new GoneException(this.createOutcome(IssueSeverity.Error, IssueType.Deleted, `${resourceType}/${id} was deleted at version ${versionId}`));
+    }
+
+    // Strip history-specific fields, return clean FHIR resource
+    const { _id, __v, request: _req, response: _resp, _deleted: _del, ...resource } = entry as any;
+
+    return resource;
+  }
+
+  /**
+   * Returns version history for a specific resource instance.
+   * Returns entries sorted by lastUpdated descending with Bundle-compatible request/response.
+   */
+  async instanceHistory(resourceType: string, id: string, params: Record<string, string>): Promise<{ entries: any[]; total: number }> {
+
+    const filter: Record<string, any> = { resourceType, id };
+
+    if (params._since) {
+filter['meta.lastUpdated'] = { $gte: params._since };
+}
+
+    if (params._at) {
+filter['meta.lastUpdated'] = params._at;
+}
+
+    const total = await this.historyModel.countDocuments(filter).exec();
+    const count = params._count ? parseInt(params._count, 10) : 100;
+    const offset = params._offset ? parseInt(params._offset, 10) : 0;
+
+    const entries = await this.historyModel.find(filter).sort({ 'meta.lastUpdated': -1 }).skip(offset).limit(count).lean().exec();
+
+    return { entries, total };
+  }
+
+  /**
+   * Returns version history for all resources of a given type.
+   */
+  async typeHistory(resourceType: string, params: Record<string, string>): Promise<{ entries: any[]; total: number }> {
+
+    const filter: Record<string, any> = { resourceType };
+
+    if (params._since) {
+filter['meta.lastUpdated'] = { $gte: params._since };
+}
+
+    if (params._at) {
+filter['meta.lastUpdated'] = params._at;
+}
+
+    const total = await this.historyModel.countDocuments(filter).exec();
+    const count = params._count ? parseInt(params._count, 10) : 100;
+    const offset = params._offset ? parseInt(params._offset, 10) : 0;
+
+    const entries = await this.historyModel.find(filter).sort({ 'meta.lastUpdated': -1 }).skip(offset).limit(count).lean().exec();
+
+    return { entries, total };
+  }
+
+  /**
+   * Returns version history across all resource types (system-level).
+   */
+  async systemHistory(params: Record<string, string>): Promise<{ entries: any[]; total: number }> {
+
+    const filter: Record<string, any> = {};
+
+    if (params._since) {
+filter['meta.lastUpdated'] = { $gte: params._since };
+}
+
+    if (params._at) {
+filter['meta.lastUpdated'] = params._at;
+}
+
+    const total = await this.historyModel.countDocuments(filter).exec();
+    const count = params._count ? parseInt(params._count, 10) : 100;
+    const offset = params._offset ? parseInt(params._offset, 10) : 0;
+
+    const entries = await this.historyModel.find(filter).sort({ 'meta.lastUpdated': -1 }).skip(offset).limit(count).lean().exec();
+
+    return { entries, total };
+  }
+
+  /**
+   * Updates an existing resource. Increments versionId and sets a new lastUpdated timestamp.
+   * Writes both the pre-update and new version to history.
+   */
+  async update(resourceType: string, id: string, body: any, session?: ClientSession): Promise<FhirResource> {
 
     const existing = await this.findById(resourceType, id);
     const currentVersion = parseInt(existing.meta.versionId, 10);
     const now = new Date().toISOString();
+    const newVersionId = String(currentVersion + 1);
 
-    return this.resourceModel.findOneAndUpdate(
+    const updated = await this.resourceModel.findOneAndUpdate(
       { resourceType, id },
-      { ...body, resourceType, id, meta: { ...body.meta, versionId: String(currentVersion + 1), lastUpdated: now } },
-      { returnDocument: 'after' },
+      { ...body, resourceType, id, meta: { ...body.meta, versionId: newVersionId, lastUpdated: now } },
+      { returnDocument: 'after', session },
     ).exec();
+
+    // Write new version to history
+    const snapshot = this.toPlainResource(updated);
+    await new this.historyModel({ ...snapshot, request: { method: 'PUT', url: `${resourceType}/${id}` }, response: { status: '200 OK', etag: `W/"${newVersionId}"`, lastModified: now } }).save({ session });
+
+    return updated;
   }
 
   /**
    * Deletes a resource by type and logical id.
-   * @param resourceType - The FHIR resource type.
-   * @param id - The logical resource id.
-   * @throws NotFoundException with an OperationOutcome if the resource does not exist.
+   * Writes a tombstone entry to history before removing from the main collection.
    */
-  async delete(resourceType: string, id: string): Promise<void> {
+  async delete(resourceType: string, id: string, session?: ClientSession): Promise<void> {
 
-    const result = await this.resourceModel.deleteOne({ resourceType, id }).exec();
+    const existing = await this.resourceModel.findOne({ resourceType, id }).exec();
 
-    if (result.deletedCount === 0) {
+    if (!existing) {
       throw new NotFoundException(this.createOutcome(IssueSeverity.Error, IssueType.NotFound, `${resourceType}/${id} not found`));
     }
+
+    const currentVersion = parseInt(existing.meta.versionId, 10);
+    const now = new Date().toISOString();
+    const deleteVersionId = String(currentVersion + 1);
+
+    // Write tombstone to history
+    await new this.historyModel({
+      resourceType, id, meta: { versionId: deleteVersionId, lastUpdated: now, profile: existing.meta.profile, tag: existing.meta.tag, security: existing.meta.security },
+      request: { method: 'DELETE', url: `${resourceType}/${id}` }, response: { status: '204 No Content' }, _deleted: true,
+    }).save({ session });
+
+    await this.resourceModel.deleteOne({ resourceType, id }, { session }).exec();
   }
 
   /**
-   * Builds a FHIR OperationOutcome with a single issue.
-   * @param severity - Issue severity level.
-   * @param code - Issue type code.
-   * @param diagnostics - Human-readable diagnostic message.
-   * @returns A populated OperationOutcome instance.
+   * Conditional create: only creates if no existing resource matches the search criteria.
+   * Uses the If-None-Exist header value as search params.
+   * @returns { resource, created } — created=true if new, false if existing match found.
+   * @throws ConflictException if multiple matches found.
    */
+  async conditionalCreate(resourceType: string, body: any, searchParams: Record<string, string>, session?: ClientSession): Promise<{ resource: FhirResource; created: boolean }> {
+
+    const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
+    const matches = await this.resourceModel.find(filter).limit(2).exec();
+
+    if (matches.length === 1) {
+      return { resource: matches[0], created: false };
+    }
+
+    if (matches.length > 1) {
+      throw new ConflictException(this.createOutcome(IssueSeverity.Error, IssueType.Duplicate, `Conditional create matched ${matches.length} resources — cannot determine which to return`));
+    }
+
+    const resource = await this.create(resourceType, body, session);
+
+    return { resource, created: true };
+  }
+
+  /**
+   * Conditional update: PUT /ResourceType?search-params
+   * Creates if 0 matches, updates if 1 match, errors if multiple matches.
+   * @returns { resource, created } — created=true if new resource was created.
+   * @throws ConflictException if multiple matches found.
+   */
+  async conditionalUpdate(resourceType: string, body: any, searchParams: Record<string, string>, session?: ClientSession): Promise<{ resource: FhirResource; created: boolean }> {
+
+    const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
+    const matches = await this.resourceModel.find(filter).limit(2).exec();
+
+    if (matches.length > 1) {
+      throw new ConflictException(this.createOutcome(IssueSeverity.Error, IssueType.Duplicate, `Conditional update matched ${matches.length} resources — cannot determine which to update`));
+    }
+
+    if (matches.length === 1) {
+      const resource = await this.update(resourceType, matches[0].id, body, session);
+
+      return { resource, created: false };
+    }
+
+    // No match → create
+    const resource = await this.create(resourceType, body, session);
+
+    return { resource, created: true };
+  }
+
+  /**
+   * Conditional delete: DELETE /ResourceType?search-params
+   * Deletes all matching resources (FHIR allows single or multiple conditional delete).
+   * @returns The number of deleted resources.
+   */
+  async conditionalDelete(resourceType: string, searchParams: Record<string, string>, session?: ClientSession): Promise<number> {
+
+    const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
+    const matches = await this.resourceModel.find(filter).exec();
+
+    for (const match of matches) {
+      await this.delete(resourceType, match.id, session);
+    }
+
+    return matches.length;
+  }
+
+  /**
+   * Checks If-Match header against current resource version for optimistic locking.
+   * @throws PreconditionFailedException if the version doesn't match.
+   */
+  async checkIfMatch(resourceType: string, id: string, ifMatch: string): Promise<void> {
+
+    const resource = await this.findById(resourceType, id);
+    const currentEtag = `W/"${resource.meta.versionId}"`;
+
+    if (ifMatch !== currentEtag) {
+      throw new PreconditionFailedException(this.createOutcome(IssueSeverity.Error, IssueType.Conflict, `Version conflict: current is ${currentEtag}, request has ${ifMatch}`));
+    }
+  }
+
   /** Returns aggregated meta (profiles, tags, security) for a resource type or the whole system. */
   async getAggregatedMeta(resourceType?: string): Promise<{ profile: string[]; tag: any[]; security: any[] }> {
 
@@ -256,6 +440,15 @@ map.set(`${item.system}|${item.code}`, item);
   async getResourceTypes(): Promise<string[]> {
 
     return this.resourceModel.distinct('resourceType').exec();
+  }
+
+  /** Converts a Mongoose document to a plain object without MongoDB internals. */
+  private toPlainResource(doc: any): any {
+
+    const obj = doc.toObject ? doc.toObject() : doc;
+    const { _id, __v, ...resource } = obj;
+
+    return resource;
   }
 
   private createOutcome(severity: IssueSeverity, code: IssueType, diagnostics: string): OperationOutcome {

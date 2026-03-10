@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { Bundle, BundleEntry, BundleEntrySearch, BundleLink, BundleType, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
+import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
 import { buildCapabilityStatement } from './capability-statement.builder';
 import { FhirService } from './fhir.service';
 import { SearchParameterRegistry } from './search/search-parameter-registry.service';
@@ -49,6 +49,20 @@ export class FhirController {
     const statement = buildCapabilityStatement(baseUrl, resourceTypes, searchParamsByType);
 
     res.set('Content-Type', 'application/fhir+json').json(statement);
+  }
+
+  /** FHIR system-level history. Returns a history Bundle across all resource types. */
+  @Get('_history')
+  @ApiOperation({ summary: 'System History', description: 'Returns version history across all resource types.' })
+  @ApiQuery({ name: '_since', required: false, description: 'Only include versions created at or after this date' })
+  @ApiQuery({ name: '_count', required: false, type: Number })
+  @ApiResponse({ status: 200, description: 'Bundle (history)' })
+  async systemHistory(@Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
+
+    const { entries, total } = await this.fhirService.systemHistory(queryParams);
+    const baseUrl = this.getBaseUrl(req);
+
+    return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/_history`, baseUrl));
   }
 
   /** FHIR $meta operation (system-level). Returns aggregated meta across all resources. */
@@ -117,6 +131,21 @@ export class FhirController {
     const result = await this.validationService.validate(resource, profile);
 
     res.set('Content-Type', 'application/fhir+json').json(this.validationResultToOutcome(result));
+  }
+
+  /** FHIR type-level history. Returns a history Bundle for all resources of a given type. */
+  @Get(':resourceType/_history')
+  @ApiOperation({ summary: 'Type History', description: 'Returns version history for all resources of a given type.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiQuery({ name: '_since', required: false, description: 'Only include versions created at or after this date' })
+  @ApiQuery({ name: '_count', required: false, type: Number })
+  @ApiResponse({ status: 200, description: 'Bundle (history)' })
+  async typeHistory(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
+
+    const { entries, total } = await this.fhirService.typeHistory(resourceType, queryParams);
+    const baseUrl = this.getBaseUrl(req);
+
+    return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/_history`, baseUrl));
   }
 
   /** FHIR $meta operation (type-level). Returns aggregated meta for all resources of a given type. */
@@ -210,6 +239,39 @@ export class FhirController {
     return this.executeSearch(resourceType, mergedParams, req, res);
   }
 
+  /** FHIR instance-level history. Returns all versions of a specific resource. */
+  @Get(':resourceType/:id/_history')
+  @ApiOperation({ summary: 'Instance History', description: 'Returns version history for a specific resource instance.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiQuery({ name: '_since', required: false, description: 'Only include versions created at or after this date' })
+  @ApiQuery({ name: '_count', required: false, type: Number })
+  @ApiResponse({ status: 200, description: 'Bundle (history)' })
+  async instanceHistory(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
+
+    const { entries, total } = await this.fhirService.instanceHistory(resourceType, id, queryParams);
+    const baseUrl = this.getBaseUrl(req);
+
+    return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/${id}/_history`, baseUrl));
+  }
+
+  /** FHIR vRead interaction. Returns a specific version of a resource. */
+  @Get(':resourceType/:id/_history/:versionId')
+  @ApiOperation({ summary: 'vRead', description: 'Read a specific version of a resource from history.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiParam({ name: 'versionId', example: '1' })
+  @ApiResponse({ status: 200, description: 'The FHIR resource at the requested version' })
+  @ApiResponse({ status: 404, description: 'Version not found' })
+  @ApiResponse({ status: 410, description: 'Resource was deleted at this version' })
+  async vRead(@Param('resourceType') resourceType: string, @Param('id') id: string, @Param('versionId') versionId: string, @Req() req: Request, @Res() res: Response) {
+
+    const resource = await this.fhirService.vRead(resourceType, id, versionId);
+    const baseUrl = this.getBaseUrl(req);
+
+    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${versionId}"`).json(this.resolveReferences(resource, baseUrl));
+  }
+
   /**
    * FHIR read interaction. Returns a single resource by logical id.
    * @param resourceType - The FHIR resource type.
@@ -235,53 +297,110 @@ export class FhirController {
 
   /**
    * FHIR create interaction. Validates the body and persists a new resource.
+   * Supports conditional create via If-None-Exist header.
    * Returns 201 Created with `Location` and `ETag` headers.
-   * @param resourceType - The FHIR resource type.
-   * @param body - The resource payload to create.
-   * @param req - The Express request.
-   * @param res - The Express response.
    */
   @Post(':resourceType')
-  @ApiOperation({ summary: 'Create', description: 'Create a new resource. Validates the body and assigns a server-generated id.' })
+  @ApiOperation({ summary: 'Create', description: 'Create a new resource. Validates the body and assigns a server-generated id. Supports conditional create via If-None-Exist header.' })
   @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiHeader({ name: 'If-None-Exist', required: false, description: 'Conditional create: search params (e.g. identifier=system|value)' })
   @ApiResponse({ status: 201, description: 'Created resource with Location and ETag headers' })
+  @ApiResponse({ status: 200, description: 'Existing resource found (conditional create)' })
   @ApiResponse({ status: 400, description: 'OperationOutcome (validation error)' })
+  @ApiResponse({ status: 409, description: 'OperationOutcome (multiple matches)' })
   async create(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
+    const baseUrl = this.getBaseUrl(req);
 
     await this.validationPipe.transform(body);
 
+    const ifNoneExist = req.headers['if-none-exist'] as string;
+
+    // Conditional create
+    if (ifNoneExist) {
+      const searchParams = this.parseSearchString(ifNoneExist);
+      searchParams.resourceType = resourceType;
+      const { resource, created } = await this.fhirService.conditionalCreate(resourceType, body, searchParams);
+
+      if (!created) {
+        return res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+      }
+
+      return res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+    }
+
     const resource = await this.fhirService.create(resourceType, body);
-    const baseUrl = this.getBaseUrl(req);
 
     res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
   }
 
   /**
+   * FHIR conditional update (without id). PUT /ResourceType?search-params
+   * Creates if 0 matches, updates if 1, errors if multiple.
+   */
+  @Put(':resourceType')
+  @ApiOperation({ summary: 'Conditional Update', description: 'Conditional update: creates if 0 matches, updates if 1, errors if multiple.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiResponse({ status: 200, description: 'Updated resource' })
+  @ApiResponse({ status: 201, description: 'Created resource (no match found)' })
+  @ApiResponse({ status: 409, description: 'OperationOutcome (multiple matches)' })
+  async conditionalUpdate(@Param('resourceType') resourceType: string, @Body() body: any, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
+
+    await this.validationPipe.transform(body);
+
+    const baseUrl = this.getBaseUrl(req);
+    const searchParams = { ...queryParams, resourceType };
+    const { resource, created } = await this.fhirService.conditionalUpdate(resourceType, body, searchParams);
+
+    if (created) {
+      return res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+    }
+
+    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+  }
+
+  /**
    * FHIR update interaction. Validates the body and replaces the existing resource.
-   * Increments the versionId automatically.
-   * @param resourceType - The FHIR resource type.
-   * @param id - The logical resource id.
-   * @param body - The updated resource payload.
-   * @param req - The Express request.
-   * @param res - The Express response.
+   * Supports If-Match header for optimistic locking.
    */
   @Put(':resourceType/:id')
-  @ApiOperation({ summary: 'Update', description: 'Update an existing resource. Validates the body and increments versionId.' })
+  @ApiOperation({ summary: 'Update', description: 'Update an existing resource. Validates the body and increments versionId. Supports If-Match for optimistic locking.' })
   @ApiParam({ name: 'resourceType', example: 'Patient' })
   @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiHeader({ name: 'If-Match', required: false, description: 'Optimistic locking: W/"versionId"' })
   @ApiResponse({ status: 200, description: 'Updated resource with ETag header' })
   @ApiResponse({ status: 400, description: 'OperationOutcome (validation error)' })
   @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
+  @ApiResponse({ status: 412, description: 'OperationOutcome (version conflict)' })
   async update(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
-
     await this.validationPipe.transform(body);
+
+    // If-Match: optimistic locking
+    const ifMatch = req.headers['if-match'] as string;
+
+    if (ifMatch) {
+      await this.fhirService.checkIfMatch(resourceType, id, ifMatch);
+    }
 
     const resource = await this.fhirService.update(resourceType, id, body);
     const baseUrl = this.getBaseUrl(req);
 
     res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+  }
+
+  /** FHIR conditional delete: DELETE /ResourceType?search-params */
+  @Delete(':resourceType')
+  @ApiOperation({ summary: 'Conditional Delete', description: 'Delete resources matching search criteria.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiResponse({ status: 200, description: 'OperationOutcome (success)' })
+  async conditionalDelete(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Res() res: Response) {
+
+    const searchParams = { ...queryParams, resourceType };
+    const count = await this.fhirService.conditionalDelete(resourceType, searchParams);
+    const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Conditionally deleted ${count} ${resourceType} resource(s)` })] });
+
+    res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
   }
 
   /**
@@ -422,6 +541,52 @@ export class FhirController {
     const { _id, __v, ...fhirResource } = obj;
 
     return this.resolveReferences(fhirResource, baseUrl);
+  }
+
+  /** Parses a search parameter string (e.g. "identifier=system|value&name=test") into a Record. */
+  private parseSearchString(searchString: string): Record<string, string> {
+
+    const params: Record<string, string> = {};
+
+    for (const part of searchString.split('&')) {
+      const [key, ...valueParts] = part.split('=');
+
+      if (key) {
+        params[decodeURIComponent(key)] = decodeURIComponent(valueParts.join('='));
+      }
+    }
+
+    return params;
+  }
+
+  /** Builds a FHIR history Bundle from history collection entries. */
+  private buildHistoryBundle(entries: any[], total: number, selfUrl: string, baseUrl: string): Bundle {
+
+    const bundleEntries = entries.map((entry) => {
+      const { _id, __v, request, response, _deleted, ...resource } = entry;
+      const fullUrl = `${baseUrl}/${entry.resourceType}/${entry.id}`;
+      const bundleEntry: any = {
+        fullUrl,
+        request: request ? new BundleEntryRequest({ method: this.toHttpVerb(request.method), url: request.url }) : undefined,
+        response: response ? new BundleEntryResponse({ status: response.status, etag: response.etag, lastModified: response.lastModified }) : undefined,
+      };
+
+      // Only include the resource body for non-deleted entries
+      if (!_deleted) {
+        bundleEntry.resource = this.resolveReferences(resource, baseUrl);
+      }
+
+      return new BundleEntry(bundleEntry);
+    });
+
+    return new Bundle({ type: BundleType.History, total, link: [new BundleLink({ relation: 'self', url: selfUrl })], entry: bundleEntries });
+  }
+
+  /** Maps HTTP method string to fhir-models-r4 HTTPVerb enum. */
+  private toHttpVerb(method: string): HTTPVerb {
+    const map: Record<string, HTTPVerb> = { GET: HTTPVerb.GET, POST: HTTPVerb.POST, PUT: HTTPVerb.PUT, DELETE: HTTPVerb.DELETE };
+
+    return map[method] || HTTPVerb.GET;
   }
 
   /**

@@ -11,6 +11,9 @@ Het project heeft een werkende generieke FHIR R4 REST API met:
 - CapabilityStatement met dynamische search parameters
 - $meta, $meta-add, $meta-delete operaties
 - FHIR validatie met nl-core profielen (fhir-validator-mx)
+- Versie-historie: vRead, instance/type/system _history, soft deletes met tombstones
+- Conditional CRUD: If-None-Exist, If-Match, conditional update/delete op search criteria
+- Batch/Transaction Bundle: POST /fhir met urn:uuid referentie-resolutie
 - Swagger/OpenAPI documentatie
 - Insomnia collectie voor alle endpoints
 
@@ -18,9 +21,9 @@ Het project heeft een werkende generieke FHIR R4 REST API met:
 
 ### Fundamenteel (hoog impact)
 
-1. **Versie-historie (vHistory)** — `GET /Patient/123/_history` en `GET /Patient/_history`. Soft deletes, oude versies bewaren, vRead (`GET /Patient/123/_history/2`)
-2. **Conditional CRUD** — `PUT /Patient?identifier=bsn|123` (create-or-update op basis van search), conditional delete, `If-Match` / `If-None-Match` headers
-3. **Batch/Transaction Bundle** — `POST /fhir` met een Bundle van type `batch` of `transaction`, atomaire transacties met rollback
+1. ~~**Versie-historie (vHistory)** — `GET /Patient/123/_history` en `GET /Patient/_history`. Soft deletes, oude versies bewaren, vRead (`GET /Patient/123/_history/2`)~~ ✅ geïmplementeerd
+2. ~~**Conditional CRUD** — `PUT /Patient?identifier=bsn|123` (create-or-update op basis van search), conditional delete, `If-Match` / `If-None-Match` headers~~ ✅ geïmplementeerd
+3. ~~**Batch/Transaction Bundle** — `POST /fhir` met een Bundle van type `batch` of `transaction`, atomaire transacties met rollback~~ ✅ geïmplementeerd (zonder MongoDB transacties, vereist replica set)
 4. **Subscription** — FHIR R4 Subscriptions voor real-time notificaties (webhooks) bij resource wijzigingen
 
 ### Kwaliteit & betrouwbaarheid
@@ -44,16 +47,16 @@ Het project heeft een werkende generieke FHIR R4 REST API met:
 
 ### DevOps
 
-15. **Docker + docker-compose** — one-command setup met MongoDB
-16. **Health check endpoint** — `/health` met DB connectivity check
-17. **Structured logging** — JSON logs met correlation IDs voor tracing
-18. **CI/CD pipeline** — GitHub Actions met lint, test, build, docker push
+15. ~~**Docker + docker-compose** — one-command setup met MongoDB~~ ✅ geimplementeerd
+16. ~~**Health check endpoint** — `/health` met DB connectivity check~~ ✅ geimplementeerd
+17. ~~**Structured logging** — JSON logs met correlation IDs voor tracing~~ ✅ geimplementeerd
+18. ~~**CI/CD pipeline** — GitHub Actions met lint, test, build, docker push~~ ✅ geimplementeerd
 
 ## Prioriteit (top 3 aanbeveling)
 
-1. **Versie-historie** — essentieel voor FHIR conformiteit, veel clients verwachten dit
-2. **Batch/Transaction Bundle** — nodig voor bulk imports en atomaire operaties
-3. **Docker setup** — verlaagt de drempel voor anderen om het project te draaien
+1. ~~**Versie-historie** — essentieel voor FHIR conformiteit, veel clients verwachten dit~~ ✅ done
+2. ~~**Batch/Transaction Bundle** — nodig voor bulk imports en atomaire operaties~~ ✅ done
+3. ~~**Docker setup** — verlaagt de drempel voor anderen om het project te draaien~~ ✅ done
 
 ## Bugfixes uitgevoerd
 
