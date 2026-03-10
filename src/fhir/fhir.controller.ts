@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleLink, BundleType, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
-import { SUPPORTED_RESOURCE_TYPES } from './fhir.constants';
+import { buildCapabilityStatement } from './capability-statement.builder';
 import { FhirService } from './fhir.service';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
+import { FhirValidationService } from './validation/fhir-validation.service';
 
 /**
  * Generic FHIR REST controller that handles all resource types via dynamic `:resourceType` routes.
@@ -15,20 +16,7 @@ export class FhirController {
    * @param fhirService - Service handling resource persistence.
    * @param validationPipe - Pipe that validates incoming resource bodies against FHIR R4 rules.
    */
-  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe) {}
-
-  /**
-   * Validates that the given resource type is in the supported list.
-   * @param resourceType - The resource type string from the URL.
-   * @throws BadRequestException with an OperationOutcome if the type is not supported.
-   */
-  private validateResourceType(resourceType: string): void {
-    if (!SUPPORTED_RESOURCE_TYPES.includes(resourceType as any)) {
-      throw new BadRequestException(
-        new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.NotSupported, diagnostics: `Resource type '${resourceType}' is not supported` })] }),
-      );
-    }
-  }
+  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService) {}
 
   /**
    * Derives the FHIR base URL from the incoming request, respecting reverse proxy headers.
@@ -36,10 +24,74 @@ export class FhirController {
    * @returns The absolute base URL, e.g. `http://localhost:3000/fhir`.
    */
   private getBaseUrl(req: Request): string {
+
     const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.headers['x-forwarded-host'] || req.get('host');
 
     return `${proto}://${host}/fhir`;
+  }
+
+  /**
+   * FHIR capabilities interaction. Returns a CapabilityStatement describing this server's supported resources, interactions and operations.
+   */
+  @Get('metadata')
+  async metadata(@Req() req: Request, @Res() res: Response) {
+
+    const baseUrl = this.getBaseUrl(req);
+    const resourceTypes = await this.fhirService.getResourceTypes();
+    const statement = buildCapabilityStatement(baseUrl, resourceTypes);
+
+    res.set('Content-Type', 'application/fhir+json').json(statement);
+  }
+
+  /**
+   * FHIR $validate operation (type-level). Validates a resource against the R4 spec and optionally a specific profile.
+   * Always returns HTTP 200 with an OperationOutcome — validation errors are reported as issues, not HTTP errors.
+   */
+  @Post(':resourceType/\\$validate')
+  async validateType(@Param('resourceType') resourceType: string, @Body() body: any, @Res() res: Response) {
+
+    const { resource, profile } = this.extractValidateParams(body);
+
+    if (!resource) {
+      const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'No resource provided for validation' })] });
+
+      return res.set('Content-Type', 'application/fhir+json').json(outcome);
+    }
+
+    if (resource.resourceType && resource.resourceType !== resourceType) {
+      const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: `Resource type '${resource.resourceType}' does not match endpoint '${resourceType}'` })] });
+
+      return res.set('Content-Type', 'application/fhir+json').json(outcome);
+    }
+
+    const result = await this.validationService.validate(resource, profile);
+    res.set('Content-Type', 'application/fhir+json').json(this.validationResultToOutcome(result));
+  }
+
+  /**
+   * FHIR $validate operation (instance-level). Validates the stored resource or a provided body against a profile.
+   * Always returns HTTP 200 with an OperationOutcome.
+   */
+  @Post(':resourceType/:id/\\$validate')
+  async validateInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+
+    const { resource: bodyResource, profile } = this.extractValidateParams(body);
+
+    // Use provided resource or fall back to the stored one
+    let resource = bodyResource;
+
+    if (!resource) {
+      const stored = await this.fhirService.findById(resourceType, id);
+      const obj = stored.toObject ? stored.toObject() : stored;
+      const { _id, __v, ...fhirResource } = obj;
+
+      resource = fhirResource;
+    }
+
+    const result = await this.validationService.validate(resource, profile);
+
+    res.set('Content-Type', 'application/fhir+json').json(this.validationResultToOutcome(result));
   }
 
   /**
@@ -52,7 +104,9 @@ export class FhirController {
    */
   @Get(':resourceType')
   async search(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
-    this.validateResourceType(resourceType);
+
+
+
     const { resources, total } = await this.fhirService.search(resourceType, queryParams);
     const baseUrl = this.getBaseUrl(req);
     const selfUrl = this.buildSelfUrl(baseUrl, resourceType, queryParams);
@@ -76,7 +130,9 @@ export class FhirController {
    */
   @Get(':resourceType/:id')
   async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
-    this.validateResourceType(resourceType);
+
+
+
     const resource = await this.fhirService.findById(resourceType, id);
     const baseUrl = this.getBaseUrl(req);
 
@@ -93,8 +149,10 @@ export class FhirController {
    */
   @Post(':resourceType')
   async create(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
-    this.validateResourceType(resourceType);
+
+
     await this.validationPipe.transform(body);
+
     const resource = await this.fhirService.create(resourceType, body);
     const baseUrl = this.getBaseUrl(req);
 
@@ -112,8 +170,10 @@ export class FhirController {
    */
   @Put(':resourceType/:id')
   async update(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
-    this.validateResourceType(resourceType);
+
+
     await this.validationPipe.transform(body);
+
     const resource = await this.fhirService.update(resourceType, id, body);
     const baseUrl = this.getBaseUrl(req);
 
@@ -128,7 +188,8 @@ export class FhirController {
    */
   @Delete(':resourceType/:id')
   async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
-    this.validateResourceType(resourceType);
+
+
     await this.fhirService.delete(resourceType, id);
 
     const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted` })] });
@@ -143,7 +204,42 @@ export class FhirController {
    * @param params - The search parameters to encode into the URL.
    * @returns The full self URL with query string.
    */
+  /**
+   * Extracts the resource and profile from a $validate request body.
+   * Supports both Parameters resource format and direct resource submission.
+   */
+  private extractValidateParams(body: any): { resource?: any; profile?: string } {
+
+    if (body?.resourceType === 'Parameters') {
+      const params = body.parameter || [];
+      const resource = params.find((p: any) => p.name === 'resource')?.resource;
+      const profile = params.find((p: any) => p.name === 'profile')?.valueUri;
+
+      return { resource, profile };
+    }
+
+    const profile = body?.meta?.profile?.[0];
+
+    return { resource: body, profile };
+  }
+
+  /** Converts a ValidationResult from fhir-validator-mx into a FHIR OperationOutcome. */
+  private validationResultToOutcome(result: { valid: boolean; issues: { severity: string; message: string; path?: string }[] }): OperationOutcome {
+
+    if (result.valid || result.issues.length === 0) {
+      return new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: 'Validation successful' })] });
+    }
+
+    const severityMap: Record<string, IssueSeverity> = { error: IssueSeverity.Error, warning: IssueSeverity.Warning, information: IssueSeverity.Information };
+    const issues = result.issues.map((i) => new OperationOutcomeIssue({
+      severity: severityMap[i.severity] || IssueSeverity.Information, code: i.severity === 'error' ? IssueType.Invalid : IssueType.Informational, diagnostics: i.message, expression: i.path ? [i.path] : undefined,
+    }));
+
+    return new OperationOutcome({ issue: issues });
+  }
+
   private buildSelfUrl(baseUrl: string, resourceType: string, params: Record<string, string>): string {
+
     const queryString = Object.entries(params).map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join('&');
 
     return queryString ? `${baseUrl}/${resourceType}?${queryString}` : `${baseUrl}/${resourceType}`;
@@ -157,6 +253,7 @@ export class FhirController {
    * @returns A clean FHIR resource object with absolute reference URLs.
    */
   private toFhirJson(doc: any, baseUrl: string): any {
+
     const obj = doc.toObject ? doc.toObject() : doc;
     const { _id, __v, ...fhirResource } = obj;
 
@@ -172,6 +269,7 @@ export class FhirController {
    * @returns The object with all references resolved.
    */
   private resolveReferences(obj: any, baseUrl: string): any {
+
     if (obj === null || obj === undefined) {
       return obj;
     }

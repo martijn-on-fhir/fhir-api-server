@@ -1,7 +1,7 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { FhirValidator, ValidationResult } from 'fhir-validator-mx';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { FhirValidator, ValidationResult } from 'fhir-validator-mx';
 
 /**
  * Service that wraps the fhir-validator-mx library.
@@ -21,7 +21,9 @@ export class FhirValidationService implements OnModuleInit {
   private loadAppConfig(): Record<string, any> {
     try {
       return JSON.parse(readFileSync(resolve(process.cwd(), 'config/app-config.json'), 'utf-8'));
-    } catch { return {}; }
+    } catch {
+ return {}; 
+}
   }
 
   /**

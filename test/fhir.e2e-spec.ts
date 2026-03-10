@@ -40,13 +40,14 @@ describe('FHIR API (e2e)', () => {
       expect(res.body.entry).toEqual([]);
     });
 
-    it('should return OperationOutcome for unsupported resource type', async () => {
+    it('should return empty Bundle for unknown resource type', async () => {
       const res = await request(app.getHttpServer())
         .get('/fhir/FakeResource')
-        .expect(400);
+        .expect(200);
 
-      expect(res.body.resourceType).toBe('OperationOutcome');
-      expect(res.body.issue[0].code).toBe('not-supported');
+      expect(res.body.resourceType).toBe('Bundle');
+      expect(res.body.type).toBe('searchset');
+      expect(res.body.total).toBe(0);
     });
   });
 

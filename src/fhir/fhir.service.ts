@@ -25,7 +25,7 @@ export class FhirService {
 
     const id = randomUUID();
     const now = new Date().toISOString();
-    const resource = new this.resourceModel({ ...body, resourceType, id, meta: { versionId: '1', lastUpdated: now } });
+    const resource = new this.resourceModel({ ...body, resourceType, id, meta: { ...body.meta, versionId: '1', lastUpdated: now } });
 
     return resource.save();
   }
@@ -108,7 +108,7 @@ export class FhirService {
 
     return this.resourceModel.findOneAndUpdate(
       { resourceType, id },
-      { ...body, resourceType, id, meta: { versionId: String(currentVersion + 1), lastUpdated: now } },
+      { ...body, resourceType, id, meta: { ...body.meta, versionId: String(currentVersion + 1), lastUpdated: now } },
       { returnDocument: 'after' },
     ).exec();
   }
@@ -135,6 +135,12 @@ export class FhirService {
    * @param diagnostics - Human-readable diagnostic message.
    * @returns A populated OperationOutcome instance.
    */
+  /** Returns all distinct resourceType values currently stored in the database. */
+  async getResourceTypes(): Promise<string[]> {
+
+    return this.resourceModel.distinct('resourceType').exec();
+  }
+
   private createOutcome(severity: IssueSeverity, code: IssueType, diagnostics: string): OperationOutcome {
     return new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity, code, diagnostics })] });
   }
