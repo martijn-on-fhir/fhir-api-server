@@ -29,7 +29,7 @@ Het project heeft een werkende generieke FHIR R4 REST API met:
 ### Kwaliteit & betrouwbaarheid
 
 5. **Uitgebreide e2e tests** — tests voor alle search types, _include, chaining, _has, $validate, edge cases
-6. **MongoDB indexen** — compound indexes op veelgebruikte search paden (identifier.system+value, code.coding, subject.reference) voor performance
+6. ~~**MongoDB indexen** — compound indexes op veelgebruikte search paden (identifier.system+value, code.coding, subject.reference) voor performance~~ ✅ geïmplementeerd
 7. ~~**Rate limiting & request logging** — bescherming tegen misbruik, audit trail~~ ✅ geïmplementeerd
 8. ~~**Input sanitization** — extra bescherming tegen NoSQL injection op search parameters~~ ✅ geïmplementeerd
 
