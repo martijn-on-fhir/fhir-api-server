@@ -122,9 +122,11 @@ const resolveSingleExpression = (expr: string, resourceType?: string): ResolvedP
   // Check if the final segment is a known choice type base name (e.g. "effective" → effectiveDateTime, effectivePeriod, etc.)
   const lastDot = mongoPath.lastIndexOf('.');
   const lastSegment = lastDot >= 0 ? mongoPath.substring(lastDot + 1) : mongoPath;
+
   if (KNOWN_CHOICE_BASES.has(lastSegment)) {
     const prefix = lastDot >= 0 ? mongoPath.substring(0, lastDot + 1) : '';
     const expanded = COMMON_CHOICE_SUFFIXES.map((suffix) => `${prefix}${lastSegment}${suffix}`);
+
     return { paths: expanded, isPolymorphic: true };
   }
 

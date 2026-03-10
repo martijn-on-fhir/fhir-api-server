@@ -3,7 +3,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { FhirResource } from '../fhir-resource.schema';
-import { BulkExportJob, BulkExportStatus } from './bulk-export.types';
+import { BulkExportJob } from './bulk-export.types';
 
 /**
  * Service for FHIR Bulk Data Export ($export).
@@ -28,6 +28,7 @@ export class BulkExportService {
     this.jobs.set(id, job);
     // Fire and forget — async processing
     setTimeout(() => this.processJob(id), 0);
+
     return job;
   }
 
@@ -38,26 +39,39 @@ export class BulkExportService {
   /** Cancel a running or pending job. */
   cancelJob(id: string): void {
     const job = this.jobs.get(id);
-    if (!job) throw new NotFoundException(`Bulk export job ${id} not found`);
+
+    if (!job) {
+throw new NotFoundException(`Bulk export job ${id} not found`);
+}
+
     job.status = 'cancelled';
   }
 
   /** Get NDJSON data for a specific job and resource type. */
   getNdjson(jobId: string, resourceType: string): string | undefined {
     const job = this.jobs.get(jobId);
-    if (!job || job.status !== 'complete') return undefined;
+
+    if (!job || job.status !== 'complete') {
+return undefined;
+}
+
     return job.output.get(resourceType);
   }
 
   /** Main processing: query MongoDB, generate NDJSON per type. */
   private async processJob(jobId: string): Promise<void> {
     const job = this.jobs.get(jobId);
-    if (!job || job.status === 'cancelled') return;
+
+    if (!job || job.status === 'cancelled') {
+return;
+}
 
     job.status = 'in-progress';
+
     try {
       // Determine which resource types to export
       let resourceTypes: string[];
+
       if (job.types?.length) {
         resourceTypes = job.types;
       } else {
@@ -66,11 +80,14 @@ export class BulkExportService {
 
       // For group-level export, only include resources linked to the group's members
       let patientIds: string[] | undefined;
+
       if (job.groupId) {
         patientIds = await this.resolveGroupMembers(job.groupId);
+
         if (!patientIds) {
           job.status = 'error';
           job.errors.push({ type: 'OperationOutcome', url: '' });
+
           return;
         }
       }
@@ -79,13 +96,17 @@ export class BulkExportService {
       let processed = 0;
 
       for (const type of resourceTypes) {
-        if ((job as BulkExportJob).status === 'cancelled') return;
+        if ((job as BulkExportJob).status === 'cancelled') {
+return;
+}
 
         const filter: Record<string, any> = { resourceType: type };
         // Exclude deleted resources (soft deletes have meta.deleted = true)
         filter['meta.deleted'] = { $ne: true };
 
-        if (job.since) filter['meta.lastUpdated'] = { $gte: job.since };
+        if (job.since) {
+filter['meta.lastUpdated'] = { $gte: job.since };
+}
 
         // For group-level: filter patient-linked resources
         if (patientIds) {
@@ -99,9 +120,11 @@ export class BulkExportService {
         }
 
         const docs = await this.resourceModel.find(filter).lean().exec();
+
         if (docs.length > 0) {
           const ndjson = docs.map((doc) => {
             const { _id, __v, ...resource } = doc as any;
+
             return JSON.stringify(resource);
           }).join('\n');
           job.output.set(type, ndjson);
@@ -124,7 +147,11 @@ export class BulkExportService {
   /** Resolve Group members to a list of Patient IDs. */
   private async resolveGroupMembers(groupId: string): Promise<string[] | undefined> {
     const group = await this.resourceModel.findOne({ resourceType: 'Group', id: groupId, 'meta.deleted': { $ne: true } }).lean().exec() as any;
-    if (!group) return undefined;
+
+    if (!group) {
+return undefined;
+}
+
     return (group.member || []).map((m: any) => m.entity?.reference?.replace('Patient/', '')).filter(Boolean);
   }
 }

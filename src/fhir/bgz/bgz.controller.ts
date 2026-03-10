@@ -37,17 +37,29 @@ export class BgzController {
   private getBaseUrl(req: Request): string {
     const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.headers['x-forwarded-host'] || req.get('host');
+
     return `${proto}://${host}/fhir`;
   }
 
   private resolveRefs(obj: any, baseUrl: string): any {
-    if (obj === null || obj === undefined) return obj;
-    if (Array.isArray(obj)) return obj.map((item) => this.resolveRefs(item, baseUrl));
-    if (typeof obj !== 'object') return obj;
+    if (obj === null || obj === undefined) {
+return obj;
+}
+
+    if (Array.isArray(obj)) {
+return obj.map((item) => this.resolveRefs(item, baseUrl));
+}
+
+    if (typeof obj !== 'object') {
+return obj;
+}
+
     const resolved: any = {};
+
     for (const [key, value] of Object.entries(obj)) {
       resolved[key] = key === 'reference' && typeof value === 'string' && !value.startsWith('http') ? `${baseUrl}/${value}` : this.resolveRefs(value, baseUrl);
     }
+
     return resolved;
   }
 }

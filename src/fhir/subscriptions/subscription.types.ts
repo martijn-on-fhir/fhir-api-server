@@ -13,8 +13,7 @@ export interface ParsedCriteria {
 }
 
 /** Parses a FHIR Subscription criteria string into resourceType and search params. */
-export function parseCriteria(criteria: string): ParsedCriteria | null {
-
+export const parseCriteria = (criteria: string): ParsedCriteria | null => {
   if (!criteria) {
 return null;
 }
@@ -38,4 +37,4 @@ searchParams[decodeURIComponent(key)] = decodeURIComponent(valueParts.join('='))
   }
 
   return { resourceType, searchParams };
-}
+};

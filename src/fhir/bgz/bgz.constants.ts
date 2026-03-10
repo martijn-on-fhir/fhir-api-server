@@ -11,23 +11,24 @@ export interface BgzQueryDef {
 
 /**
  * Consolidated BgZ queries — one per resource type, with the reference path(s) to the patient.
+ *
  * Covers all 26 zibs:
- *  1. Patient (fetched directly)
- *  2-3. TreatmentDirective + AdvanceDirective → Consent
- *  4. ContactPerson → RelatedPerson
- *  5,12-15,22-26. FunctionalOrMentalStatus, BloodPressure, BodyWeight, BodyHeight, LaboratoryTestResult, TobaccoUse, AlcoholUse, DrugUse, LivingSituation, LifeStance → Observation
- *  6. Problem → Condition
- *  7. AllergyIntolerance → AllergyIntolerance
- *  8. Alert → Flag
- *  9. MedicationUse → MedicationStatement
- *  10. MedicalDevice → DeviceUseStatement
- *  11. Vaccination → Immunization
- *  16. Procedure → Procedure
- *  17. Encounter → Encounter
- *  18. PlannedCareActivity → ServiceRequest + CarePlan
- *  19. Payer → Coverage
- *  20. HealthProfessional → resolved via includes (Practitioner, PractitionerRole)
- *  21. HealthcareProvider → resolved via includes (Organization, Location)
+ * 1. Patient (fetched directly)
+ * 2-3. TreatmentDirective + AdvanceDirective → Consent
+ * 4. ContactPerson → RelatedPerson
+ * 5,12-15,22-26. FunctionalOrMentalStatus, BloodPressure, BodyWeight, BodyHeight, LaboratoryTestResult, TobaccoUse, AlcoholUse, DrugUse, LivingSituation, LifeStance → Observation
+ * 6. Problem → Condition
+ * 7. AllergyIntolerance → AllergyIntolerance
+ * 8. Alert → Flag
+ * 9. MedicationUse → MedicationStatement
+ * 10. MedicalDevice → DeviceUseStatement
+ * 11. Vaccination → Immunization
+ * 16. Procedure → Procedure
+ * 17. Encounter → Encounter
+ * 18. PlannedCareActivity → ServiceRequest + CarePlan
+ * 19. Payer → Coverage
+ * 20. HealthProfessional → resolved via includes (Practitioner, PractitionerRole)
+ * 21. HealthcareProvider → resolved via includes (Organization, Location)
  */
 export const BGZ_QUERIES: BgzQueryDef[] = [
   { resourceType: 'Observation', refPaths: ['subject.reference'] },

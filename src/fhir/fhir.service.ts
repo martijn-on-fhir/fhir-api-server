@@ -460,7 +460,6 @@ map.set(`${item.system}|${item.code}`, item);
     // 2. Build filter to find all resources referencing this resource
     // Uses a $regex on any nested .reference field (generic approach for schema-free storage)
     const refFilter: Record<string, any> = { resourceType: { $ne: resourceType === 'Patient' ? 'Patient' : '__none__' } };
-    const refRegex = { $regex: `(^|/)${id.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$` };
 
     // Search for the reference pattern anywhere in the document using a recursive reference scan
     refFilter.$where = undefined; // Explicitly avoid $where — instead we query known reference paths

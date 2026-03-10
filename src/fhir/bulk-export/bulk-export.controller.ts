@@ -49,11 +49,18 @@ export class BulkExportController {
   @ApiResponse({ status: 404, description: 'Job not found' })
   pollStatus(@Query('_jobId') jobId: string, @Req() req: Request, @Res() res: Response) {
     const job = this.bulkExportService.getJob(jobId);
-    if (!job) return res.status(HttpStatus.NOT_FOUND).json({ resourceType: 'OperationOutcome', issue: [{ severity: 'error', code: 'not-found', diagnostics: `Bulk export job ${jobId} not found` }] });
 
-    if (job.status === 'cancelled') return res.status(HttpStatus.NOT_FOUND).json({ resourceType: 'OperationOutcome', issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Export job was cancelled' }] });
+    if (!job) {
+return res.status(HttpStatus.NOT_FOUND).json({ resourceType: 'OperationOutcome', issue: [{ severity: 'error', code: 'not-found', diagnostics: `Bulk export job ${jobId} not found` }] });
+}
 
-    if (job.status === 'error') return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ resourceType: 'OperationOutcome', issue: [{ severity: 'error', code: 'exception', diagnostics: 'Export failed' }] });
+    if (job.status === 'cancelled') {
+return res.status(HttpStatus.NOT_FOUND).json({ resourceType: 'OperationOutcome', issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Export job was cancelled' }] });
+}
+
+    if (job.status === 'error') {
+return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ resourceType: 'OperationOutcome', issue: [{ severity: 'error', code: 'exception', diagnostics: 'Export failed' }] });
+}
 
     if (job.status !== 'complete') {
       return res.status(HttpStatus.ACCEPTED).header('X-Progress', `${job.progress}%`).header('Retry-After', '1').json({ message: 'Export in progress', progress: `${job.progress}%` });
@@ -62,6 +69,7 @@ export class BulkExportController {
     // Complete — return the output manifest per Bulk Data IG
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const output = [...job.output.entries()].map(([type, ndjson]) => ({ type, url: `${baseUrl}/fhir/$export-output?_jobId=${job.id}&type=${type}`, count: ndjson.split('\n').length }));
+
     return res.status(HttpStatus.OK).header('Expires', '0').json({
       transactionTime: job.transactionTime, request: job.request, requiresAccessToken: false,
       output, error: job.errors,
@@ -75,7 +83,11 @@ export class BulkExportController {
   @ApiQuery({ name: 'type', required: true, description: 'Resource type' })
   downloadNdjson(@Query('_jobId') jobId: string, @Query('type') type: string, @Res() res: Response) {
     const ndjson = this.bulkExportService.getNdjson(jobId, type);
-    if (ndjson === undefined) return res.status(HttpStatus.NOT_FOUND).json({ resourceType: 'OperationOutcome', issue: [{ severity: 'error', code: 'not-found', diagnostics: `No output for job ${jobId} type ${type}` }] });
+
+    if (ndjson === undefined) {
+return res.status(HttpStatus.NOT_FOUND).json({ resourceType: 'OperationOutcome', issue: [{ severity: 'error', code: 'not-found', diagnostics: `No output for job ${jobId} type ${type}` }] });
+}
+
     res.status(HttpStatus.OK).header('Content-Type', 'application/fhir+ndjson').send(ndjson);
   }
 
