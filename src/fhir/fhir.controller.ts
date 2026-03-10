@@ -1,9 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { Bundle, BundleEntry, BundleLink, BundleType, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
+import { Bundle, BundleEntry, BundleEntrySearch, BundleLink, BundleType, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
 import { buildCapabilityStatement } from './capability-statement.builder';
 import { FhirService } from './fhir.service';
+import { SearchParameterRegistry } from './search/search-parameter-registry.service';
+import { applySummary, applyElements } from './search/summary.utils';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 import { FhirValidationService } from './validation/fhir-validation.service';
 
@@ -18,7 +20,7 @@ export class FhirController {
    * @param fhirService - Service handling resource persistence.
    * @param validationPipe - Pipe that validates incoming resource bodies against FHIR R4 rules.
    */
-  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService) {}
+  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry) {}
 
   /**
    * Derives the FHIR base URL from the incoming request, respecting reverse proxy headers.
@@ -43,7 +45,8 @@ export class FhirController {
 
     const baseUrl = this.getBaseUrl(req);
     const resourceTypes = await this.fhirService.getResourceTypes();
-    const statement = buildCapabilityStatement(baseUrl, resourceTypes);
+    const searchParamsByType = new Map(resourceTypes.map((t) => [t, this.searchRegistry.getParamsForType(t)]));
+    const statement = buildCapabilityStatement(baseUrl, resourceTypes, searchParamsByType);
 
     res.set('Content-Type', 'application/fhir+json').json(statement);
   }
@@ -184,23 +187,27 @@ export class FhirController {
   @ApiQuery({ name: '_sort', required: false, description: 'Sort fields (comma-separated, prefix with - for descending)' })
   @ApiQuery({ name: '_count', required: false, description: 'Maximum number of results', type: Number })
   @ApiQuery({ name: '_offset', required: false, description: 'Offset for pagination', type: Number })
+  @ApiQuery({ name: '_summary', required: false, description: 'Return summary: true, text, data, count, false' })
+  @ApiQuery({ name: '_elements', required: false, description: 'Comma-separated list of elements to include' })
+  @ApiQuery({ name: '_include', required: false, description: 'Include referenced resources (format: SourceType:searchParam[:targetType])' })
+  @ApiQuery({ name: '_revinclude', required: false, description: 'Reverse include (format: SourceType:searchParam[:targetType])' })
   @ApiResponse({ status: 200, description: 'Bundle (searchset)' })
   async search(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
+    return this.executeSearch(resourceType, queryParams, req, res);
+  }
 
+  /** FHIR search via POST (application/x-www-form-urlencoded). Equivalent to GET search. */
+  @Post(':resourceType/_search')
+  @ApiOperation({ summary: 'Search (POST)', description: 'Search via POST with form-encoded parameters. Equivalent to GET search.' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiResponse({ status: 200, description: 'Bundle (searchset)' })
+  async searchPost(@Param('resourceType') resourceType: string, @Body() body: Record<string, string>, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
-    const { resources, total } = await this.fhirService.search(resourceType, queryParams);
-    const baseUrl = this.getBaseUrl(req);
-    const selfUrl = this.buildSelfUrl(baseUrl, resourceType, queryParams);
+    // Merge query string and body params (body takes precedence)
+    const mergedParams = { ...queryParams, ...body };
 
-    const bundle = new Bundle({
-      type: BundleType.Searchset,
-      total,
-      link: [new BundleLink({ relation: 'self', url: selfUrl })],
-      entry: resources.map((r) => new BundleEntry({ fullUrl: `${baseUrl}/${resourceType}/${r.id}`, resource: this.toFhirJson(r, baseUrl) })),
-    });
-
-    res.set('Content-Type', 'application/fhir+json').json(bundle);
+    return this.executeSearch(resourceType, mergedParams, req, res);
   }
 
   /**
@@ -338,6 +345,61 @@ export class FhirController {
     }));
 
     return new OperationOutcome({ issue: issues });
+  }
+
+  /** Shared search execution for GET and POST _search. */
+  private async executeSearch(resourceType: string, params: Record<string, string>, req: Request, res: Response) {
+
+    const { resources, total, included } = await this.fhirService.search(resourceType, params);
+    const baseUrl = this.getBaseUrl(req);
+    const selfUrl = this.buildSelfUrl(baseUrl, resourceType, params);
+    const summary = params._summary;
+
+    // _summary=count returns only total, no entries
+    if (summary === 'count') {
+      const bundle = new Bundle({ type: BundleType.Searchset, total, link: [new BundleLink({ relation: 'self', url: selfUrl })] });
+
+      return res.set('Content-Type', 'application/fhir+json').json(bundle);
+    }
+
+    // Apply _summary or _elements projection
+    const transformResource = (r: any) => {
+      let fhir = this.toFhirJson(r, baseUrl);
+
+      if (summary && summary !== 'false') {
+        fhir = applySummary(fhir, summary);
+      } else if (params._elements) {
+        fhir = applyElements(fhir, params._elements);
+      }
+
+      return fhir;
+    };
+
+    // Primary results with search.mode = 'match'
+    const entries: any[] = resources.map((r) => new BundleEntry({ fullUrl: `${baseUrl}/${r.resourceType}/${r.id}`, resource: transformResource(r), search: new BundleEntrySearch({ mode: SearchEntryMode.Match }) }));
+
+    // Included resources with search.mode = 'include'
+    for (const r of included) {
+      entries.push(new BundleEntry({ fullUrl: `${baseUrl}/${r.resourceType}/${r.id}`, resource: transformResource(r), search: new BundleEntrySearch({ mode: SearchEntryMode.Include }) }));
+    }
+
+    // Pagination links
+    const count = params._count ? parseInt(params._count, 10) : 100;
+    const offset = params._offset ? parseInt(params._offset, 10) : 0;
+    const links = [new BundleLink({ relation: 'self', url: selfUrl })];
+
+    if (offset > 0) {
+      const prevOffset = Math.max(0, offset - count);
+      links.push(new BundleLink({ relation: 'previous', url: this.buildSelfUrl(baseUrl, resourceType, { ...params, _offset: String(prevOffset) }) }));
+    }
+
+    if (offset + count < total) {
+      links.push(new BundleLink({ relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, { ...params, _offset: String(offset + count) }) }));
+    }
+
+    const bundle = new Bundle({ type: BundleType.Searchset, total, link: links, entry: entries });
+
+    return res.set('Content-Type', 'application/fhir+json').json(bundle);
   }
 
   private buildSelfUrl(baseUrl: string, resourceType: string, params: Record<string, string>): string {

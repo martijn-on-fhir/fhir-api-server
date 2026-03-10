@@ -4,6 +4,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
 import { Model } from 'mongoose';
 import { FhirResource } from './fhir-resource.schema';
+import { ChainingService } from './search/chaining.service';
+import { IncludeService } from './search/include.service';
+import { QueryBuilderService } from './search/query-builder.service';
+import { SearchParameterRegistry } from './search/search-parameter-registry.service';
 
 /**
  * Service responsible for all FHIR resource persistence operations.
@@ -12,8 +16,11 @@ import { FhirResource } from './fhir-resource.schema';
 @Injectable()
 export class FhirService {
 
-  /** @param resourceModel - Mongoose model injected for the shared FhirResource collection. */
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {}
+  constructor(
+    @InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>,
+    private readonly queryBuilder: QueryBuilderService, private readonly searchRegistry: SearchParameterRegistry,
+    private readonly includeService: IncludeService, private readonly chainingService: ChainingService,
+  ) {}
 
   /**
    * Creates a new FHIR resource with a server-assigned id and meta.
@@ -36,25 +43,40 @@ export class FhirService {
    * @param params - FHIR search parameters: `_id`, `_sort`, `_count`, `_offset`.
    * @returns An object containing the matched resources and the total count (independent of `_count`).
    */
-  async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number }> {
+  async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number; included: FhirResource[] }> {
 
-    const filter: Record<string, any> = { resourceType };
+    const filter = this.queryBuilder.buildFilter(resourceType, params);
 
-    if (params._id) {
-      filter.id = params._id;
+    // Resolve chained search params and _has reverse chaining
+    const [chainConditions, hasConditions] = await Promise.all([
+      this.chainingService.resolveChainedParams(resourceType, params),
+      this.chainingService.resolveHasParams(resourceType, params),
+    ]);
+
+    const extraConditions = [...chainConditions, ...hasConditions].filter((c) => !('_impossible' in c));
+
+    // If any chain/has resolved to impossible (no matches), return empty
+    if ([...chainConditions, ...hasConditions].some((c) => '_impossible' in c)) {
+      return { resources: [], total: 0, included: [] };
+    }
+
+    if (extraConditions.length > 0) {
+      const existing = filter.$and || [];
+      filter.$and = [...existing, ...extraConditions];
     }
 
     const query = this.resourceModel.find(filter);
 
+    // Sort: resolve FHIR parameter names to MongoDB paths via registry
     if (params._sort) {
       const sortObj: Record<string, 1 | -1> = {};
 
       for (const field of params._sort.split(',')) {
-        if (field.startsWith('-')) {
-          sortObj[field.substring(1)] = -1;
-        } else {
-          sortObj[field] = 1;
-        }
+        const descending = field.startsWith('-');
+        const paramCode = descending ? field.substring(1) : field;
+        const resolved = this.searchRegistry.resolvePaths(resourceType, paramCode);
+        const mongoPath = resolved?.paths[0] || paramCode;
+        sortObj[mongoPath] = descending ? -1 : 1;
       }
 
       query.sort(sortObj);
@@ -71,7 +93,10 @@ export class FhirService {
 
     const resources = await query.exec();
 
-    return { resources, total };
+    // Resolve _include and _revinclude
+    const included = await this.includeService.resolveIncludes(resources, resourceType, params);
+
+    return { resources, total, included };
   }
 
   /**

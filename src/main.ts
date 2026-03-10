@@ -8,6 +8,7 @@ import { FhirExceptionFilter } from './fhir/filters/fhir-exception.filter';
 const bootstrap = async () => {
   const app = await NestFactory.create(AppModule);
   app.use(express.json({ type: ['application/json', 'application/fhir+json'] }));
+  app.use(express.urlencoded({ extended: true }));
   app.useGlobalFilters(new FhirExceptionFilter());
 
   const swaggerConfig = new DocumentBuilder()

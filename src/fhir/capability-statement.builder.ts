@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
-import { CapabilityStatement, CapabilityStatementImplementation, CapabilityStatementKind, CapabilityStatementRest, CapabilityStatementRestResource, CapabilityStatementRestResourceInteraction, CapabilityStatementRestResourceOperation, CapabilityStatementRestResourceSearchParam, CapabilityStatementSoftware, PublicationStatus, RestfulCapabilityMode, SearchParamType } from 'fhir-models-r4';
+import { CapabilityStatement, CapabilityStatementImplementation, CapabilityStatementKind, CapabilityStatementRest, CapabilityStatementRestResource, CapabilityStatementRestResourceInteraction, CapabilityStatementRestResourceOperation, CapabilityStatementRestResourceSearchParam, CapabilityStatementSoftware, PublicationStatus, RestfulCapabilityMode, SearchParamType as FhirSearchParamType } from 'fhir-models-r4';
 /* eslint-enable max-len */
-
+import { SearchParamDef } from './search/search-parameter.types';
 
 /** Map of resource types to their nl-core profile URLs (when applicable). */
 const NL_CORE_PROFILES: Record<string, string> = {
@@ -21,11 +21,22 @@ const NL_CORE_PROFILES: Record<string, string> = {
 
 const INTERACTIONS = ['read', 'create', 'update', 'delete', 'search-type'];
 
-const SEARCH_PARAMS = [
-  new CapabilityStatementRestResourceSearchParam({ name: '_id', type: SearchParamType.Token, documentation: 'Logical id of the resource' }),
-  new CapabilityStatementRestResourceSearchParam({ name: '_sort', type: SearchParamType.String, documentation: 'Sort order for results' }),
-  new CapabilityStatementRestResourceSearchParam({ name: '_count', type: SearchParamType.Number, documentation: 'Maximum number of results per page' }),
-  new CapabilityStatementRestResourceSearchParam({ name: '_offset', type: SearchParamType.Number, documentation: 'Offset for pagination' }),
+/** Maps internal search param type strings to the fhir-models-r4 SearchParamType enum. */
+const TYPE_MAP: Record<string, FhirSearchParamType> = {
+  number: FhirSearchParamType.Number, date: FhirSearchParamType.Date, string: FhirSearchParamType.String,
+  token: FhirSearchParamType.Token, reference: FhirSearchParamType.Reference, composite: FhirSearchParamType.Composite,
+  quantity: FhirSearchParamType.Quantity, uri: FhirSearchParamType.Uri, special: FhirSearchParamType.Special,
+};
+
+/** Common search parameters that apply to all resource types. */
+const COMMON_SEARCH_PARAMS = [
+  new CapabilityStatementRestResourceSearchParam({ name: '_id', type: FhirSearchParamType.Token, documentation: 'Logical id of the resource' }),
+  new CapabilityStatementRestResourceSearchParam({ name: '_lastUpdated', type: FhirSearchParamType.Date, documentation: 'When the resource was last updated' }),
+  new CapabilityStatementRestResourceSearchParam({ name: '_tag', type: FhirSearchParamType.Token, documentation: 'Tags on the resource' }),
+  new CapabilityStatementRestResourceSearchParam({ name: '_profile', type: FhirSearchParamType.Uri, documentation: 'Profiles the resource claims to conform to' }),
+  new CapabilityStatementRestResourceSearchParam({ name: '_security', type: FhirSearchParamType.Token, documentation: 'Security labels on the resource' }),
+  new CapabilityStatementRestResourceSearchParam({ name: '_text', type: FhirSearchParamType.String, documentation: 'Full-text search on narrative' }),
+  new CapabilityStatementRestResourceSearchParam({ name: '_content', type: FhirSearchParamType.String, documentation: 'Full-text search on resource content' }),
 ];
 
 const OPERATIONS = [
@@ -39,15 +50,40 @@ const OPERATIONS = [
  * Builds a FHIR CapabilityStatement for this server based on the resource types currently stored.
  * @param baseUrl - The absolute FHIR base URL (e.g. http://localhost:3000/fhir).
  * @param resourceTypes - The list of resource types currently available in the database.
+ * @param searchParamsByType - Optional map of resource type → search parameter definitions from the registry.
  */
-export const buildCapabilityStatement = (baseUrl: string, resourceTypes: string[]): CapabilityStatement => {
+export const buildCapabilityStatement = (baseUrl: string, resourceTypes: string[], searchParamsByType?: Map<string, SearchParamDef[]>): CapabilityStatement => {
 
   const resources = resourceTypes.sort().map((type) => {
+    // Build search params: common + type-specific from registry
+    const typeSpecificParams: CapabilityStatementRestResourceSearchParam[] = [];
+
+    if (searchParamsByType) {
+      const defs = searchParamsByType.get(type) || [];
+
+      for (const def of defs) {
+        // Skip params already in common list
+        if (def.code.startsWith('_')) {
+          continue;
+        }
+
+        typeSpecificParams.push(new CapabilityStatementRestResourceSearchParam({
+          name: def.code,
+          type: TYPE_MAP[def.type] || FhirSearchParamType.String,
+          documentation: `Search by ${def.code} (${def.type})`,
+        }));
+      }
+    }
+
+    const searchParams = [...COMMON_SEARCH_PARAMS, ...typeSpecificParams];
+
     const resource = new CapabilityStatementRestResource({
       type,
       interaction: INTERACTIONS.map((code) => new CapabilityStatementRestResourceInteraction({ code })),
-      searchParam: SEARCH_PARAMS,
+      searchParam: searchParams,
       operation: OPERATIONS,
+      searchInclude: ['*'],
+      searchRevInclude: ['*'],
     });
 
     const nlProfile = NL_CORE_PROFILES[type];
