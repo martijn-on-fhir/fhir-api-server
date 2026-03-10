@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.1.0...fhir-api-server-v0.1.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* prevent NoSQL injection on search parameters ([2d2b6ad](https://github.com/martijn-on-fhir/fhir-api-server/commit/2d2b6adee5e5a5779cef040482b4a4e62f8278b8))
+
 ## [0.1.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.0.1...fhir-api-server-v0.1.0) (2026-03-10)
 
 
