@@ -446,6 +446,95 @@ map.set(`${item.system}|${item.code}`, item);
     return [...map.values()];
   }
 
+  /**
+   * FHIR $everything operation: returns the patient and all resources referencing it.
+   * Searches all reference fields across all resource types for Patient/{id}.
+   * Supports _since, _count and _type parameters per the FHIR spec.
+   */
+  async everything(resourceType: string, id: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number }> {
+
+    // 1. Fetch the focal resource
+    const focal = await this.findById(resourceType, id);
+    const ref = `${resourceType}/${id}`;
+
+    // 2. Build filter to find all resources referencing this resource
+    // Uses a $regex on any nested .reference field (generic approach for schema-free storage)
+    const refFilter: Record<string, any> = { resourceType: { $ne: resourceType === 'Patient' ? 'Patient' : '__none__' } };
+    const refRegex = { $regex: `(^|/)${id.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$` };
+
+    // Search for the reference pattern anywhere in the document using a recursive reference scan
+    refFilter.$where = undefined; // Explicitly avoid $where — instead we query known reference paths
+
+    // Generic approach: search for the exact reference string in any field ending in .reference
+    // MongoDB doesn't support recursive field search natively, so we search common reference patterns
+    const referenceFilter: Record<string, any> = {};
+
+    if (params._type) {
+      // Limit to specific resource types
+      const types = params._type.split(',').map((t) => t.trim()).filter(Boolean);
+      referenceFilter.resourceType = { $in: types };
+    } else {
+      // Exclude the focal resource type to avoid self-references (the focal resource is already included)
+      referenceFilter.resourceType = { $ne: resourceType };
+    }
+
+    if (params._since) {
+      referenceFilter['meta.lastUpdated'] = { $gte: String(params._since) };
+    }
+
+    // Find all resources that contain a reference to the focal resource
+    // We search across all documents using a text match on the serialized reference string
+    const allDocs = await this.resourceModel.find(referenceFilter).lean().exec();
+
+    // Filter in-memory: check if any reference field contains the target reference
+    const matchingDocs = allDocs.filter((doc) => this.containsReference(doc, ref));
+
+    // Apply count/offset
+    const count = params._count ? parseInt(params._count, 10) : 1000;
+    const offset = params._offset ? parseInt(params._offset, 10) : 0;
+
+    // Combine focal resource + matching resources
+    const allResources = [focal, ...matchingDocs.map((d) => {
+      const obj = (d as any).toObject ? (d as any).toObject() : d;
+
+      return obj;
+    })];
+
+    const total = allResources.length;
+    const paged = allResources.slice(offset, offset + count);
+
+    return { resources: paged as FhirResource[], total };
+  }
+
+  /** Recursively checks if a document contains a reference to the given target (e.g. "Patient/123"). */
+  private containsReference(obj: any, targetRef: string): boolean {
+    if (obj === null || obj === undefined) {
+return false;
+}
+
+    if (typeof obj === 'string') {
+return obj === targetRef || obj.endsWith(`/${targetRef}`);
+}
+
+    if (Array.isArray(obj)) {
+return obj.some((item) => this.containsReference(item, targetRef));
+}
+
+    if (typeof obj === 'object') {
+      for (const [key, value] of Object.entries(obj)) {
+        if (key === 'reference' && typeof value === 'string' && (value === targetRef || value.endsWith(`/${targetRef}`))) {
+return true;
+}
+
+        if (key !== '_id' && key !== '__v' && this.containsReference(value, targetRef)) {
+return true;
+}
+      }
+    }
+
+    return false;
+  }
+
   /** Returns all distinct resourceType values currently stored in the database. */
   async getResourceTypes(): Promise<string[]> {
 

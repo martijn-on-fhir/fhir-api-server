@@ -37,7 +37,7 @@ Het project heeft een werkende generieke FHIR R4 REST API met:
 
 9. **SMART on FHIR / OAuth2** — authenticatie en autorisatie, scopes per resource type, launch context
 10. **Bulk Data Export ($export)** — `GET /fhir/$export` voor grote datasets als NDJSON, async processing
-11. **$everything operation** — `GET /Patient/123/$everything` retourneert alles wat aan een patient gelinkt is
+11. ~~**$everything operation** — `GET /Patient/123/$everything` retourneert alles wat aan een patient gelinkt is~~ ✅ geïmplementeerd
 12. **Meer $operaties** — `$expand` (ValueSet), `$lookup` (CodeSystem), `$translate` (ConceptMap)
 
 ### NL-specifiek

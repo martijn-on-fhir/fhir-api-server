@@ -203,6 +203,36 @@ export class FhirController {
   }
 
   /**
+   * FHIR $everything operation (instance-level). Returns the resource and all resources referencing it.
+   * Supported on Patient (and extensible to other compartment types).
+   * Supports _since, _count, _type parameters.
+   */
+  @Get(':resourceType/:id/\\$everything')
+  @ApiOperation({ summary: '$everything', description: 'Returns the resource and all resources that reference it (Patient compartment).' })
+  @ApiParam({ name: 'resourceType', example: 'Patient' })
+  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
+  @ApiQuery({ name: '_since', required: false, description: 'Only include resources updated since this date' })
+  @ApiQuery({ name: '_count', required: false, type: Number, description: 'Maximum number of results' })
+  @ApiQuery({ name: '_type', required: false, description: 'Comma-separated list of resource types to include' })
+  @ApiResponse({ status: 200, description: 'Bundle (searchset) with all related resources' })
+  async everything(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
+
+    const params = sanitizeSearchParams(queryParams);
+    const { resources, total } = await this.fhirService.everything(resourceType, id, params);
+    const baseUrl = this.getBaseUrl(req);
+
+    const entries = resources.map((r: any) => {
+      const fhir = this.toFhirJson(r, baseUrl);
+
+      return new BundleEntry({ fullUrl: `${baseUrl}/${fhir.resourceType}/${fhir.id}`, resource: fhir });
+    });
+
+    const bundle = new Bundle({ type: BundleType.Searchset, total, link: [new BundleLink({ relation: 'self', url: `${baseUrl}/${resourceType}/${id}/$everything` })], entry: entries });
+
+    res.set('Content-Type', 'application/fhir+json').json(bundle);
+  }
+
+  /**
    * FHIR search interaction. Returns a Bundle of type `searchset` with matching resources.
    * Supports `_id`, `_sort`, `_count` and `_offset` search parameters.
    * @param resourceType - The FHIR resource type to search.
