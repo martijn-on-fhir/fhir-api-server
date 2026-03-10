@@ -1,5 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { BulkExportController } from './bulk-export/bulk-export.controller';
+import { BulkExportService } from './bulk-export/bulk-export.service';
 import { BundleProcessorService } from './bundle-processor.service';
 import { BundleMiddleware } from './bundle.middleware';
 import { FhirResourceHistory, FhirResourceHistorySchema } from './fhir-resource-history.schema';
@@ -21,8 +23,8 @@ import { FhirValidationService } from './validation/fhir-validation.service';
  */
 @Module({
   imports: [MongooseModule.forFeature([{ name: FhirResource.name, schema: FhirResourceSchema }, { name: FhirResourceHistory.name, schema: FhirResourceHistorySchema }])],
-  controllers: [FhirController],
-  providers: [FhirService, FhirValidationService, FhirValidationPipe, SearchParameterRegistry, QueryBuilderService, IncludeService, ChainingService, BundleProcessorService, SubscriptionService, SubscriptionNotificationService],
+  controllers: [BulkExportController, FhirController],
+  providers: [FhirService, FhirValidationService, FhirValidationPipe, SearchParameterRegistry, QueryBuilderService, IncludeService, ChainingService, BundleProcessorService, SubscriptionService, SubscriptionNotificationService, BulkExportService],
 })
 export class FhirModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
