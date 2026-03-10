@@ -7,6 +7,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FhirModule } from './fhir/fhir.module';
 import { FhirThrottlerGuard } from './fhir/guards/fhir-throttler.guard';
+import { SmartAuthGuard } from './fhir/guards/smart-auth.guard';
+import { SmartModule } from './fhir/smart/smart.module';
 import { HealthModule } from './health/health.module';
 import { AuditMiddleware } from './logging/audit.middleware';
 import { CorrelationMiddleware } from './logging/correlation.middleware';
@@ -26,10 +28,11 @@ import { CorrelationMiddleware } from './logging/correlation.middleware';
     }]),
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/fhir'),
     FhirModule,
+    SmartModule,
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: FhirThrottlerGuard }],
+  providers: [AppService, { provide: APP_GUARD, useClass: FhirThrottlerGuard }, { provide: APP_GUARD, useClass: SmartAuthGuard }],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

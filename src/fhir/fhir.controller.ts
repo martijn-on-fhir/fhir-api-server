@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpStatus, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
@@ -7,6 +7,7 @@ import { FhirService } from './fhir.service';
 import { sanitizeSearchParams } from './search/sanitize';
 import { SearchParameterRegistry } from './search/search-parameter-registry.service';
 import { applySummary, applyElements } from './search/summary.utils';
+import { SmartConfig, SMART_CONFIG } from './smart/smart-config';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 import { FhirValidationService } from './validation/fhir-validation.service';
 
@@ -21,7 +22,7 @@ export class FhirController {
    * @param fhirService - Service handling resource persistence.
    * @param validationPipe - Pipe that validates incoming resource bodies against FHIR R4 rules.
    */
-  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry) {}
+  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig) {}
 
   /**
    * Derives the FHIR base URL from the incoming request, respecting reverse proxy headers.
@@ -47,7 +48,7 @@ export class FhirController {
     const baseUrl = this.getBaseUrl(req);
     const resourceTypes = await this.fhirService.getResourceTypes();
     const searchParamsByType = new Map(resourceTypes.map((t) => [t, this.searchRegistry.getParamsForType(t)]));
-    const statement = buildCapabilityStatement(baseUrl, resourceTypes, searchParamsByType);
+    const statement = buildCapabilityStatement(baseUrl, resourceTypes, searchParamsByType, this.smartConfig);
 
     res.set('Content-Type', 'application/fhir+json').json(statement);
   }

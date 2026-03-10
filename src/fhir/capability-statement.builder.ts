@@ -2,6 +2,7 @@
 import { CapabilityStatement, CapabilityStatementImplementation, CapabilityStatementKind, CapabilityStatementRest, CapabilityStatementRestResource, CapabilityStatementRestResourceInteraction, CapabilityStatementRestResourceOperation, CapabilityStatementRestResourceSearchParam, CapabilityStatementSoftware, PublicationStatus, RestfulCapabilityMode, SearchParamType as FhirSearchParamType } from 'fhir-models-r4';
 /* eslint-enable max-len */
 import { SearchParamDef } from './search/search-parameter.types';
+import { SmartConfig } from './smart/smart-config';
 
 /** Map of resource types to their nl-core profile URLs (when applicable). */
 const NL_CORE_PROFILES: Record<string, string> = {
@@ -52,7 +53,7 @@ const OPERATIONS = [
  * @param resourceTypes - The list of resource types currently available in the database.
  * @param searchParamsByType - Optional map of resource type → search parameter definitions from the registry.
  */
-export const buildCapabilityStatement = (baseUrl: string, resourceTypes: string[], searchParamsByType?: Map<string, SearchParamDef[]>): CapabilityStatement => {
+export const buildCapabilityStatement = (baseUrl: string, resourceTypes: string[], searchParamsByType?: Map<string, SearchParamDef[]>, smartConfig?: SmartConfig): CapabilityStatement => {
 
   const resources = resourceTypes.sort().map((type) => {
     // Build search params: common + type-specific from registry
@@ -95,6 +96,20 @@ export const buildCapabilityStatement = (baseUrl: string, resourceTypes: string[
     return resource;
   });
 
+  const rest = new CapabilityStatementRest({ mode: RestfulCapabilityMode.Server, resource: resources });
+
+  // Add SMART on FHIR security information when enabled
+  if (smartConfig?.enabled) {
+    rest.security = {
+      cors: true,
+      service: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/restful-security-service', code: 'SMART-on-FHIR', display: 'SMART on FHIR' }] }],
+      extension: [{
+        url: 'http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris',
+        extension: [{ url: 'authorize', valueUri: smartConfig.authorizeUrl }, { url: 'token', valueUri: smartConfig.tokenUrl }],
+      }],
+    } as any;
+  }
+
   return new CapabilityStatement({
     status: PublicationStatus.Active,
     date: new Date().toISOString(),
@@ -103,9 +118,6 @@ export const buildCapabilityStatement = (baseUrl: string, resourceTypes: string[
     format: ['application/fhir+json'],
     software: new CapabilityStatementSoftware({ name: 'fhir-api-server', version: '0.0.1' }),
     implementation: new CapabilityStatementImplementation({ description: 'FHIR R4 REST API Server with Dutch nl-core profile support', url: baseUrl }),
-    rest: [new CapabilityStatementRest({
-      mode: RestfulCapabilityMode.Server,
-      resource: resources,
-    })],
+    rest: [rest],
   });
 };

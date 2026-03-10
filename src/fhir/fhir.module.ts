@@ -14,6 +14,7 @@ import { ChainingService } from './search/chaining.service';
 import { IncludeService } from './search/include.service';
 import { QueryBuilderService } from './search/query-builder.service';
 import { SearchParameterRegistry } from './search/search-parameter-registry.service';
+import { SmartModule } from './smart/smart.module';
 import { SubscriptionNotificationService } from './subscriptions/subscription-notification.service';
 import { SubscriptionService } from './subscriptions/subscription.service';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
@@ -24,7 +25,7 @@ import { FhirValidationService } from './validation/fhir-validation.service';
  * resource persistence service, and FHIR validation pipeline.
  */
 @Module({
-  imports: [MongooseModule.forFeature([{ name: FhirResource.name, schema: FhirResourceSchema }, { name: FhirResourceHistory.name, schema: FhirResourceHistorySchema }])],
+  imports: [MongooseModule.forFeature([{ name: FhirResource.name, schema: FhirResourceSchema }, { name: FhirResourceHistory.name, schema: FhirResourceHistorySchema }]), SmartModule],
   controllers: [BulkExportController, BgzController, FhirController],
   providers: [FhirService, FhirValidationService, FhirValidationPipe, SearchParameterRegistry, QueryBuilderService, IncludeService, ChainingService, BundleProcessorService, SubscriptionService, SubscriptionNotificationService, BulkExportService, BgzService],
 })
