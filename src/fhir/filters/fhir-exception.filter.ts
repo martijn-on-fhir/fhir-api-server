@@ -70,7 +70,10 @@ export class FhirExceptionFilter implements ExceptionFilter {
       case 404: return IssueType.NotFound;
       case 405: return IssueType.NotSupported;
       case 409: return IssueType.Conflict;
+      case 410: return IssueType.Deleted;
+      case 412: return IssueType.Conflict;
       case 422: return IssueType.Processing;
+      case 429: return IssueType.Throttled;
       default: return IssueType.Exception;
     }
   }
