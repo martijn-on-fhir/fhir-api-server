@@ -14,6 +14,26 @@ const CHOICE_TYPE_SUFFIXES = [
 ];
 
 /**
+ * Known FHIR choice type base field names (the [x] part).
+ * When a FHIRPath expression ends in one of these, expand to commonly used concrete types.
+ */
+const KNOWN_CHOICE_BASES = new Set([
+  'effective', 'onset', 'abatement', 'value', 'deceased', 'multipleBirth', 'occurrence',
+  'performed', 'serviced', 'collected', 'timing', 'reported', 'medication', 'product',
+  'defaultValue', 'fixed', 'pattern', 'minValue', 'maxValue', 'born', 'age',
+  'used', 'allowed', 'rate', 'diagnosed',
+]);
+
+/** Most commonly used choice type suffixes in FHIR R4. Avoids 67-way $or by only expanding to practical types. */
+const COMMON_CHOICE_SUFFIXES = [
+  'DateTime', 'Period', 'String', 'Quantity', 'CodeableConcept', 'Boolean', 'Integer',
+  'Range', 'Ratio', 'Reference', 'Instant', 'Date', 'Time', 'Age', 'Duration',
+  'Timing', 'Identifier', 'Coding', 'Address', 'HumanName', 'Annotation', 'Attachment',
+  'Decimal', 'Uri', 'Url', 'Canonical', 'Code', 'Markdown', 'Id', 'Oid', 'Uuid',
+  'UnsignedInt', 'Money', 'Count', 'Distance', 'SampledData', 'Dosage',
+];
+
+/**
  * Converts a FHIR SearchParameter expression to MongoDB dot-notation paths.
  *
  * Handles:
@@ -98,6 +118,15 @@ const resolveSingleExpression = (expr: string, resourceType?: string): ResolvedP
   cleaned = cleaned.replace(/\.(exists|empty|not|first|last|count)\(\)/g, '');
 
   const mongoPath = stripResourcePrefix(cleaned, resourceType);
+
+  // Check if the final segment is a known choice type base name (e.g. "effective" → effectiveDateTime, effectivePeriod, etc.)
+  const lastDot = mongoPath.lastIndexOf('.');
+  const lastSegment = lastDot >= 0 ? mongoPath.substring(lastDot + 1) : mongoPath;
+  if (KNOWN_CHOICE_BASES.has(lastSegment)) {
+    const prefix = lastDot >= 0 ? mongoPath.substring(0, lastDot + 1) : '';
+    const expanded = COMMON_CHOICE_SUFFIXES.map((suffix) => `${prefix}${lastSegment}${suffix}`);
+    return { paths: expanded, isPolymorphic: true };
+  }
 
   return { paths: [mongoPath], isPolymorphic: false };
 };
