@@ -1,13 +1,19 @@
 import { generateKeyPairSync, createPublicKey } from 'crypto';
 import { INestApplication } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import * as express from 'express';
 import * as jwt from 'jsonwebtoken';
 import * as http from 'http';
 import * as request from 'supertest';
-import { AppModule } from '../src/app.module';
 import { FhirExceptionFilter } from '../src/fhir/filters/fhir-exception.filter';
+import { FhirModule } from '../src/fhir/fhir.module';
+import { SmartAuthGuard } from '../src/fhir/guards/smart-auth.guard';
+import { SMART_CONFIG, SmartConfig } from '../src/fhir/smart/smart-config';
+import { SmartModule } from '../src/fhir/smart/smart.module';
 
 /**
  * E2e tests for SMART on FHIR / OAuth2 authentication and authorization.
@@ -17,7 +23,6 @@ describe('SMART on FHIR Auth (e2e)', () => {
   let app: INestApplication;
   let mongod: MongoMemoryServer;
   let jwksServer: http.Server;
-  let jwksPort: number;
   let privateKey: string;
   let kid: string;
 
@@ -41,26 +46,31 @@ describe('SMART on FHIR Auth (e2e)', () => {
       }
     });
 
-    await new Promise<void>((resolve) => {
-      jwksServer.listen(0, () => {
-        jwksPort = (jwksServer.address() as any).port;
-        resolve();
-      });
+    const jwksPort = await new Promise<number>((resolve) => {
+      jwksServer.listen(0, () => resolve((jwksServer.address() as any).port));
     });
 
-    // Configure SMART env vars
-    process.env.SMART_ENABLED = 'true';
-    process.env.SMART_ISSUER = 'https://auth.example.com';
-    process.env.SMART_AUDIENCE = 'fhir-api';
-    process.env.SMART_JWKS_URI = `http://localhost:${jwksPort}/certs`;
-    process.env.SMART_SCOPE_CLAIM = 'scope';
-    process.env.SMART_AUTHORIZE_URL = 'https://auth.example.com/authorize';
-    process.env.SMART_TOKEN_URL = 'https://auth.example.com/token';
+    // Build SMART config directly — no env vars needed
+    const smartConfig: SmartConfig = {
+      enabled: true,
+      issuer: 'https://auth.example.com',
+      audience: 'fhir-api',
+      jwksUri: `http://localhost:${jwksPort}/certs`,
+      scopeClaim: 'scope',
+      authorizeUrl: 'https://auth.example.com/authorize',
+      tokenUrl: 'https://auth.example.com/token',
+    };
 
     mongod = await MongoMemoryServer.create();
-    process.env.MONGODB_URI = mongod.getUri();
 
-    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [EventEmitterModule.forRoot(), MongooseModule.forRoot(mongod.getUri()), FhirModule, SmartModule],
+      providers: [{ provide: APP_GUARD, useClass: SmartAuthGuard }],
+    })
+      .overrideProvider(SMART_CONFIG)
+      .useValue(smartConfig)
+      .compile();
+
     app = moduleFixture.createNestApplication();
     app.use(express.json({ type: ['application/json', 'application/fhir+json'] }));
     app.useGlobalFilters(new FhirExceptionFilter());
@@ -71,13 +81,6 @@ describe('SMART on FHIR Auth (e2e)', () => {
     jwksServer?.close();
     await app?.close();
     await mongod?.stop();
-    delete process.env.SMART_ENABLED;
-    delete process.env.SMART_ISSUER;
-    delete process.env.SMART_AUDIENCE;
-    delete process.env.SMART_JWKS_URI;
-    delete process.env.SMART_SCOPE_CLAIM;
-    delete process.env.SMART_AUTHORIZE_URL;
-    delete process.env.SMART_TOKEN_URL;
   }, 30_000);
 
   /** Helper to create a signed JWT with given claims. */
