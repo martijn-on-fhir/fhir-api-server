@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.3.2...fhir-api-server-v0.4.0) (2026-03-10)
+
+
+### Features
+
+* add BgZ (Basisgegevensset Zorg) operation and update Insomnia collection ([bb80ede](https://github.com/martijn-on-fhir/fhir-api-server/commit/bb80ede3fb7353f126febfb61292c79cb58fc3c3))
+
+
+### Bug Fixes
+
+* resolve CI lint errors (jsdoc indentation, unused imports, style) ([1a5b170](https://github.com/martijn-on-fhir/fhir-api-server/commit/1a5b170c3c32b8047e94766272c8066232995533))
+
 ## [0.3.2](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.3.1...fhir-api-server-v0.3.2) (2026-03-10)
 
 
