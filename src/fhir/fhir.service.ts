@@ -11,6 +11,7 @@ import { FhirResource } from './fhir-resource.schema';
  */
 @Injectable()
 export class FhirService {
+
   /** @param resourceModel - Mongoose model injected for the shared FhirResource collection. */
   constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {}
 
@@ -21,6 +22,7 @@ export class FhirService {
    * @returns The persisted resource including server-assigned id, versionId and lastUpdated.
    */
   async create(resourceType: string, body: any): Promise<FhirResource> {
+
     const id = randomUUID();
     const now = new Date().toISOString();
     const resource = new this.resourceModel({ ...body, resourceType, id, meta: { versionId: '1', lastUpdated: now } });
@@ -35,6 +37,7 @@ export class FhirService {
    * @returns An object containing the matched resources and the total count (independent of `_count`).
    */
   async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number }> {
+
     const filter: Record<string, any> = { resourceType };
 
     if (params._id) {
@@ -79,6 +82,7 @@ export class FhirService {
    * @throws NotFoundException with an OperationOutcome if the resource does not exist.
    */
   async findById(resourceType: string, id: string): Promise<FhirResource> {
+
     const resource = await this.resourceModel.findOne({ resourceType, id }).exec();
 
     if (!resource) {
@@ -97,6 +101,7 @@ export class FhirService {
    * @throws NotFoundException if the resource does not exist.
    */
   async update(resourceType: string, id: string, body: any): Promise<FhirResource> {
+
     const existing = await this.findById(resourceType, id);
     const currentVersion = parseInt(existing.meta.versionId, 10);
     const now = new Date().toISOString();
@@ -115,6 +120,7 @@ export class FhirService {
    * @throws NotFoundException with an OperationOutcome if the resource does not exist.
    */
   async delete(resourceType: string, id: string): Promise<void> {
+
     const result = await this.resourceModel.deleteOne({ resourceType, id }).exec();
 
     if (result.deletedCount === 0) {

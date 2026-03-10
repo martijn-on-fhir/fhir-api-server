@@ -35,6 +35,9 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Config with credentials
+config/app-config.json
+
 # dotenv environment variable files
 .env
 .env.development.local

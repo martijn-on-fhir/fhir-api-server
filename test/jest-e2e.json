@@ -4,9 +4,10 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": "ts-jest",
+    "^.+\\.mjs$": "<rootDir>/esm-transformer.js"
   },
   "transformIgnorePatterns": [
-    "node_modules/(?!fhir-models-r4|fhir-r4-validator)"
+    "node_modules/(?!fhir-models-r4|fhir-validator-mx)"
   ]
 }

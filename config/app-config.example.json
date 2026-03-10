@@ -1,0 +1,17 @@
+{
+  "mongodb": {
+    "host": "localhost",
+    "port": 27017,
+    "database": "fhir",
+    "username": "",
+    "password": ""
+  },
+  "terminology": {
+    "baseUrl": "https://terminologieserver.nl",
+    "authUrl": "https://terminologieserver.nl/authorisation/auth/realms/nictiz/protocol/openid-connect/token",
+    "user": "",
+    "password": "",
+    "clientId": "cli_client",
+    "grantType": "password"
+  }
+}

@@ -8,12 +8,14 @@ import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } fro
  */
 @Catch()
 export class FhirExceptionFilter implements ExceptionFilter {
+
   /**
    * Catches any thrown exception and responds with an appropriate OperationOutcome.
    * @param exception - The thrown exception (HttpException or unknown).
    * @param host - The NestJS arguments host providing access to the HTTP context.
    */
   catch(exception: unknown, host: ArgumentsHost) {
+
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
     const { status, outcome } = this.buildResponse(exception);
@@ -28,6 +30,7 @@ export class FhirExceptionFilter implements ExceptionFilter {
    * @returns An object with the HTTP status code and the OperationOutcome to return.
    */
   private buildResponse(exception: unknown): { status: number; outcome: OperationOutcome } {
+
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const body = exception.getResponse();

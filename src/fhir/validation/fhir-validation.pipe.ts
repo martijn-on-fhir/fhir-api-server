@@ -9,6 +9,7 @@ import { FhirValidationService } from './fhir-validation.service';
  */
 @Injectable()
 export class FhirValidationPipe implements PipeTransform {
+
   /** @param validationService - The injected FHIR validation service. */
   constructor(private readonly validationService: FhirValidationService) {}
 
@@ -19,6 +20,7 @@ export class FhirValidationPipe implements PipeTransform {
    * @throws BadRequestException with an OperationOutcome if validation fails.
    */
   async transform(value: any) {
+
     if (!value || typeof value !== 'object') {
       throw new BadRequestException(new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: 'Request body must be a JSON object' })] }));
     }
