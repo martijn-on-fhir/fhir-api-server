@@ -42,7 +42,7 @@ Het project heeft een werkende generieke FHIR R4 REST API met:
 
 ### NL-specifiek
 
-13. **BgZ (Basisgegevensset Zorg)** — gestructureerde opvraag van de 26 BgZ zibs via een custom operation of standaard search
+13. ~~**BgZ (Basisgegevensset Zorg)** — gestructureerde opvraag van de 26 BgZ zibs via een custom operation of standaard search~~ ✅ geïmplementeerd
 14. **MedMij/Nuts integratie** — aansluiting op het Nederlandse zorgnetwerk
 
 ### DevOps

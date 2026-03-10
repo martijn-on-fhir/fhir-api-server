@@ -790,6 +790,312 @@
         "mimeType": "application/json",
         "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [{\n    \"name\": \"meta\",\n    \"valueMeta\": {\n      \"profile\": [\"http://nictiz.nl/fhir/StructureDefinition/nl-core-Patient\"]\n    }\n  }]\n}"
       }
+    },
+
+    {
+      "_id": "fld_history",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "History"
+    },
+    {
+      "_id": "req_history_instance",
+      "_type": "request",
+      "parentId": "fld_history",
+      "name": "Instance history",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/_history",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_history_vread",
+      "_type": "request",
+      "parentId": "fld_history",
+      "name": "vRead (specific version)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/_history/1",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_history_type",
+      "_type": "request",
+      "parentId": "fld_history",
+      "name": "Type-level history",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/_history",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_history_system",
+      "_type": "request",
+      "parentId": "fld_history",
+      "name": "System-level history",
+      "method": "GET",
+      "url": "{{ _.base_url }}/_history",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_history_since",
+      "_type": "request",
+      "parentId": "fld_history",
+      "name": "History with _since",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/_history?_since=2026-01-01",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_everything",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$everything"
+    },
+    {
+      "_id": "req_everything",
+      "_type": "request",
+      "parentId": "fld_everything",
+      "name": "Patient $everything",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$everything",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_everything_type",
+      "_type": "request",
+      "parentId": "fld_everything",
+      "name": "Patient $everything (filtered by _type)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$everything?_type=Observation,Condition",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_bgz",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$bgz (Basisgegevensset Zorg)"
+    },
+    {
+      "_id": "req_bgz",
+      "_type": "request",
+      "parentId": "fld_bgz",
+      "name": "Patient BgZ",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$bgz",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_export",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$export (Bulk Data)"
+    },
+    {
+      "_id": "req_export_system",
+      "_type": "request",
+      "parentId": "fld_export",
+      "name": "System-level $export (kick-off)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/$export",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Prefer", "value": "respond-async" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_export_system_type",
+      "_type": "request",
+      "parentId": "fld_export",
+      "name": "System-level $export (filtered by _type)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/$export?_type=Patient,Observation",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Prefer", "value": "respond-async" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_export_group",
+      "_type": "request",
+      "parentId": "fld_export",
+      "name": "Group-level $export (kick-off)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Group/GROUP_ID/$export",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Prefer", "value": "respond-async" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_export_poll",
+      "_type": "request",
+      "parentId": "fld_export",
+      "name": "Poll export status",
+      "method": "GET",
+      "url": "{{ _.base_url }}/$export-poll-status?_jobId=JOB_ID",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_export_download",
+      "_type": "request",
+      "parentId": "fld_export",
+      "name": "Download NDJSON output",
+      "method": "GET",
+      "url": "{{ _.base_url }}/$export-output?_jobId=JOB_ID&type=Patient",
+      "headers": [{ "name": "Accept", "value": "application/fhir+ndjson" }],
+      "body": {}
+    },
+    {
+      "_id": "req_export_cancel",
+      "_type": "request",
+      "parentId": "fld_export",
+      "name": "Cancel export job",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/$export-poll-status?_jobId=JOB_ID",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_subscriptions",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Subscriptions"
+    },
+    {
+      "_id": "req_create_subscription",
+      "_type": "request",
+      "parentId": "fld_subscriptions",
+      "name": "Create Subscription (rest-hook)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Subscription",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Subscription\",\n  \"status\": \"requested\",\n  \"criteria\": \"Observation?code=85354-9\",\n  \"channel\": {\n    \"type\": \"rest-hook\",\n    \"endpoint\": \"https://webhook.site/YOUR-UUID\",\n    \"payload\": \"application/fhir+json\"\n  },\n  \"reason\": \"Monitor blood pressure observations\",\n  \"end\": \"2027-01-01T00:00:00Z\"\n}"
+      }
+    },
+    {
+      "_id": "req_search_subscriptions",
+      "_type": "request",
+      "parentId": "fld_subscriptions",
+      "name": "Search active Subscriptions",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Subscription?status=active",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_conditional",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Conditional CRUD"
+    },
+    {
+      "_id": "req_conditional_create",
+      "_type": "request",
+      "parentId": "fld_conditional",
+      "name": "Conditional Create (If-None-Exist)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "If-None-Exist", "value": "identifier=http://fhir.nl/fhir/NamingSystem/bsn|1430789234" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Patient\",\n  \"identifier\": [{\"system\": \"http://fhir.nl/fhir/NamingSystem/bsn\", \"value\": \"1430789234\"}],\n  \"name\": [{\"family\": \"Conditional\", \"given\": [\"Test\"]}]\n}"
+      }
+    },
+    {
+      "_id": "req_conditional_update",
+      "_type": "request",
+      "parentId": "fld_conditional",
+      "name": "Conditional Update (PUT with search)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/Patient?identifier=http://fhir.nl/fhir/NamingSystem/bsn|1430789234",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Patient\",\n  \"identifier\": [{\"system\": \"http://fhir.nl/fhir/NamingSystem/bsn\", \"value\": \"1430789234\"}],\n  \"name\": [{\"family\": \"Updated\", \"given\": [\"Conditionally\"]}]\n}"
+      }
+    },
+    {
+      "_id": "req_optimistic_locking",
+      "_type": "request",
+      "parentId": "fld_conditional",
+      "name": "Optimistic Locking (If-Match)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "If-Match", "value": "W/\"1\"" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Patient\",\n  \"name\": [{\"family\": \"Locked\", \"given\": [\"Update\"]}]\n}"
+      }
+    },
+
+    {
+      "_id": "fld_batch",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Batch/Transaction"
+    },
+    {
+      "_id": "req_batch",
+      "_type": "request",
+      "parentId": "fld_batch",
+      "name": "Batch Bundle",
+      "method": "POST",
+      "url": "{{ _.base_url }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Bundle\",\n  \"type\": \"batch\",\n  \"entry\": [\n    {\n      \"request\": { \"method\": \"POST\", \"url\": \"Patient\" },\n      \"resource\": { \"resourceType\": \"Patient\", \"name\": [{ \"family\": \"Batch1\" }] }\n    },\n    {\n      \"request\": { \"method\": \"POST\", \"url\": \"Patient\" },\n      \"resource\": { \"resourceType\": \"Patient\", \"name\": [{ \"family\": \"Batch2\" }] }\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_transaction",
+      "_type": "request",
+      "parentId": "fld_batch",
+      "name": "Transaction Bundle (with urn:uuid refs)",
+      "method": "POST",
+      "url": "{{ _.base_url }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Bundle\",\n  \"type\": \"transaction\",\n  \"entry\": [\n    {\n      \"fullUrl\": \"urn:uuid:patient-1\",\n      \"request\": { \"method\": \"POST\", \"url\": \"Patient\" },\n      \"resource\": { \"resourceType\": \"Patient\", \"name\": [{ \"family\": \"Transaction\" }] }\n    },\n    {\n      \"request\": { \"method\": \"POST\", \"url\": \"Observation\" },\n      \"resource\": {\n        \"resourceType\": \"Observation\",\n        \"status\": \"final\",\n        \"code\": { \"coding\": [{ \"system\": \"http://loinc.org\", \"code\": \"85354-9\" }] },\n        \"subject\": { \"reference\": \"urn:uuid:patient-1\" }\n      }\n    }\n  ]\n}"
+      }
     }
   ]
 }

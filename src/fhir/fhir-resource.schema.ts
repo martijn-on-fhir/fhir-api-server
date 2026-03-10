@@ -73,3 +73,6 @@ FhirResourceSchema.index({ 'meta.security.system': 1, 'meta.security.code': 1 })
 // Performer/author references
 FhirResourceSchema.index({ resourceType: 1, 'performer.reference': 1 });
 FhirResourceSchema.index({ resourceType: 1, 'encounter.reference': 1 });
+
+// BgZ: Coverage beneficiary reference
+FhirResourceSchema.index({ resourceType: 1, 'beneficiary.reference': 1 });
