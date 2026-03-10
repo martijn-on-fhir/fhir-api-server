@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.2.0...fhir-api-server-v0.3.0) (2026-03-10)
+
+
+### Features
+
+* add FHIR Bulk Data Export ($export) with async NDJSON processing ([0e660f6](https://github.com/martijn-on-fhir/fhir-api-server/commit/0e660f6f28e0ce0b01fbf29369179ace7cc2eace))
+
 ## [0.2.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.1.1...fhir-api-server-v0.2.0) (2026-03-10)
 
 
