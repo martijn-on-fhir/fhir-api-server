@@ -1,17 +1,17 @@
-import { randomUUID } from 'crypto';
-import { Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { InjectModel } from '@nestjs/mongoose';
-import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
-import { Model, ClientSession } from 'mongoose';
-import { FhirResourceHistory } from './fhir-resource-history.schema';
-import { FhirResource } from './fhir-resource.schema';
-import { ChainingService } from './search/chaining.service';
-import { IncludeService } from './search/include.service';
-import { QueryBuilderService } from './search/query-builder.service';
-import { sanitizeValue } from './search/sanitize';
-import { SearchParameterRegistry } from './search/search-parameter-registry.service';
-import { FhirResourceEvent } from './subscriptions/subscription.types';
+import {randomUUID} from 'crypto';
+import {Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException} from '@nestjs/common';
+import {EventEmitter2} from '@nestjs/event-emitter';
+import {InjectModel} from '@nestjs/mongoose';
+import {OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType} from 'fhir-models-r4';
+import {Model, ClientSession} from 'mongoose';
+import {FhirResourceHistory} from './fhir-resource-history.schema';
+import {FhirResource} from './fhir-resource.schema';
+import {ChainingService} from './search/chaining.service';
+import {IncludeService} from './search/include.service';
+import {QueryBuilderService} from './search/query-builder.service';
+import {sanitizeValue} from './search/sanitize';
+import {SearchParameterRegistry} from './search/search-parameter-registry.service';
+import {FhirResourceEvent} from './subscriptions/subscription.types';
 
 /**
  * Service responsible for all FHIR resource persistence operations.
@@ -26,7 +26,8 @@ export class FhirService {
     private readonly queryBuilder: QueryBuilderService, private readonly searchRegistry: SearchParameterRegistry,
     private readonly includeService: IncludeService, private readonly chainingService: ChainingService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) {
+  }
 
   /**
    * Creates a new FHIR resource with a server-assigned id and meta.
@@ -36,13 +37,13 @@ export class FhirService {
 
     const id = randomUUID();
     const now = new Date().toISOString();
-    const meta = { ...body.meta, versionId: '1', lastUpdated: now };
-    const resource = new this.resourceModel({ ...body, resourceType, id, meta });
-    const saved = await resource.save({ session });
+    const meta = {...body.meta, versionId: '1', lastUpdated: now};
+    const resource = new this.resourceModel({...body, resourceType, id, meta});
+    const saved = await resource.save({session});
 
     // Write version 1 to history
     const snapshot = this.toPlainResource(saved);
-    await new this.historyModel({ ...snapshot, request: { method: 'POST', url: resourceType }, response: { status: '201 Created', etag: `W/"1"`, lastModified: now } }).save({ session });
+    await new this.historyModel({...snapshot, request: {method: 'POST', url: resourceType}, response: {status: '201 Created', etag: `W/"1"`, lastModified: now}}).save({session});
 
     this.emitResourceEvent('create', resourceType, id, snapshot);
 
@@ -66,7 +67,7 @@ export class FhirService {
 
     // If any chain/has resolved to impossible (no matches), return empty
     if ([...chainConditions, ...hasConditions].some((c) => '_impossible' in c)) {
-      return { resources: [], total: 0, included: [] };
+      return {resources: [], total: 0, included: []};
     }
 
     if (extraConditions.length > 0) {
@@ -105,7 +106,7 @@ export class FhirService {
     // Resolve _include and _revinclude
     const included = await this.includeService.resolveIncludes(resources, resourceType, params);
 
-    return { resources, total, included };
+    return {resources, total, included};
   }
 
   /**
@@ -114,7 +115,7 @@ export class FhirService {
    */
   async findById(resourceType: string, id: string): Promise<FhirResource> {
 
-    const resource = await this.resourceModel.findOne({ resourceType, id }).exec();
+    const resource = await this.resourceModel.findOne({resourceType, id}).exec();
 
     if (!resource) {
       throw new NotFoundException(this.createOutcome(IssueSeverity.Error, IssueType.NotFound, `${resourceType}/${id} not found`));
@@ -130,7 +131,7 @@ export class FhirService {
    */
   async vRead(resourceType: string, id: string, versionId: string): Promise<any> {
 
-    const entry = await this.historyModel.findOne({ resourceType, id, 'meta.versionId': versionId }).lean().exec();
+    const entry = await this.historyModel.findOne({resourceType, id, 'meta.versionId': versionId}).lean().exec();
 
     if (!entry) {
       throw new NotFoundException(this.createOutcome(IssueSeverity.Error, IssueType.NotFound, `${resourceType}/${id}/_history/${versionId} not found`));
@@ -141,7 +142,7 @@ export class FhirService {
     }
 
     // Strip history-specific fields, return clean FHIR resource
-    const { _id, __v, request: _req, response: _resp, _deleted: _del, ...resource } = entry as any;
+    const {_id, __v, request: _req, response: _resp, _deleted: _del, ...resource} = entry as any;
 
     return resource;
   }
@@ -152,23 +153,23 @@ export class FhirService {
    */
   async instanceHistory(resourceType: string, id: string, params: Record<string, string>): Promise<{ entries: any[]; total: number }> {
 
-    const filter: Record<string, any> = { resourceType, id };
+    const filter: Record<string, any> = {resourceType, id};
 
     if (params._since) {
-filter['meta.lastUpdated'] = { $gte: sanitizeValue(params._since) };
-}
+      filter['meta.lastUpdated'] = {$gte: sanitizeValue(params._since)};
+    }
 
     if (params._at) {
-filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
-}
+      filter['meta.lastUpdated'] = {$eq: sanitizeValue(params._at)};
+    }
 
     const total = await this.historyModel.countDocuments(filter).exec();
     const count = params._count ? parseInt(params._count, 10) : 100;
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
-    const entries = await this.historyModel.find(filter).sort({ 'meta.lastUpdated': -1 }).skip(offset).limit(count).lean().exec();
+    const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();
 
-    return { entries, total };
+    return {entries, total};
   }
 
   /**
@@ -176,23 +177,23 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
    */
   async typeHistory(resourceType: string, params: Record<string, string>): Promise<{ entries: any[]; total: number }> {
 
-    const filter: Record<string, any> = { resourceType };
+    const filter: Record<string, any> = {resourceType};
 
     if (params._since) {
-filter['meta.lastUpdated'] = { $gte: sanitizeValue(params._since) };
-}
+      filter['meta.lastUpdated'] = {$gte: sanitizeValue(params._since)};
+    }
 
     if (params._at) {
-filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
-}
+      filter['meta.lastUpdated'] = {$eq: sanitizeValue(params._at)};
+    }
 
     const total = await this.historyModel.countDocuments(filter).exec();
     const count = params._count ? parseInt(params._count, 10) : 100;
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
-    const entries = await this.historyModel.find(filter).sort({ 'meta.lastUpdated': -1 }).skip(offset).limit(count).lean().exec();
+    const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();
 
-    return { entries, total };
+    return {entries, total};
   }
 
   /**
@@ -203,20 +204,20 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
     const filter: Record<string, any> = {};
 
     if (params._since) {
-filter['meta.lastUpdated'] = { $gte: sanitizeValue(params._since) };
-}
+      filter['meta.lastUpdated'] = {$gte: sanitizeValue(params._since)};
+    }
 
     if (params._at) {
-filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
-}
+      filter['meta.lastUpdated'] = {$eq: sanitizeValue(params._at)};
+    }
 
     const total = await this.historyModel.countDocuments(filter).exec();
     const count = params._count ? parseInt(params._count, 10) : 100;
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
-    const entries = await this.historyModel.find(filter).sort({ 'meta.lastUpdated': -1 }).skip(offset).limit(count).lean().exec();
+    const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();
 
-    return { entries, total };
+    return {entries, total};
   }
 
   /**
@@ -231,14 +232,14 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
     const newVersionId = String(currentVersion + 1);
 
     const updated = await this.resourceModel.findOneAndUpdate(
-      { resourceType, id },
-      { ...body, resourceType, id, meta: { ...body.meta, versionId: newVersionId, lastUpdated: now } },
-      { returnDocument: 'after', session },
+      {resourceType, id},
+      {...body, resourceType, id, meta: {...body.meta, versionId: newVersionId, lastUpdated: now}},
+      {returnDocument: 'after', session},
     ).exec();
 
     // Write new version to history
     const snapshot = this.toPlainResource(updated);
-    await new this.historyModel({ ...snapshot, request: { method: 'PUT', url: `${resourceType}/${id}` }, response: { status: '200 OK', etag: `W/"${newVersionId}"`, lastModified: now } }).save({ session });
+    await new this.historyModel({...snapshot, request: {method: 'PUT', url: `${resourceType}/${id}`}, response: {status: '200 OK', etag: `W/"${newVersionId}"`, lastModified: now}}).save({session});
 
     this.emitResourceEvent('update', resourceType, id, snapshot);
 
@@ -251,7 +252,7 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
    */
   async delete(resourceType: string, id: string, session?: ClientSession): Promise<void> {
 
-    const existing = await this.resourceModel.findOne({ resourceType, id }).exec();
+    const existing = await this.resourceModel.findOne({resourceType, id}).exec();
 
     if (!existing) {
       throw new NotFoundException(this.createOutcome(IssueSeverity.Error, IssueType.NotFound, `${resourceType}/${id} not found`));
@@ -263,11 +264,11 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
 
     // Write tombstone to history
     await new this.historyModel({
-      resourceType, id, meta: { versionId: deleteVersionId, lastUpdated: now, profile: existing.meta.profile, tag: existing.meta.tag, security: existing.meta.security },
-      request: { method: 'DELETE', url: `${resourceType}/${id}` }, response: { status: '204 No Content' }, _deleted: true,
-    }).save({ session });
+      resourceType, id, meta: {versionId: deleteVersionId, lastUpdated: now, profile: existing.meta.profile, tag: existing.meta.tag, security: existing.meta.security},
+      request: {method: 'DELETE', url: `${resourceType}/${id}`}, response: {status: '204 No Content'}, _deleted: true,
+    }).save({session});
 
-    await this.resourceModel.deleteOne({ resourceType, id }, { session }).exec();
+    await this.resourceModel.deleteOne({resourceType, id}, {session}).exec();
 
     this.emitResourceEvent('delete', resourceType, id, null);
   }
@@ -284,7 +285,7 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
     const matches = await this.resourceModel.find(filter).limit(2).exec();
 
     if (matches.length === 1) {
-      return { resource: matches[0], created: false };
+      return {resource: matches[0], created: false};
     }
 
     if (matches.length > 1) {
@@ -293,7 +294,7 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
 
     const resource = await this.create(resourceType, body, session);
 
-    return { resource, created: true };
+    return {resource, created: true};
   }
 
   /**
@@ -314,13 +315,13 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
     if (matches.length === 1) {
       const resource = await this.update(resourceType, matches[0].id, body, session);
 
-      return { resource, created: false };
+      return {resource, created: false};
     }
 
     // No match → create
     const resource = await this.create(resourceType, body, session);
 
-    return { resource, created: true };
+    return {resource, created: true};
   }
 
   /**
@@ -357,7 +358,7 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
   /** Returns aggregated meta (profiles, tags, security) for a resource type or the whole system. */
   async getAggregatedMeta(resourceType?: string): Promise<{ profile: string[]; tag: any[]; security: any[] }> {
 
-    const filter: Record<string, any> = resourceType ? { resourceType } : {};
+    const filter: Record<string, any> = resourceType ? {resourceType} : {};
     const docs = await this.resourceModel.find(filter).select('meta').lean().exec();
     const profiles = new Set<string>();
     const tagMap = new Map<string, any>();
@@ -365,19 +366,19 @@ filter['meta.lastUpdated'] = { $eq: sanitizeValue(params._at) };
 
     for (const doc of docs) {
       for (const p of doc.meta?.profile || []) {
-profiles.add(p);
-}
+        profiles.add(p);
+      }
 
       for (const t of doc.meta?.tag || []) {
-tagMap.set(`${t.system}|${t.code}`, t);
-}
+        tagMap.set(`${t.system}|${t.code}`, t);
+      }
 
       for (const s of doc.meta?.security || []) {
-securityMap.set(`${s.system}|${s.code}`, s);
-}
+        securityMap.set(`${s.system}|${s.code}`, s);
+      }
     }
 
-    return { profile: [...profiles], tag: [...tagMap.values()], security: [...securityMap.values()] };
+    return {profile: [...profiles], tag: [...tagMap.values()], security: [...securityMap.values()]};
   }
 
   /** Adds profiles, tags and security labels to an existing resource's meta. Returns the updated meta. */
@@ -392,7 +393,7 @@ securityMap.set(`${s.system}|${s.code}`, s);
       security: this.mergeCoded(current.security, meta.security),
     };
 
-    const updated = await this.resourceModel.findOneAndUpdate({ resourceType, id }, { meta: merged }, { returnDocument: 'after' }).exec();
+    const updated = await this.resourceModel.findOneAndUpdate({resourceType, id}, {meta: merged}, {returnDocument: 'after'}).exec();
 
     return updated.meta;
   }
@@ -413,7 +414,7 @@ securityMap.set(`${s.system}|${s.code}`, s);
       security: (current.security || []).filter((s: any) => !securityToRemove.has(`${s.system}|${s.code}`)),
     };
 
-    const updated = await this.resourceModel.findOneAndUpdate({ resourceType, id }, { 'meta': merged }, { returnDocument: 'after' }).exec();
+    const updated = await this.resourceModel.findOneAndUpdate({resourceType, id}, {'meta': merged}, {returnDocument: 'after'}).exec();
 
     return updated.meta;
   }
@@ -424,8 +425,8 @@ securityMap.set(`${s.system}|${s.code}`, s);
     const set = new Set(existing);
 
     for (const item of additions) {
-set.add(item);
-}
+      set.add(item);
+    }
 
     return [...set];
   }
@@ -436,12 +437,12 @@ set.add(item);
     const map = new Map<string, any>();
 
     for (const item of existing) {
-map.set(`${item.system}|${item.code}`, item);
-}
+      map.set(`${item.system}|${item.code}`, item);
+    }
 
     for (const item of additions) {
-map.set(`${item.system}|${item.code}`, item);
-}
+      map.set(`${item.system}|${item.code}`, item);
+    }
 
     return [...map.values()];
   }
@@ -459,7 +460,7 @@ map.set(`${item.system}|${item.code}`, item);
 
     // 2. Build filter to find all resources referencing this resource
     // Uses a $regex on any nested .reference field (generic approach for schema-free storage)
-    const refFilter: Record<string, any> = { resourceType: { $ne: resourceType === 'Patient' ? 'Patient' : '__none__' } };
+    const refFilter: Record<string, any> = {resourceType: {$ne: resourceType === 'Patient' ? 'Patient' : '__none__'}};
 
     // Search for the reference pattern anywhere in the document using a recursive reference scan
     refFilter.$where = undefined; // Explicitly avoid $where — instead we query known reference paths
@@ -471,14 +472,14 @@ map.set(`${item.system}|${item.code}`, item);
     if (params._type) {
       // Limit to specific resource types
       const types = params._type.split(',').map((t) => t.trim()).filter(Boolean);
-      referenceFilter.resourceType = { $in: types };
+      referenceFilter.resourceType = {$in: types};
     } else {
       // Exclude the focal resource type to avoid self-references (the focal resource is already included)
-      referenceFilter.resourceType = { $ne: resourceType };
+      referenceFilter.resourceType = {$ne: resourceType};
     }
 
     if (params._since) {
-      referenceFilter['meta.lastUpdated'] = { $gte: String(params._since) };
+      referenceFilter['meta.lastUpdated'] = {$gte: String(params._since)};
     }
 
     // Find all resources that contain a reference to the focal resource
@@ -502,32 +503,32 @@ map.set(`${item.system}|${item.code}`, item);
     const total = allResources.length;
     const paged = allResources.slice(offset, offset + count);
 
-    return { resources: paged as FhirResource[], total };
+    return {resources: paged as FhirResource[], total};
   }
 
   /** Recursively checks if a document contains a reference to the given target (e.g. "Patient/123"). */
   private containsReference(obj: any, targetRef: string): boolean {
     if (obj === null || obj === undefined) {
-return false;
-}
+      return false;
+    }
 
     if (typeof obj === 'string') {
-return obj === targetRef || obj.endsWith(`/${targetRef}`);
-}
+      return obj === targetRef || obj.endsWith(`/${targetRef}`);
+    }
 
     if (Array.isArray(obj)) {
-return obj.some((item) => this.containsReference(item, targetRef));
-}
+      return obj.some((item) => this.containsReference(item, targetRef));
+    }
 
     if (typeof obj === 'object') {
       for (const [key, value] of Object.entries(obj)) {
         if (key === 'reference' && typeof value === 'string' && (value === targetRef || value.endsWith(`/${targetRef}`))) {
-return true;
-}
+          return true;
+        }
 
         if (key !== '_id' && key !== '__v' && this.containsReference(value, targetRef)) {
-return true;
-}
+          return true;
+        }
       }
     }
 
@@ -544,17 +545,17 @@ return true;
   private toPlainResource(doc: any): any {
 
     const obj = doc.toObject ? doc.toObject() : doc;
-    const { _id, __v, ...resource } = obj;
+    const {_id, __v, ...resource} = obj;
 
     return resource;
   }
 
   /** Emits a fhir.resource.changed event for subscription evaluation. */
   private emitResourceEvent(action: FhirResourceEvent['action'], resourceType: string, id: string, resource: any): void {
-    this.eventEmitter.emit('fhir.resource.changed', { action, resourceType, id, resource } as FhirResourceEvent);
+    this.eventEmitter.emit('fhir.resource.changed', {action, resourceType, id, resource} as FhirResourceEvent);
   }
 
   private createOutcome(severity: IssueSeverity, code: IssueType, diagnostics: string): OperationOutcome {
-    return new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity, code, diagnostics })] });
+    return new OperationOutcome({issue: [new OperationOutcomeIssue({severity, code, diagnostics})]});
   }
 }

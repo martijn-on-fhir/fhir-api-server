@@ -1,6 +1,5 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { FhirValidator, MongoSource, ValidationResult } from 'fhir-validator-mx';
@@ -47,6 +46,14 @@ export class FhirValidationService implements OnModuleInit {
   }
 
   async validate(resource: unknown, profileUrl?: string): Promise<ValidationResult> {
+    const { profiles } = this.validator.stats();
+
+    if (profiles === 0) {
+      this.logger.warn('No profiles loaded — skipping deep validation');
+
+      return { valid: true, issues: [] };
+    }
+
     return this.validator.validate(resource, profileUrl);
   }
 

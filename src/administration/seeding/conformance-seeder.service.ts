@@ -17,6 +17,7 @@ export class ConformanceSeederService implements OnModuleInit {
   async onModuleInit() {
     if (!existsSync(this.importDir)) {
       this.logger.warn(`Import directory not found: ${this.importDir} — skipping seed`);
+
       return;
     }
 
@@ -38,6 +39,7 @@ export class ConformanceSeederService implements OnModuleInit {
 
     if (storedHash === currentHash) {
       this.logger.log('Seed hash unchanged — skipping import');
+
       return;
     }
 
@@ -53,8 +55,12 @@ export class ConformanceSeederService implements OnModuleInit {
         if (content.resourceType === 'Bundle' && Array.isArray(content.entry)) {
           for (const entry of content.entry) {
             const r = entry.resource || entry;
-            if (r.resourceType && CONFORMANCE_TYPES.has(r.resourceType)) resources.push(r);
+
+            if (r.resourceType && CONFORMANCE_TYPES.has(r.resourceType)) {
+resources.push(r);
+}
           }
+
           continue;
         }
 
@@ -71,7 +77,9 @@ export class ConformanceSeederService implements OnModuleInit {
 
     this.logger.log(`Parsed ${resources.length} conformance resources (${skipped} non-conformance files skipped)`);
 
-    if (resources.length === 0) return;
+    if (resources.length === 0) {
+return;
+}
 
     const upserted = await this.administrationService.bulkUpsert(resources);
     await this.administrationService.setSeedVersion(currentHash);
@@ -85,6 +93,7 @@ export class ConformanceSeederService implements OnModuleInit {
 
     for (const entry of entries) {
       const fullPath = join(dir, entry.name);
+
       if (entry.isDirectory()) {
         results.push(...this.collectJsonFiles(fullPath));
       } else if (entry.name.endsWith('.json')) {

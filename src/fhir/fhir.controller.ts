@@ -96,7 +96,13 @@ export class FhirController {
       return res.set('Content-Type', 'application/fhir+json').json(outcome);
     }
 
-    if (resource.resourceType && resource.resourceType !== resourceType) {
+    if (!resource.resourceType) {
+      const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Missing required field: resourceType' })] });
+
+      return res.set('Content-Type', 'application/fhir+json').json(outcome);
+    }
+
+    if (resource.resourceType !== resourceType) {
       const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: `Resource type '${resource.resourceType}' does not match endpoint '${resourceType}'` })] });
 
       return res.set('Content-Type', 'application/fhir+json').json(outcome);
@@ -471,6 +477,7 @@ export class FhirController {
   private extractValidateParams(body: any): { resource?: any; profile?: string } {
 
     if (body?.resourceType === 'Parameters') {
+
       const params = body.parameter || [];
       const resource = params.find((p: any) => p.name === 'resource')?.resource;
       const profile = params.find((p: any) => p.name === 'profile')?.valueUri;
