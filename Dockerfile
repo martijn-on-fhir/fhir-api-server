@@ -6,7 +6,6 @@ RUN npm ci
 COPY tsconfig*.json nest-cli.json ./
 COPY src/ src/
 COPY data/ data/
-COPY profiles/ profiles/
 RUN npm run build
 
 # Stage 2: Production
@@ -17,7 +16,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY data/ data/
-COPY profiles/ profiles/
+COPY config/ config/
 EXPOSE 3000
 USER node
 CMD ["node", "dist/main"]

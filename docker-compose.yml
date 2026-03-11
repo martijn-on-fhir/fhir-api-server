@@ -6,7 +6,6 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongo:27017/fhir
       - PORT=3000
-      - FHIR_PROFILES_DIR=/app/profiles
       - LOG_FORMAT=json
     volumes:
       - ./file-import:/app/file-import:ro
