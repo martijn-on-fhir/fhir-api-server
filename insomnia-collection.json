@@ -1106,6 +1106,16 @@
       "name": "Administration (Conformance)"
     },
     {
+      "_id": "req_admin_metadata",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "CapabilityStatement (administration)",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/metadata",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
       "_id": "req_admin_search_sd",
       "_type": "request",
       "parentId": "fld_administration",
