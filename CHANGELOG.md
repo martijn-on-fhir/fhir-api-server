@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.5.0...fhir-api-server-v0.6.0) (2026-03-11)
+
+
+### Features
+
+* add /administration endpoint for conformance resources (Firely-style) ([362346a](https://github.com/martijn-on-fhir/fhir-api-server/commit/362346aa657715df2310bce8473688d32d20ff72))
+
+
+### Bug Fixes
+
+* remove file-import COPY from Dockerfile to prevent CI build failure ([ad7c2ea](https://github.com/martijn-on-fhir/fhir-api-server/commit/ad7c2ea0950caf7d5a1028317e9ca3c49f74c2bb))
+
 ## [0.5.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.4.0...fhir-api-server-v0.5.0) (2026-03-10)
 
 
