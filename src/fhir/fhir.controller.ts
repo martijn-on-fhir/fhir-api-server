@@ -358,7 +358,7 @@ export class FhirController {
     if (ifNoneExist) {
       const searchParams = this.parseSearchString(ifNoneExist);
       searchParams.resourceType = resourceType;
-      const { resource, created } = await this.fhirService.conditionalCreate(resourceType, body, searchParams);
+      const { resource, created } = await this.fhirService.conditionalCreate(resourceType, body, searchParams, undefined, req);
 
       if (!created) {
         return res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
@@ -367,7 +367,7 @@ export class FhirController {
       return res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
     }
 
-    const resource = await this.fhirService.create(resourceType, body);
+    const resource = await this.fhirService.create(resourceType, body, undefined, req);
 
     res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
   }
@@ -388,7 +388,7 @@ export class FhirController {
 
     const baseUrl = this.getBaseUrl(req);
     const searchParams = { ...queryParams, resourceType };
-    const { resource, created } = await this.fhirService.conditionalUpdate(resourceType, body, searchParams);
+    const { resource, created } = await this.fhirService.conditionalUpdate(resourceType, body, searchParams, undefined, req);
 
     if (created) {
       return res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
@@ -421,7 +421,7 @@ export class FhirController {
       await this.fhirService.checkIfMatch(resourceType, id, ifMatch);
     }
 
-    const resource = await this.fhirService.update(resourceType, id, body);
+    const resource = await this.fhirService.update(resourceType, id, body, undefined, req);
     const baseUrl = this.getBaseUrl(req);
 
     res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
@@ -432,10 +432,10 @@ export class FhirController {
   @ApiOperation({ summary: 'Conditional Delete', description: 'Delete resources matching search criteria.' })
   @ApiParam({ name: 'resourceType', example: 'Patient' })
   @ApiResponse({ status: 200, description: 'OperationOutcome (success)' })
-  async conditionalDelete(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Res() res: Response) {
+  async conditionalDelete(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
     const searchParams = { ...queryParams, resourceType };
-    const count = await this.fhirService.conditionalDelete(resourceType, searchParams);
+    const count = await this.fhirService.conditionalDelete(resourceType, searchParams, undefined, req);
     const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Conditionally deleted ${count} ${resourceType} resource(s)` })] });
 
     res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
@@ -453,10 +453,10 @@ export class FhirController {
   @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
   @ApiResponse({ status: 200, description: 'OperationOutcome (success)' })
   @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
-  async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
+  async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
 
-    await this.fhirService.delete(resourceType, id);
+    await this.fhirService.delete(resourceType, id, undefined, req);
 
     const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted` })] });
 

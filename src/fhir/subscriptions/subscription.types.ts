@@ -4,6 +4,7 @@ export interface FhirResourceEvent {
   resourceType: string;
   id: string;
   resource: any;
+  req?: any;
 }
 
 /** Parsed FHIR subscription criteria, e.g. "Observation?code=1234" → { resourceType: 'Observation', searchParams: { code: '1234' } }. */

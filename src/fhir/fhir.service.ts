@@ -33,7 +33,7 @@ export class FhirService {
    * Creates a new FHIR resource with a server-assigned id and meta.
    * Also writes the initial version to the history collection.
    */
-  async create(resourceType: string, body: any, session?: ClientSession): Promise<FhirResource> {
+  async create(resourceType: string, body: any, session?: ClientSession, req?: any): Promise<FhirResource> {
 
     const id = randomUUID();
     const now = new Date().toISOString();
@@ -45,7 +45,7 @@ export class FhirService {
     const snapshot = this.toPlainResource(saved);
     await new this.historyModel({...snapshot, request: {method: 'POST', url: resourceType}, response: {status: '201 Created', etag: `W/"1"`, lastModified: now}}).save({session});
 
-    this.emitResourceEvent('create', resourceType, id, snapshot);
+    this.emitResourceEvent('create', resourceType, id, snapshot, req);
 
     return saved;
   }
@@ -224,7 +224,7 @@ export class FhirService {
    * Updates an existing resource. Increments versionId and sets a new lastUpdated timestamp.
    * Writes both the pre-update and new version to history.
    */
-  async update(resourceType: string, id: string, body: any, session?: ClientSession): Promise<FhirResource> {
+  async update(resourceType: string, id: string, body: any, session?: ClientSession, req?: any): Promise<FhirResource> {
 
     const existing = await this.findById(resourceType, id);
     const currentVersion = parseInt(existing.meta.versionId, 10);
@@ -241,7 +241,7 @@ export class FhirService {
     const snapshot = this.toPlainResource(updated);
     await new this.historyModel({...snapshot, request: {method: 'PUT', url: `${resourceType}/${id}`}, response: {status: '200 OK', etag: `W/"${newVersionId}"`, lastModified: now}}).save({session});
 
-    this.emitResourceEvent('update', resourceType, id, snapshot);
+    this.emitResourceEvent('update', resourceType, id, snapshot, req);
 
     return updated;
   }
@@ -250,7 +250,7 @@ export class FhirService {
    * Deletes a resource by type and logical id.
    * Writes a tombstone entry to history before removing from the main collection.
    */
-  async delete(resourceType: string, id: string, session?: ClientSession): Promise<void> {
+  async delete(resourceType: string, id: string, session?: ClientSession, req?: any): Promise<void> {
 
     const existing = await this.resourceModel.findOne({resourceType, id}).exec();
 
@@ -270,7 +270,7 @@ export class FhirService {
 
     await this.resourceModel.deleteOne({resourceType, id}, {session}).exec();
 
-    this.emitResourceEvent('delete', resourceType, id, null);
+    this.emitResourceEvent('delete', resourceType, id, null, req);
   }
 
   /**
@@ -279,7 +279,7 @@ export class FhirService {
    * @returns { resource, created } — created=true if new, false if existing match found.
    * @throws ConflictException if multiple matches found.
    */
-  async conditionalCreate(resourceType: string, body: any, searchParams: Record<string, string>, session?: ClientSession): Promise<{ resource: FhirResource; created: boolean }> {
+  async conditionalCreate(resourceType: string, body: any, searchParams: Record<string, string>, session?: ClientSession, req?: any): Promise<{ resource: FhirResource; created: boolean }> {
 
     const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
     const matches = await this.resourceModel.find(filter).limit(2).exec();
@@ -292,7 +292,7 @@ export class FhirService {
       throw new ConflictException(this.createOutcome(IssueSeverity.Error, IssueType.Duplicate, `Conditional create matched ${matches.length} resources — cannot determine which to return`));
     }
 
-    const resource = await this.create(resourceType, body, session);
+    const resource = await this.create(resourceType, body, session, req);
 
     return {resource, created: true};
   }
@@ -303,7 +303,7 @@ export class FhirService {
    * @returns { resource, created } — created=true if new resource was created.
    * @throws ConflictException if multiple matches found.
    */
-  async conditionalUpdate(resourceType: string, body: any, searchParams: Record<string, string>, session?: ClientSession): Promise<{ resource: FhirResource; created: boolean }> {
+  async conditionalUpdate(resourceType: string, body: any, searchParams: Record<string, string>, session?: ClientSession, req?: any): Promise<{ resource: FhirResource; created: boolean }> {
 
     const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
     const matches = await this.resourceModel.find(filter).limit(2).exec();
@@ -313,13 +313,13 @@ export class FhirService {
     }
 
     if (matches.length === 1) {
-      const resource = await this.update(resourceType, matches[0].id, body, session);
+      const resource = await this.update(resourceType, matches[0].id, body, session, req);
 
       return {resource, created: false};
     }
 
     // No match → create
-    const resource = await this.create(resourceType, body, session);
+    const resource = await this.create(resourceType, body, session, req);
 
     return {resource, created: true};
   }
@@ -329,13 +329,13 @@ export class FhirService {
    * Deletes all matching resources (FHIR allows single or multiple conditional delete).
    * @returns The number of deleted resources.
    */
-  async conditionalDelete(resourceType: string, searchParams: Record<string, string>, session?: ClientSession): Promise<number> {
+  async conditionalDelete(resourceType: string, searchParams: Record<string, string>, session?: ClientSession, req?: any): Promise<number> {
 
     const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
     const matches = await this.resourceModel.find(filter).exec();
 
     for (const match of matches) {
-      await this.delete(resourceType, match.id, session);
+      await this.delete(resourceType, match.id, session, req);
     }
 
     return matches.length;
@@ -474,8 +474,8 @@ export class FhirService {
       const types = params._type.split(',').map((t) => t.trim()).filter(Boolean);
       referenceFilter.resourceType = {$in: types};
     } else {
-      // Exclude the focal resource type to avoid self-references (the focal resource is already included)
-      referenceFilter.resourceType = {$ne: resourceType};
+      // Exclude the focal resource type and infrastructure resources (AuditEvent, Provenance)
+      referenceFilter.resourceType = {$nin: [resourceType, 'AuditEvent', 'Provenance']};
     }
 
     if (params._since) {
@@ -550,9 +550,9 @@ export class FhirService {
     return resource;
   }
 
-  /** Emits a fhir.resource.changed event for subscription evaluation. */
-  private emitResourceEvent(action: FhirResourceEvent['action'], resourceType: string, id: string, resource: any): void {
-    this.eventEmitter.emit('fhir.resource.changed', {action, resourceType, id, resource} as FhirResourceEvent);
+  /** Emits a fhir.resource.changed event for subscription and audit evaluation. */
+  private emitResourceEvent(action: FhirResourceEvent['action'], resourceType: string, id: string, resource: any, req?: any): void {
+    this.eventEmitter.emit('fhir.resource.changed', {action, resourceType, id, resource, req} as FhirResourceEvent);
   }
 
   private createOutcome(severity: IssueSeverity, code: IssueType, diagnostics: string): OperationOutcome {
