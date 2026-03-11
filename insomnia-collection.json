@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-03-10T16:00:00.000Z",
+  "__export_date": "2026-03-11T14:00:00.000Z",
   "__export_source": "insomnia.importers:v0.1.0",
   "resources": [
     {
@@ -18,6 +18,7 @@
       "name": "Local",
       "data": {
         "base_url": "http://localhost:3000/fhir",
+        "admin_url": "http://localhost:3000/administration",
         "patient_id": "1d5c8c6c-1405-4c69-80d0-3f1734451444",
         "practitioner_id": "033049df-cf26-4212-804e-e107cef1bc0c"
       }
@@ -1096,6 +1097,139 @@
         "mimeType": "application/json",
         "text": "{\n  \"resourceType\": \"Bundle\",\n  \"type\": \"transaction\",\n  \"entry\": [\n    {\n      \"fullUrl\": \"urn:uuid:patient-1\",\n      \"request\": { \"method\": \"POST\", \"url\": \"Patient\" },\n      \"resource\": { \"resourceType\": \"Patient\", \"name\": [{ \"family\": \"Transaction\" }] }\n    },\n    {\n      \"request\": { \"method\": \"POST\", \"url\": \"Observation\" },\n      \"resource\": {\n        \"resourceType\": \"Observation\",\n        \"status\": \"final\",\n        \"code\": { \"coding\": [{ \"system\": \"http://loinc.org\", \"code\": \"85354-9\" }] },\n        \"subject\": { \"reference\": \"urn:uuid:patient-1\" }\n      }\n    }\n  ]\n}"
       }
+    },
+
+    {
+      "_id": "fld_administration",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Administration (Conformance)"
+    },
+    {
+      "_id": "req_admin_search_sd",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search StructureDefinitions",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/StructureDefinition?_count=10",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_search_sd_url",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search StructureDefinition by URL",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/StructureDefinition?url=http://nictiz.nl/fhir/StructureDefinition/nl-core-Patient",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_search_sd_name",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search StructureDefinition by name",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/StructureDefinition?name=BodyWeight",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_read_sd",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Read StructureDefinition by id",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/StructureDefinition/nl-core-Patient",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_search_vs",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search ValueSets",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/ValueSet?_count=10",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_search_vs_url",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search ValueSet by URL",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/ValueSet?url=http://hl7.org/fhir/ValueSet/observation-status",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_search_cs",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search CodeSystems",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/CodeSystem?_count=10",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_search_cs_url",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search CodeSystem by URL",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/CodeSystem?url=http://loinc.org",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_search_sp",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search SearchParameters",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/SearchParameter?_count=10",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_search_sp_name",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Search SearchParameter by name",
+      "method": "GET",
+      "url": "{{ _.admin_url }}/SearchParameter?name=birthdate",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_create_sd",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Create custom StructureDefinition",
+      "method": "POST",
+      "url": "{{ _.admin_url }}/StructureDefinition",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"StructureDefinition\",\n  \"url\": \"http://example.org/fhir/StructureDefinition/custom-patient\",\n  \"name\": \"CustomPatient\",\n  \"status\": \"draft\",\n  \"kind\": \"resource\",\n  \"abstract\": false,\n  \"type\": \"Patient\",\n  \"baseDefinition\": \"http://hl7.org/fhir/StructureDefinition/Patient\",\n  \"derivation\": \"constraint\"\n}"
+      }
+    },
+    {
+      "_id": "req_admin_delete_sd",
+      "_type": "request",
+      "parentId": "fld_administration",
+      "name": "Delete StructureDefinition",
+      "method": "DELETE",
+      "url": "{{ _.admin_url }}/StructureDefinition/RESOURCE_ID",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
     }
   ]
 }

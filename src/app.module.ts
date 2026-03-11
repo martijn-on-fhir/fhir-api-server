@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdministrationModule } from './administration/administration.module';
 import { FhirModule } from './fhir/fhir.module';
 import { FhirThrottlerGuard } from './fhir/guards/fhir-throttler.guard';
 import { SmartAuthGuard } from './fhir/guards/smart-auth.guard';
@@ -28,6 +29,7 @@ import { CorrelationMiddleware } from './logging/correlation.middleware';
     }]),
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/fhir'),
     FhirModule,
+    AdministrationModule,
     SmartModule,
     HealthModule,
   ],
