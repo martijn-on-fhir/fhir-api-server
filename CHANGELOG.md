@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.6.0...fhir-api-server-v0.7.0) (2026-03-11)
+
+
+### Features
+
+* add /administration/metadata CapabilityStatement endpoint ([715861b](https://github.com/martijn-on-fhir/fhir-api-server/commit/715861b9513e65558d6444b74c0a991cda5bc60c))
+* add AuditEvent for read, vread and search interactions ([2ee8a27](https://github.com/martijn-on-fhir/fhir-api-server/commit/2ee8a27a6186bcb3a18646d963d333e68120d19e))
+* add AuditEvent resource generation for FHIR mutations ([d320d14](https://github.com/martijn-on-fhir/fhir-api-server/commit/d320d14af6a5ecdf3b07917a0b73eb561db52526))
+* improve search pagination and add competitor analysis ([5319476](https://github.com/martijn-on-fhir/fhir-api-server/commit/5319476dc04727cb4d4ff2037a384cf3a5059ba8))
+* switch validator to MongoDB source, remove filesystem dependencies ([50ac353](https://github.com/martijn-on-fhir/fhir-api-server/commit/50ac35399b221ba037be4b1f1516a2ad85e41cad))
+
+
+### Bug Fixes
+
+* resolve e2e test failures and remove obsolete terminology files ([8007aa7](https://github.com/martijn-on-fhir/fhir-api-server/commit/8007aa7632bac9befba3a5af8f8e01612d2e1159))
+
+
+### Refactoring
+
+* move SearchParameterRegistry to MongoDB-only, remove data/ directory ([6347b46](https://github.com/martijn-on-fhir/fhir-api-server/commit/6347b462c97f56aee888ce35a01e3cb6fd57c54b))
+
 ## [0.6.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.5.0...fhir-api-server-v0.6.0) (2026-03-11)
 
 
