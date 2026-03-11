@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpS
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
+import { AuditEventService } from './audit/audit-event.service';
 import { buildCapabilityStatement } from './capability-statement.builder';
 import { FhirService } from './fhir.service';
 import { sanitizeSearchParams } from './search/sanitize';
@@ -22,7 +23,8 @@ export class FhirController {
    * @param fhirService - Service handling resource persistence.
    * @param validationPipe - Pipe that validates incoming resource bodies against FHIR R4 rules.
    */
-  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig) {}
+  // eslint-disable-next-line max-len
+  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig, private readonly auditService: AuditEventService) {}
 
   /**
    * Derives the FHIR base URL from the incoming request, respecting reverse proxy headers.
@@ -306,6 +308,7 @@ export class FhirController {
 
     const resource = await this.fhirService.vRead(resourceType, id, versionId);
     const baseUrl = this.getBaseUrl(req);
+    this.auditService.recordAudit('vread', resourceType, id, req);
 
     res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${versionId}"`).json(this.resolveReferences(resource, baseUrl));
   }
@@ -329,6 +332,7 @@ export class FhirController {
 
     const resource = await this.fhirService.findById(resourceType, id);
     const baseUrl = this.getBaseUrl(req);
+    this.auditService.recordAudit('read', resourceType, id, req);
 
     res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
   }
@@ -559,6 +563,7 @@ export class FhirController {
     }
 
     const bundle = new Bundle({ type: BundleType.Searchset, total, link: links, entry: entries });
+    this.auditService.recordAudit('search', resourceType, null, req);
 
     return res.set('Content-Type', 'application/fhir+json').json(bundle);
   }
