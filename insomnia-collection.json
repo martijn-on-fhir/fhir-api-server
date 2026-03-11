@@ -1240,6 +1240,83 @@
       "url": "{{ _.admin_url }}/StructureDefinition/RESOURCE_ID",
       "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
       "body": {}
+    },
+
+    {
+      "_id": "fld_audit",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "AuditEvent"
+    },
+    {
+      "_id": "req_audit_search",
+      "_type": "request",
+      "parentId": "fld_audit",
+      "name": "Search AuditEvents",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AuditEvent",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_audit_search_by_entity",
+      "_type": "request",
+      "parentId": "fld_audit",
+      "name": "Search by Entity (Patient)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AuditEvent?entity=Patient/{{ _.patient_id }}",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_audit_search_by_action",
+      "_type": "request",
+      "parentId": "fld_audit",
+      "name": "Search by Action (create)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AuditEvent?action=C",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_audit_search_by_date",
+      "_type": "request",
+      "parentId": "fld_audit",
+      "name": "Search by Date",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AuditEvent?date=ge2026-03-11",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_audit_search_by_subtype",
+      "_type": "request",
+      "parentId": "fld_audit",
+      "name": "Search by Subtype (read)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AuditEvent?subtype=read",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_audit_read",
+      "_type": "request",
+      "parentId": "fld_audit",
+      "name": "Read AuditEvent",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AuditEvent/AUDIT_EVENT_ID",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_audit_paginate",
+      "_type": "request",
+      "parentId": "fld_audit",
+      "name": "Paginate (page 2)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/AuditEvent?_count=10&_offset=10",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
     }
   ]
 }
