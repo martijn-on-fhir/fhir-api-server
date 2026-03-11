@@ -5,6 +5,7 @@ import * as request from 'supertest';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AppModule } from './../src/app.module';
+import { seedSearchParameters } from './helpers/seed-search-params';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -12,6 +13,7 @@ describe('AppController (e2e)', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
+    await seedSearchParameters(mongod.getUri());
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [MongooseModule.forRoot(mongod.getUri()), AppModule],

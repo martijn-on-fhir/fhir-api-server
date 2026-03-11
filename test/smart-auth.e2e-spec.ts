@@ -14,6 +14,7 @@ import { FhirModule } from '../src/fhir/fhir.module';
 import { SmartAuthGuard } from '../src/fhir/guards/smart-auth.guard';
 import { SMART_CONFIG, SmartConfig } from '../src/fhir/smart/smart-config';
 import { SmartModule } from '../src/fhir/smart/smart.module';
+import { seedSearchParameters } from './helpers/seed-search-params';
 
 /**
  * E2e tests for SMART on FHIR / OAuth2 authentication and authorization.
@@ -62,6 +63,7 @@ describe('SMART on FHIR Auth (e2e)', () => {
     };
 
     mongod = await MongoMemoryServer.create();
+    await seedSearchParameters(mongod.getUri());
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [EventEmitterModule.forRoot(), MongooseModule.forRoot(mongod.getUri()), FhirModule, SmartModule],

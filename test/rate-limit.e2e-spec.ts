@@ -9,6 +9,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { FhirModule } from '../src/fhir/fhir.module';
 import { FhirExceptionFilter } from '../src/fhir/filters/fhir-exception.filter';
 import { FhirThrottlerGuard } from '../src/fhir/guards/fhir-throttler.guard';
+import { seedSearchParameters } from './helpers/seed-search-params';
 
 describe('Rate Limiting (e2e)', () => {
   let app: INestApplication;
@@ -16,6 +17,7 @@ describe('Rate Limiting (e2e)', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
+    await seedSearchParameters(mongod.getUri());
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [

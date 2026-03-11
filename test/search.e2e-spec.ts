@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { FhirModule } from '../src/fhir/fhir.module';
 import { FhirExceptionFilter } from '../src/fhir/filters/fhir-exception.filter';
+import { seedSearchParameters } from './helpers/seed-search-params';
 
 describe('FHIR Search (e2e)', () => {
   let app: INestApplication;
@@ -22,6 +23,7 @@ describe('FHIR Search (e2e)', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
+    await seedSearchParameters(mongod.getUri());
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [EventEmitterModule.forRoot(), MongooseModule.forRoot(mongod.getUri()), FhirModule],
     }).compile();

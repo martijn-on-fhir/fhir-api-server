@@ -6,6 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { FhirModule } from '../src/fhir/fhir.module';
 import { FhirExceptionFilter } from '../src/fhir/filters/fhir-exception.filter';
+import { seedSearchParameters } from './helpers/seed-search-params';
 
 /** Helper to wait for async export job completion. */
 const pollUntilComplete = async (server: any, pollUrl: string, maxAttempts = 20): Promise<request.Response> => {
@@ -24,6 +25,7 @@ describe('Bulk Data Export $export (e2e)', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
+    await seedSearchParameters(mongod.getUri());
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [EventEmitterModule.forRoot(), MongooseModule.forRoot(mongod.getUri()), FhirModule],
     }).compile();
