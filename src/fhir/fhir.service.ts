@@ -93,7 +93,7 @@ export class FhirService {
     }
 
     const total = await this.resourceModel.countDocuments(filter).exec();
-    const count = params._count ? parseInt(params._count, 10) : 100;
+    const count = params._count ? parseInt(params._count, 10) : 10;
     query.limit(count);
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
@@ -164,7 +164,7 @@ export class FhirService {
     }
 
     const total = await this.historyModel.countDocuments(filter).exec();
-    const count = params._count ? parseInt(params._count, 10) : 100;
+    const count = params._count ? parseInt(params._count, 10) : 10;
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
     const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();
@@ -188,7 +188,7 @@ export class FhirService {
     }
 
     const total = await this.historyModel.countDocuments(filter).exec();
-    const count = params._count ? parseInt(params._count, 10) : 100;
+    const count = params._count ? parseInt(params._count, 10) : 10;
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
     const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();
@@ -212,7 +212,7 @@ export class FhirService {
     }
 
     const total = await this.historyModel.countDocuments(filter).exec();
-    const count = params._count ? parseInt(params._count, 10) : 100;
+    const count = params._count ? parseInt(params._count, 10) : 10;
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
     const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();

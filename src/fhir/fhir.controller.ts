@@ -548,18 +548,25 @@ export class FhirController {
       entries.push(new BundleEntry({ fullUrl: `${baseUrl}/${r.resourceType}/${r.id}`, resource: transformResource(r), search: new BundleEntrySearch({ mode: SearchEntryMode.Include }) }));
     }
 
-    // Pagination links
-    const count = params._count ? parseInt(params._count, 10) : 100;
+    // Pagination links (FHIR spec: self, first, previous, next, last)
+    const count = params._count ? parseInt(params._count, 10) : 10;
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
+    const paginationParams = { ...params, _count: String(count) };
     const links = [new BundleLink({ relation: 'self', url: selfUrl })];
+    links.push(new BundleLink({ relation: 'first', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: '0' }) }));
 
     if (offset > 0) {
       const prevOffset = Math.max(0, offset - count);
-      links.push(new BundleLink({ relation: 'previous', url: this.buildSelfUrl(baseUrl, resourceType, { ...params, _offset: String(prevOffset) }) }));
+      links.push(new BundleLink({ relation: 'previous', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(prevOffset) }) }));
     }
 
     if (offset + count < total) {
-      links.push(new BundleLink({ relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, { ...params, _offset: String(offset + count) }) }));
+      links.push(new BundleLink({ relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(offset + count) }) }));
+    }
+
+    if (total > 0) {
+      const lastOffset = Math.max(0, Math.floor((total - 1) / count) * count);
+      links.push(new BundleLink({ relation: 'last', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(lastOffset) }) }));
     }
 
     const bundle = new Bundle({ type: BundleType.Searchset, total, link: links, entry: entries });
