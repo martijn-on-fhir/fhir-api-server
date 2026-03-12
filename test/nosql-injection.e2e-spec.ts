@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import * as request from 'supertest';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -9,7 +10,7 @@ import { FhirExceptionFilter } from '../src/fhir/filters/fhir-exception.filter';
 import { seedSearchParameters } from './helpers/seed-search-params';
 
 describe('NoSQL Injection Prevention (e2e)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
   let mongod: MongoMemoryServer;
 
   beforeAll(async () => {
@@ -20,7 +21,8 @@ describe('NoSQL Injection Prevention (e2e)', () => {
       imports: [EventEmitterModule.forRoot(), MongooseModule.forRoot(mongod.getUri()), FhirModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication<NestExpressApplication>();
+    app.set('query parser', 'extended');
     app.useGlobalFilters(new FhirExceptionFilter());
     await app.init();
 

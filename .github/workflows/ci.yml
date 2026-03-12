@@ -18,8 +18,7 @@ jobs:
           cache: npm
       - run: npm ci
       # --omit=dev: devDependencies are not shipped to production
-      # TODO: change to --audit-level=high after NestJS 11 upgrade (fixes multer DoS CVEs)
-      - run: npm audit --omit=dev --audit-level=critical
+      - run: npm audit --omit=dev --audit-level=high
 
   lint:
     name: Lint

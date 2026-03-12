@@ -38,7 +38,7 @@ import { CorrelationMiddleware } from './logging/correlation.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CorrelationMiddleware).forRoutes('*');
+    consumer.apply(CorrelationMiddleware).forRoutes('{*splat}');
     consumer.apply(AuditMiddleware).forRoutes('fhir');
   }
 }

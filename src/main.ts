@@ -1,3 +1,4 @@
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
@@ -11,7 +12,10 @@ import { JsonLoggerService } from './logging/json-logger.service';
 const bootstrap = async () => {
 
   const useJsonLogger = process.env.LOG_FORMAT === 'json';
-  const app = await NestFactory.create(AppModule, useJsonLogger ? { logger: new JsonLoggerService() } : {});
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, useJsonLogger ? { logger: new JsonLoggerService() } : {});
+
+  // Express v5 uses 'simple' query parser by default — use 'extended' for nested object/array support (e.g. ?filter[name]=John)
+  app.set('query parser', 'extended');
 
   app.use(helmet({
     contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], scriptSrc: ["'self'", "'unsafe-inline'"], styleSrc: ["'self'", "'unsafe-inline'"] } },
