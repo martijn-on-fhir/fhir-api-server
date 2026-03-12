@@ -15,8 +15,11 @@ describe('AppController (e2e)', () => {
     mongod = await MongoMemoryServer.create();
     await seedSearchParameters(mongod.getUri());
 
+    // Set MONGODB_URI so AppModule's MongooseModule.forRoot() uses the in-memory server
+    process.env.MONGODB_URI = mongod.getUri();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [MongooseModule.forRoot(mongod.getUri()), AppModule],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
