@@ -174,6 +174,46 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 
 SMART settings can also be configured in `config/app-config.json` (see `config/app-config.example.json`). Environment variables take precedence.
 
+## STU3 → R4 Migration
+
+A standalone CLI script is included for migrating FHIR STU3 resources (nl-core profiles) to R4. It works directly MongoDB-to-MongoDB for maximum performance.
+
+### Supported Resource Types
+
+Practitioner (+ PractitionerRole extraction), Patient, Organization, Location, Condition, Consent, AllergyIntolerance
+
+### Usage
+
+```bash
+npx ts-node scripts/migrate-stu3/index.ts \
+  --source mongodb://klant-db:27017/fhir-stu3 \
+  --target mongodb://localhost:27017/fhir \
+  --types Practitioner,Patient,Condition \
+  --batch-size 500 \
+  --dry-run
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--source` | (required) | Source MongoDB URI with STU3 data |
+| `--target` | `mongodb://localhost:27017/fhir` | Target MongoDB URI (R4 server) |
+| `--types` | all supported | Comma-separated resource types to migrate |
+| `--source-collection` | `fhir_resources` | Collection name in source DB |
+| `--batch-size` | `500` | Resources per batch |
+| `--dry-run` | `false` | Log what would happen without writing |
+
+### Key Conversions
+
+- **All resources**: profile URLs rewritten from `fhir.nl` to `nictiz.nl`, extension URLs updated, meta reset to versionId `1`
+- **Practitioner**: embedded `role[]` extracted into separate PractitionerRole resources with deterministic IDs
+- **Condition**: `assertedDate` → `recordedDate`, `clinicalStatus`/`verificationStatus` string → CodeableConcept
+- **Consent**: `except[]` → `provision.provision[]`, `period`/`actor` moved into `provision`
+- **AllergyIntolerance**: `clinicalStatus`/`verificationStatus` string → CodeableConcept
+- **Location**: `type` single → array
+- **Patient**: `animal` component removed
+
+The script is idempotent (upsert on `{resourceType, id}`), preserves original IDs to maintain referential integrity, and continues on per-resource errors.
+
 ## License
 
 UNLICENSED
