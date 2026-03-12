@@ -134,6 +134,7 @@ export class FhirController {
   @ApiOperation({summary: '$expunge (system)', description: 'Physically purge deleted resources and/or old history versions across all resource types.'})
   @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
   async expungeSystem(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+    body = this.parseRequestBody(req);
     const params = this.extractExpungeParams(body);
     const result = await this.fhirService.expunge(params);
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s)`})]});
@@ -180,6 +181,7 @@ export class FhirController {
   @ApiResponse({ status: 200, description: 'OperationOutcome with validation results' })
   async validateType(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
+    body = this.parseRequestBody(req);
     const { resource, profile } = this.extractValidateParams(body);
 
     if (!resource) {
@@ -215,6 +217,7 @@ export class FhirController {
   @ApiResponse({ status: 200, description: 'OperationOutcome with validation results' })
   async validateInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
+    body = this.parseRequestBody(req);
     const { resource: bodyResource, profile } = this.extractValidateParams(body);
 
     // Use provided resource or fall back to the stored one
@@ -241,6 +244,7 @@ export class FhirController {
   @ApiParam({name: 'resourceType', example: 'Patient'})
   @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
   async expungeType(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    body = this.parseRequestBody(req);
     const params = this.extractExpungeParams(body);
     const result = await this.fhirService.expunge({...params, resourceType});
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s) for ${resourceType}`})]});
@@ -256,6 +260,7 @@ export class FhirController {
   @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
   @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
   async expungeInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    body = this.parseRequestBody(req);
     const params = this.extractExpungeParams(body);
     const result = await this.fhirService.expunge({...params, resourceType, id});
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s) for ${resourceType}/${id}`})]});
@@ -296,6 +301,7 @@ export class FhirController {
   @ApiParam({name: 'resourceType', example: 'Patient'})
   @ApiResponse({status: 200, description: 'Parameters resource with diff entries'})
   async diffType(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    body = this.parseRequestBody(req);
     if (!body || body.resourceType !== 'Parameters') {
       const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: 'Request body must be a Parameters resource with "left" and "right" resource parameters'})]});
 
@@ -364,6 +370,7 @@ export class FhirController {
   @ApiResponse({ status: 200, description: 'Parameters resource with updated Meta' })
   async metaAdd(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
+    body = this.parseRequestBody(req);
     const inputMeta = body?.resourceType === 'Parameters' ? body.parameter?.find((p: any) => p.name === 'meta')?.valueMeta : body;
     const updatedMeta = await this.fhirService.metaAdd(resourceType, id, inputMeta || {});
 
@@ -378,6 +385,7 @@ export class FhirController {
   @ApiResponse({ status: 200, description: 'Parameters resource with updated Meta' })
   async metaDelete(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
+    body = this.parseRequestBody(req);
     const inputMeta = body?.resourceType === 'Parameters' ? body.parameter?.find((p: any) => p.name === 'meta')?.valueMeta : body;
     const updatedMeta = await this.fhirService.metaDelete(resourceType, id, inputMeta || {});
 
@@ -560,6 +568,7 @@ export class FhirController {
   @ApiResponse({ status: 409, description: 'OperationOutcome (multiple matches)' })
   async create(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
+    body = this.parseRequestBody(req);
     const baseUrl = this.getBaseUrl(req);
 
     await this.validationPipe.transform(body);
@@ -601,6 +610,7 @@ export class FhirController {
   @ApiResponse({ status: 409, description: 'OperationOutcome (multiple matches)' })
   async conditionalUpdate(@Param('resourceType') resourceType: string, @Body() body: any, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
+    body = this.parseRequestBody(req);
     await this.validationPipe.transform(body);
 
     const baseUrl = this.getBaseUrl(req);
@@ -632,6 +642,7 @@ export class FhirController {
   @ApiResponse({ status: 412, description: 'OperationOutcome (version conflict)' })
   async update(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
+    body = this.parseRequestBody(req);
     await this.validationPipe.transform(body);
 
     // If-Match: optimistic locking
@@ -664,6 +675,7 @@ export class FhirController {
   @ApiResponse({status: 404, description: 'OperationOutcome (not found)'})
   @ApiResponse({status: 412, description: 'OperationOutcome (version conflict)'})
   async patch(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    body = this.parseRequestBody(req);
     const ifMatch = req.headers['if-match'] as string;
 
     if (ifMatch) {
