@@ -11,11 +11,44 @@ A generic FHIR R4 REST API server built with NestJS 10, TypeScript and MongoDB. 
 ### FHIR REST API
 - Generic CRUD endpoints for any FHIR R4 resource type (`GET`, `POST`, `PUT`, `DELETE`)
 - FHIR-conformant responses: `Bundle` (searchset), `OperationOutcome`, `ETag`, `Location` headers
-- Content-Type: `application/fhir+json`
+- Content negotiation: `application/fhir+json` and `application/fhir+xml` via `Accept` header or `_format` parameter
+- PATCH: JSON Patch (RFC 6902) and FHIRPath Patch (Parameters resource)
 - Version history: `vRead`, instance/type/system `_history`, soft deletes
-- Conditional CRUD: `If-None-Exist`, `If-Match` headers
-- Batch and Transaction Bundle support
+- Conditional CRUD: `If-None-Exist`, `If-Match`, conditional update/delete
+- Batch and Transaction Bundle support with `urn:uuid` reference resolution
+- Referential integrity: delete blocked when resource is still referenced
+- Cascading deletes (`_cascade=delete`)
 - Absolute reference resolution in output (reverse proxy aware)
+- Binary resource support with raw content negotiation
+
+### Search
+- All parameter types: string, token, reference, date, number, quantity, composite, URI
+- Modifiers: `:exact`, `:contains`, `:missing`, `:not`, `:text`, `:of-type`, `:above`, `:below`
+- Prefixes for date/number/quantity: `eq`, `ne`, `gt`, `lt`, `ge`, `le`, `sa`, `eb`, `ap`
+- `_include` / `_revinclude` with `:iterate`
+- Chained search (`subject:Patient.name`)
+- Reverse chaining (`_has:Observation:subject:code`)
+- `_sort`, `_count`, `_offset`, `_summary`, `_elements`, `_text`, `_content`
+- `POST _search` with form-urlencoded body
+- Pagination with `next`, `previous`, `first`, `last` links
+- Compartment search: `Patient`, `Practitioner`, `Encounter` compartments
+- Custom SearchParameter resources with `$reindex` operation
+- UCUM unit conversion: quantity search automatically matches equivalent units (e.g. "1 kg" matches "1000 g", "1000000 mg")
+
+### Operations
+- `$validate` — type and instance level, with nl-core profile support
+- `$everything` — Patient compartment linked resources
+- `$bgz` — BgZ (Basisgegevensset Zorg): structured retrieval of 26 zibs
+- `$export` — Bulk Data Export: async NDJSON processing with kick-off, polling, download and cancel
+- `$meta`, `$meta-add`, `$meta-delete` — resource metadata management
+- `$lastn` — last N observations per code, with patient/category/code filters
+- `$expunge` — hard delete / physical purge at instance, type and system level (GDPR/AVG compliance)
+- `$diff` — compare two versions of a resource or two arbitrary resources
+- `$expand` — ValueSet expansion by URL or id, with filter and pagination
+- `$lookup` — CodeSystem code lookup with designations and properties
+- `$translate` — ConceptMap code translation
+- `$reindex` — reload custom search parameter definitions
+- `CapabilityStatement` at `/fhir/metadata`
 
 ### Administration API (Firely-style)
 - Separate `/administration` endpoint for conformance resources
@@ -32,42 +65,30 @@ A generic FHIR R4 REST API server built with NestJS 10, TypeScript and MongoDB. 
 - Externally resolved resources (Art-Decor, Nictiz) auto-persisted back to MongoDB
 - `$validate` operation at type and instance level
 
-### Search
-- All parameter types: string, token, reference, date, number, quantity, composite, URI
-- Modifiers: `:exact`, `:contains`, `:missing`, `:not`, `:text`, `:of-type`, `:above`, `:below`
-- Prefixes for date/number/quantity: `eq`, `ne`, `gt`, `lt`, `ge`, `le`
-- `_include` / `_revinclude` with `:iterate`
-- Chained search (`subject:Patient.name`)
-- Reverse chaining (`_has:Observation:subject:code`)
-- `_sort`, `_count`, `_offset`, `_summary`, `_elements`
-
-### Operations
-- `$validate` — type and instance level, with nl-core profile support
-- `$everything` — Patient compartment linked resources
-- `$bgz` — BgZ (Basisgegevensset Zorg): structured retrieval of 26 zibs
-- `$export` — Bulk Data Export: async NDJSON processing with kick-off, polling, download and cancel
-- `$meta`, `$meta-add`, `$meta-delete` — resource metadata management
-- `CapabilityStatement` at `/fhir/metadata`
-
 ### Security
 - **SMART on FHIR / OAuth2** — JWT Bearer token validation via JWKS, SMART scope enforcement per resource type (toggleable via config)
 - `/.well-known/smart-configuration` endpoint
 - Rate limiting (short + long window)
 - NoSQL injection protection
+- CORS configuration for browser-based SMART apps
 - CapabilityStatement reflects security settings when SMART is enabled
 
 ### Subscriptions
 - FHIR R4 Subscription resources with criteria-based matching
 - REST-hook channel notifications on resource create/update/delete
 
+### Audit
+- Automatic AuditEvent generation for read, vread, search, create, update and delete interactions
+- Stored as FHIR AuditEvent resources, queryable via search
+
 ### Infrastructure
 - Structured JSON logging with correlation IDs
-- Audit middleware for mutation tracking
 - Health check endpoint (`/health`)
 - MongoDB compound indexes for common search patterns
 - Docker + docker-compose support
 - GitHub Actions CI/CD (lint, test, build, Docker)
 - Automated releases via release-please
+- Swagger/OpenAPI documentation + Insomnia collection
 
 ## Architecture
 
@@ -130,6 +151,8 @@ npx jest --testPathPattern=<pattern>
 
 Swagger UI is available at `http://localhost:3000/api` when the server is running.
 
+An [Insomnia collection](insomnia-collection.json) is included with example requests for all features.
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -147,6 +170,7 @@ Swagger UI is available at `http://localhost:3000/api` when the server is runnin
 | `SMART_SCOPE_CLAIM` | `scope` | JWT claim containing SMART scopes |
 | `SMART_AUTHORIZE_URL` | - | OAuth2 authorization endpoint |
 | `SMART_TOKEN_URL` | - | OAuth2 token endpoint |
+| `CORS_ORIGIN` | `*` | Allowed CORS origins (comma-separated) |
 
 SMART settings can also be configured in `config/app-config.json` (see `config/app-config.example.json`). Environment variables take precedence.
 
