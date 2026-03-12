@@ -866,6 +866,41 @@ codeFilter['code.coding.system'] = codeSystem;
   }
 
   /**
+   * Cascade delete: deletes the resource and all resources that reference it.
+   * Recursively deletes dependent resources depth-first.
+   * @returns The total number of deleted resources.
+   */
+  async cascadeDelete(resourceType: string, id: string, session?: ClientSession, req?: any): Promise<number> {
+    const ref = `${resourceType}/${id}`;
+    const allDocs = await this.resourceModel.find({resourceType: {$nin: ['AuditEvent', 'Provenance']}}).lean().exec();
+    const dependents = allDocs.filter((doc) => this.containsReference(doc, ref) && !((doc as any).resourceType === resourceType && (doc as any).id === id));
+
+    let deleted = 0;
+
+    // Delete dependents first (depth-first)
+    for (const dep of dependents) {
+      deleted += await this.cascadeDelete((dep as any).resourceType, (dep as any).id, session, req);
+    }
+
+    // Delete the focal resource (skip referential integrity check)
+    const existing = await this.resourceModel.findOne({resourceType, id}).exec();
+
+    if (existing) {
+      const currentVersion = parseInt(existing.meta.versionId, 10);
+      const now = new Date().toISOString();
+      const deleteVersionId = String(currentVersion + 1);
+      const meta = {versionId: deleteVersionId, lastUpdated: now, profile: existing.meta.profile, tag: existing.meta.tag, security: existing.meta.security};
+      const historyEntry = {resourceType, id, meta, request: {method: 'DELETE', url: `${resourceType}/${id}`}, response: {status: '204 No Content'}, _deleted: true};
+      await new this.historyModel(historyEntry).save({session});
+      await this.resourceModel.deleteOne({resourceType, id}, {session}).exec();
+      this.emitResourceEvent('delete', resourceType, id, null, req);
+      deleted++;
+    }
+
+    return deleted;
+  }
+
+  /**
    * Checks referential integrity: verifies that no other resource references the given resource.
    * @throws ConflictException if the resource is still referenced by other resources.
    */

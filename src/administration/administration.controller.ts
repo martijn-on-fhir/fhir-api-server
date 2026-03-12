@@ -23,6 +23,7 @@ export class AdministrationController {
   @ApiOperation({ summary: 'CapabilityStatement', description: 'Returns the CapabilityStatement for the administration endpoint describing supported conformance resource types and interactions.' })
   @ApiResponse({ status: 200, description: 'CapabilityStatement resource' })
   metadata(@Req() req: Request, @Res() res: Response) {
+
     const baseUrl = this.getBaseUrl(req);
     const conformanceTypes = ['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter', 'CompartmentDefinition', 'OperationDefinition', 'NamingSystem', 'ConceptMap', 'ImplementationGuide'];
     const interactions = ['read', 'create', 'update', 'delete', 'search-type'];
@@ -67,7 +68,9 @@ export class AdministrationController {
   @ApiQuery({name: '_count', required: false, type: Number})
   @ApiQuery({name: '_offset', required: false, type: Number})
   @ApiResponse({status: 200, description: 'Bundle (searchset)'})
-  async search(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
+  async search(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request,
+               @Res() res: Response) {
+
     const {resources, total} = await this.administrationService.search(resourceType, queryParams);
     const baseUrl = this.getBaseUrl(req);
 
@@ -92,6 +95,7 @@ export class AdministrationController {
   @ApiResponse({status: 200, description: 'The conformance resource'})
   @ApiResponse({status: 404, description: 'Not found'})
   async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
+
     const resource = await this.administrationService.findById(resourceType, id);
     const obj = resource.toObject ? resource.toObject() : resource;
     const {_id, __v, ...fhir} = obj;
@@ -103,6 +107,7 @@ export class AdministrationController {
   @ApiParam({name: 'resourceType', example: 'StructureDefinition'})
   @ApiResponse({status: 201, description: 'Created'})
   async create(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+
     const resource = await this.administrationService.create(resourceType, body);
     const baseUrl = this.getBaseUrl(req);
     const obj = resource.toObject ? resource.toObject() : resource;
@@ -116,12 +121,12 @@ export class AdministrationController {
   @ApiParam({name: 'id'})
   @ApiResponse({status: 200, description: 'Updated'})
   async update(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+
     const resource = await this.administrationService.update(resourceType, id, body);
     const obj = resource.toObject ? resource.toObject() : resource;
     const {_id, __v, ...fhir} = obj;
     res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${fhir.meta.versionId}"`).json(fhir);
   }
-
 
   @Delete(':resourceType/:id')
   @ApiOperation({summary: 'Delete conformance resource'})
@@ -129,6 +134,7 @@ export class AdministrationController {
   @ApiParam({name: 'id'})
   @ApiResponse({status: 200, description: 'Deleted'})
   async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
+
     await this.administrationService.delete(resourceType, id);
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted`})]});
     res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);

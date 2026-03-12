@@ -26,22 +26,25 @@ export class AuditEventService {
 
   private readonly logger = new Logger(AuditEventService.name);
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {}
+  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {
+  }
 
   @OnEvent('fhir.resource.changed')
   async handleResourceChanged(event: FhirResourceEvent & { req?: any }) {
+
     if (event.resourceType === 'AuditEvent') {
-return;
-}
+      return;
+    }
 
     await this.recordAudit(event.action, event.resourceType, event.id, event.req);
   }
 
   /** Record an AuditEvent for any FHIR interaction (read, search, create, update, delete). */
   async recordAudit(action: string, resourceType: string, resourceId: string | null, req?: any) {
+
     if (resourceType === 'AuditEvent') {
-return;
-}
+      return;
+    }
 
     try {
       const now = new Date().toISOString();
@@ -68,6 +71,7 @@ return;
 
       await new this.resourceModel(auditEvent).save();
       this.logger.debug(`AuditEvent created: ${action} ${resourceType}${resourceId ? '/' + resourceId : ''}`);
+
     } catch (err) {
       this.logger.error(`Failed to create AuditEvent: ${err.message}`);
     }
@@ -82,8 +86,8 @@ return;
       agent.who = {display: user.sub || 'unknown'};
 
       if (user.iss) {
-agent.who.identifier = {system: user.iss, value: user.sub};
-}
+        agent.who.identifier = {system: user.iss, value: user.sub};
+      }
 
       agent.name = user.name || user.sub;
     } else {
@@ -93,14 +97,14 @@ agent.who.identifier = {system: user.iss, value: user.sub};
     // Client IP and user-agent
     if (req) {
       if (req.ip || req.socket?.remoteAddress) {
-agent.network = {address: req.ip || req.socket.remoteAddress, type: '2'};
-}
+        agent.network = {address: req.ip || req.socket.remoteAddress, type: '2'};
+      }
 
       const userAgent = req.get?.('user-agent');
 
       if (userAgent) {
-agent.policy = [userAgent];
-}
+        agent.policy = [userAgent];
+      }
     }
 
     return agent;

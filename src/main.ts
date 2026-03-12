@@ -20,6 +20,8 @@ const bootstrap = async () => {
   });
 
   app.use(express.json({ type: ['application/json', 'application/fhir+json', 'application/json-patch+json'] }));
+  app.use(express.text({ type: ['application/fhir+xml', 'application/xml'] }));
+  app.use(express.raw({ type: ['application/octet-stream'], limit: '50mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.useGlobalFilters(new FhirExceptionFilter());
 

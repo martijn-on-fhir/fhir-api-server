@@ -30,3 +30,4 @@ Standard NestJS module structure:
 - ESLint: `@typescript-eslint/recommended` + Prettier integration
 - `no-explicit-any` is allowed (rule is off)
 - Strict null checks are disabled in tsconfig
+- Add proper JSDoc comments above all functions and class properties

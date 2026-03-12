@@ -33,6 +33,10 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | Terminology Services: $expand, $lookup, $translate | ✅ |
 | $lastn (Observation) — laatste N per code | ✅ |
 | Referential Integrity — blokkeer delete bij referenties | ✅ |
+| XML Format — content negotiation via Accept header en `_format` parameter | ✅ |
+| Binary Resource — raw content negotiation + FHIR JSON/XML | ✅ |
+| Custom SearchParameters + $reindex operatie | ✅ |
+| Cascading Deletes (`_cascade=delete`) | ✅ |
 
 ## Ontbrekende features
 
@@ -43,8 +47,8 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | ~~1~~ | ~~**PATCH**~~ | | | | | | ~~Geïmplementeerd: JSON Patch + FHIRPath Patch~~ |
 | ~~2~~ | ~~**Compartment Search**~~ | | | | | | ~~Geïmplementeerd: Patient, Practitioner, Encounter compartments~~ |
 | ~~3~~ | ~~**Terminology Services**~~ | | | | | | ~~Geïmplementeerd: $expand, $lookup, $translate~~ |
-| 4 | **XML Format** | ✅ | ✅ | ✅ | ✅ | ✅ | `application/fhir+xml` + content negotiation via `Accept` header en `_format` parameter. FHIR spec beveelt beide formats sterk aan. |
-| 5 | **Binary Resource** | ✅ | ✅ | ✅ | ✅ | ✅ | Speciale content-type handling: FHIR JSON bij `Accept: application/fhir+json`, ruwe content bij eigen MIME type. |
+| ~~4~~ | ~~**XML Format**~~ | | | | | | ~~Geïmplementeerd: content negotiation via Accept header en _format parameter~~ |
+| ~~5~~ | ~~**Binary Resource**~~ | | | | | | ~~Geïmplementeerd: raw content bij eigen MIME type, FHIR JSON/XML bij FHIR content types~~ |
 | ~~6~~ | ~~**Referential Integrity**~~ | | | | | | ~~Geïmplementeerd: delete geblokkeerd als resource nog gerefereerd wordt~~ |
 
 ### Medium prioriteit — 3-4 concurrenten hebben dit
@@ -52,8 +56,8 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | # | Feature | Firely | HAPI | IBM | Google | Azure | Beschrijving |
 |---|---------|--------|------|-----|--------|-------|-------------|
 | ~~7~~ | ~~**$lastn**~~ | | | | | | ~~Geïmplementeerd: Observation/$lastn met max, patient, code, category filters~~ |
-| 8 | **Custom SearchParameters** | ✅ | ✅ | ✅ | — | ✅ | Runtime-defined search parameters via SearchParameter resources + reindexering van bestaande data. |
-| 9 | **Cascading Deletes** | ✅ | ✅ | — | — | ✅ | `_cascade=delete` parameter: verwijder automatisch afhankelijke resources mee. |
+| ~~8~~ | ~~**Custom SearchParameters**~~ | | | | | | ~~Geïmplementeerd: runtime SearchParameter resources + $reindex operatie~~ |
+| ~~9~~ | ~~**Cascading Deletes**~~ | | | | | | ~~Geïmplementeerd: _cascade=delete verwijdert afhankelijke resources recursief~~ |
 | ~~10~~ | ~~**CORS**~~ | | | | | | ~~Geïmplementeerd: configureerbaar via CORS_ORIGIN env var~~ |
 | 11 | **GraphQL** | ✅ | ✅ | — | ✅ | — | Alternatieve query interface per FHIR spec. Client vraagt precies de velden op die nodig zijn. |
 | 12 | **Multi-tenancy** | — | ✅ | ✅ | — | — | Meerdere geïsoleerde tenants op één server-instantie met gescheiden datapools. |
@@ -63,7 +67,7 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | # | Feature | Firely | HAPI | IBM | Google | Azure | Beschrijving |
 |---|---------|--------|------|-----|--------|-------|-------------|
 | 13 | **$expunge** | — | ✅ | ✅ | — | — | Hard delete / fysieke purge. Belangrijk voor AVG/GDPR compliance. |
-| 14 | **$reindex** | — | ✅ | ✅ | — | ✅ | Herindexering na SearchParameter wijzigingen of schema-updates. |
+| ~~14~~ | ~~**$reindex**~~ | | | | | | ~~Geïmplementeerd als onderdeel van Custom SearchParameters~~ |
 | ~~15~~ | ~~**$translate**~~ | | | | | | ~~Geïmplementeerd als onderdeel van Terminology Services~~ |
 | 16 | **Consent-based Access** | ✅ | ✅ | — | — | — | Toegangscontrole op basis van FHIR Consent resources. Gaat verder dan OAuth scopes. |
 | 17 | **UCUM Unit Conversion** | ✅ | ✅ | — | — | — | Automatische eenheidsconversie bij quantity search (bijv. "1 kg" matcht ook "1000 g"). |
@@ -82,11 +86,11 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 ~~5. **$lastn** — hoge klinische waarde, veel gevraagd door clients~~
 ~~6. **Referential Integrity** — data kwaliteit en consistentie~~
 
-### Fase 3 — Uitbreidingen
-7. **Binary Resource** handling
-8. **XML Format** support
-9. **Custom SearchParameters** + $reindex
-10. **Cascading Deletes**
+### ~~Fase 3 — Uitbreidingen~~ ✅ DONE
+~~7. **Binary Resource** handling~~
+~~8. **XML Format** support~~
+~~9. **Custom SearchParameters** + $reindex~~
+~~10. **Cascading Deletes**~~
 
 ### Fase 4 — Geavanceerd
 11. **$expunge** (GDPR)

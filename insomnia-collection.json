@@ -1678,6 +1678,164 @@
       "url": "{{ _.base_url }}/Observation/$lastn?category=vital-signs&max=5",
       "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
       "body": {}
+    },
+    {
+      "_id": "fld_xml",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "XML Format"
+    },
+    {
+      "_id": "req_xml_accept",
+      "_type": "request",
+      "parentId": "fld_xml",
+      "name": "Read Patient (XML via Accept header)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [{ "name": "Accept", "value": "application/fhir+xml" }],
+      "body": {}
+    },
+    {
+      "_id": "req_xml_format",
+      "_type": "request",
+      "parentId": "fld_xml",
+      "name": "Read Patient (XML via _format param)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}?_format=xml",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_xml_search",
+      "_type": "request",
+      "parentId": "fld_xml",
+      "name": "Search Patient (XML)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient?family=Doe&_format=xml",
+      "headers": [{ "name": "Accept", "value": "application/fhir+xml" }],
+      "body": {}
+    },
+    {
+      "_id": "req_xml_create",
+      "_type": "request",
+      "parentId": "fld_xml",
+      "name": "Create Patient (XML body)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+xml" },
+        { "name": "Accept", "value": "application/fhir+xml" }
+      ],
+      "body": {
+        "mimeType": "application/xml",
+        "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Patient xmlns=\"http://hl7.org/fhir\">\n  <name>\n    <family value=\"Test\"/>\n    <given value=\"XML\"/>\n  </name>\n  <gender value=\"unknown\"/>\n</Patient>"
+      }
+    },
+    {
+      "_id": "fld_binary",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Binary Resource"
+    },
+    {
+      "_id": "req_binary_create",
+      "_type": "request",
+      "parentId": "fld_binary",
+      "name": "Create Binary (FHIR JSON)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Binary",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Binary\",\n  \"contentType\": \"text/plain\",\n  \"data\": \"SGVsbG8gV29ybGQ=\"\n}"
+      }
+    },
+    {
+      "_id": "req_binary_read_fhir",
+      "_type": "request",
+      "parentId": "fld_binary",
+      "name": "Read Binary (FHIR JSON)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Binary/{{ _.patient_id }}",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_binary_read_raw",
+      "_type": "request",
+      "parentId": "fld_binary",
+      "name": "Read Binary (raw content)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Binary/{{ _.patient_id }}",
+      "headers": [{ "name": "Accept", "value": "text/plain" }],
+      "body": {}
+    },
+    {
+      "_id": "fld_reindex",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$reindex"
+    },
+    {
+      "_id": "req_reindex_all",
+      "_type": "request",
+      "parentId": "fld_reindex",
+      "name": "$reindex (all resource types)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/$reindex",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": []\n}"
+      }
+    },
+    {
+      "_id": "req_reindex_type",
+      "_type": "request",
+      "parentId": "fld_reindex",
+      "name": "$reindex (specific type — Patient)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/$reindex",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"resourceType\", \"valueString\": \"Patient\" }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "fld_cascade",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Cascading Delete"
+    },
+    {
+      "_id": "req_cascade_delete",
+      "_type": "request",
+      "parentId": "fld_cascade",
+      "name": "Delete Patient (cascade)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}?_cascade=delete",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_delete_blocked",
+      "_type": "request",
+      "parentId": "fld_cascade",
+      "name": "Delete Patient (blocked by referential integrity)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
     }
   ]
 }

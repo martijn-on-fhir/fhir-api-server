@@ -11,6 +11,7 @@ import { applySummary, applyElements } from './search/summary.utils';
 import { SmartConfig, SMART_CONFIG } from './smart/smart-config';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 import { FhirValidationService } from './validation/fhir-validation.service';
+import { fhirJsonToXml, fhirXmlToJson } from './xml/fhir-xml.utils';
 
 /** FHIR R4 Patient compartment definition: maps resource types to their reference search parameters that link to Patient. */
 const COMPARTMENT_PARAMS: Record<string, Record<string, string[]>> = {
@@ -110,6 +111,19 @@ export class FhirController {
     const meta = await this.fhirService.getAggregatedMeta();
 
     res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
+  }
+
+  /**
+   * FHIR $reindex operation. Reloads custom search parameters from the conformance_resources collection
+   * into the SearchParameterRegistry so they take effect immediately.
+   */
+  @Post('\\$reindex')
+  @ApiOperation({summary: '$reindex', description: 'Reloads search parameter definitions from the database. Use after creating or updating SearchParameter resources.'})
+  @ApiResponse({status: 200, description: 'OperationOutcome confirming reindex'})
+  async reindex(@Res() res: Response) {
+    const count = await this.searchRegistry.reload();
+    const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Search parameter registry reloaded: ${count} parameters active`})]});
+    res.set('Content-Type', 'application/fhir+json').json(outcome);
   }
 
   /**
@@ -424,13 +438,13 @@ export class FhirController {
   @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
   async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
-
-
     const resource = await this.fhirService.findById(resourceType, id);
     const baseUrl = this.getBaseUrl(req);
+    const fhir = this.toFhirJson(resource, baseUrl);
     this.auditService.recordAudit('read', resourceType, id, req);
 
-    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+    res.set('ETag', `W/"${resource.meta.versionId}"`);
+    this.sendFhirResponse(res, req, fhir);
   }
 
   /**
@@ -582,23 +596,27 @@ export class FhirController {
 
   /**
    * FHIR delete interaction. Removes the resource and returns an OperationOutcome.
-   * @param resourceType - The FHIR resource type.
-   * @param id - The logical resource id.
-   * @param res - The Express response.
+   * Supports _cascade=delete to automatically remove dependent resources.
+   * Without _cascade, delete is blocked if other resources reference this one.
    */
   @Delete(':resourceType/:id')
-  @ApiOperation({ summary: 'Delete', description: 'Delete a resource by logical id.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiResponse({ status: 200, description: 'OperationOutcome (success)' })
-  @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
-  async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+  @ApiOperation({summary: 'Delete', description: 'Delete a resource by logical id. Use _cascade=delete to remove dependent resources.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiQuery({name: '_cascade', required: false, description: 'Set to "delete" to cascade delete dependent resources'})
+  @ApiResponse({status: 200, description: 'OperationOutcome (success)'})
+  @ApiResponse({status: 404, description: 'OperationOutcome (not found)'})
+  @ApiResponse({status: 409, description: 'OperationOutcome (referential integrity violation)'})
+  async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query('_cascade') cascade: string, @Req() req: Request, @Res() res: Response) {
+    if (cascade === 'delete') {
+      const deleted = await this.fhirService.cascadeDelete(resourceType, id, undefined, req);
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Cascade deleted ${deleted} resource(s) including ${resourceType}/${id}`})]});
 
+      return res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
+    }
 
     await this.fhirService.delete(resourceType, id, undefined, req);
-
-    const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted` })] });
-
+    const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted`})]});
     res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
   }
 
@@ -779,6 +797,59 @@ export class FhirController {
   }
 
   /**
+   * Determines the desired response format from the Accept header or _format parameter.
+   * Returns 'xml' for XML format requests, 'json' otherwise.
+   */
+  private getResponseFormat(req: Request): 'json' | 'xml' {
+    const format = (req.query as any)._format;
+
+    if (format) {
+      const f = String(format).toLowerCase();
+
+      if (f.includes('xml') || f === 'xml') {
+return 'xml';
+}
+
+      return 'json';
+    }
+
+    const accept = req.headers.accept || '';
+
+    if (accept.includes('application/fhir+xml') || accept.includes('application/xml')) {
+return 'xml';
+}
+
+    return 'json';
+  }
+
+  /**
+   * Sends a FHIR resource response in the requested format (JSON or XML).
+   * For Binary resources with matching Accept header, returns raw content.
+   */
+  private sendFhirResponse(res: Response, req: Request, resource: any, statusCode = 200): void {
+    // Binary resource: serve raw content if Accept matches contentType
+    if (resource.resourceType === 'Binary' && resource.contentType && resource.data) {
+      const accept = req.headers.accept || '';
+
+      if (accept === resource.contentType || accept.includes(resource.contentType)) {
+        const buffer = Buffer.from(resource.data, 'base64');
+        res.status(statusCode).set('Content-Type', resource.contentType).send(buffer);
+
+        return;
+      }
+    }
+
+    const format = this.getResponseFormat(req);
+
+    if (format === 'xml') {
+      const xml = fhirJsonToXml(resource);
+      res.status(statusCode).set('Content-Type', 'application/fhir+xml').send(xml);
+    } else {
+      res.status(statusCode).set('Content-Type', 'application/fhir+json').json(resource);
+    }
+  }
+
+  /**
    * Recursively walks the object tree and converts all relative `reference` fields to absolute URLs.
    * E.g. `"Patient/123"` becomes `"http://localhost:3000/fhir/Patient/123"`.
    * References that already start with `http` are left unchanged.
@@ -811,5 +882,19 @@ export class FhirController {
     }
 
     return resolved;
+  }
+
+  /**
+   * Parses request body from XML to JSON if Content-Type is XML.
+   * Returns the body as-is for JSON content types.
+   */
+  private parseRequestBody(req: Request): any {
+    const contentType = (req.headers['content-type'] || '').toLowerCase();
+
+    if (contentType.includes('xml') && typeof req.body === 'string') {
+      return fhirXmlToJson(req.body);
+    }
+
+    return req.body;
   }
 }
