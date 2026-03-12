@@ -8,6 +8,7 @@ export class OrganizationMapper implements ResourceMapper {
   map(stu3: any): MapperResult {
     const resource = { ...stu3 };
     applyCommonTransforms(resource);
+
     return { resources: [resource], warnings: [] };
   }
 }

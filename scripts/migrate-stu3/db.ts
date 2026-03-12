@@ -1,4 +1,4 @@
-import { MongoClient, Db } from 'mongodb';
+import {MongoClient, Db} from 'mongodb';
 
 /** Holds the source and target MongoDB connections. */
 export interface DbConnections {
@@ -15,7 +15,8 @@ export async function connect(sourceUri: string, targetUri: string): Promise<DbC
   await Promise.all([sourceClient.connect(), targetClient.connect()]);
   const sourceDb = sourceClient.db();
   const targetDb = targetClient.db();
-  return { sourceClient, targetClient, sourceDb, targetDb };
+
+  return {sourceClient, targetClient, sourceDb, targetDb};
 }
 
 /** Close both MongoDB connections. */

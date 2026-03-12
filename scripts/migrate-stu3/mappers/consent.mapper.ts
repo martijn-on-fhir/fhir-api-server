@@ -1,5 +1,5 @@
-import { ResourceMapper, MapperResult } from '../mapper.interface';
-import { applyCommonTransforms } from '../transforms/common';
+import {ResourceMapper, MapperResult} from '../mapper.interface';
+import {applyCommonTransforms} from '../transforms/common';
 
 /** Maps STU3 Consent to R4. Key changes: except[] → provision.provision[], period/actor restructuring. */
 export class ConsentMapper implements ResourceMapper {
@@ -7,7 +7,7 @@ export class ConsentMapper implements ResourceMapper {
 
   map(stu3: any): MapperResult {
     const warnings: string[] = [];
-    const resource = { ...stu3 };
+    const resource = {...stu3};
 
     // Build provision from STU3 fields
     if (resource.except || resource.period || resource.actor) {
@@ -28,15 +28,40 @@ export class ConsentMapper implements ResourceMapper {
       // except[] → provision.provision[] (nested provisions)
       if (resource.except) {
         provision.provision = resource.except.map((exc: any) => {
-          const nested: any = { type: exc.type || 'deny' };
-          if (exc.period) nested.period = exc.period;
-          if (exc.actor) nested.actor = exc.actor;
-          if (exc.action) nested.action = exc.action;
-          if (exc.securityLabel) nested.securityLabel = exc.securityLabel;
-          if (exc.purpose) nested.purpose = exc.purpose;
-          if (exc.class) nested.class = exc.class;
-          if (exc.code) nested.code = exc.code;
-          if (exc.data) nested.data = exc.data;
+          const nested: any = {type: exc.type || 'deny'};
+
+          if (exc.period) {
+            nested.period = exc.period;
+          }
+
+          if (exc.actor) {
+            nested.actor = exc.actor;
+          }
+
+          if (exc.action) {
+            nested.action = exc.action;
+          }
+
+          if (exc.securityLabel) {
+            nested.securityLabel = exc.securityLabel;
+          }
+
+          if (exc.purpose) {
+            nested.purpose = exc.purpose;
+          }
+
+          if (exc.class) {
+            nested.class = exc.class;
+          }
+
+          if (exc.code) {
+            nested.code = exc.code;
+          }
+
+          if (exc.data) {
+            nested.data = exc.data;
+          }
+
           return nested;
         });
         delete resource.except;
@@ -46,6 +71,7 @@ export class ConsentMapper implements ResourceMapper {
     }
 
     applyCommonTransforms(resource);
-    return { resources: [resource], warnings };
+
+    return {resources: [resource], warnings};
   }
 }

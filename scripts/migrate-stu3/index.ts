@@ -1,12 +1,14 @@
-import { parseArgs } from './config';
-import { connect, disconnect } from './db';
-import { mapperRegistry, getSupportedTypes } from './mappers';
-import { migrateResourceType, MigrateStats } from './migrate';
+import {parseArgs} from './config';
+import {connect, disconnect} from './db';
+import {mapperRegistry, getSupportedTypes} from './mappers';
+import {migrateResourceType, MigrateStats} from './migrate';
 
-async function main() {
+const main = async () => {
+
   const config = parseArgs(process.argv);
   const types = config.types || getSupportedTypes();
   const unsupported = types.filter(t => !mapperRegistry.has(t));
+
   if (unsupported.length > 0) {
     console.error(`Unsupported resource types: ${unsupported.join(', ')}`);
     console.error(`Supported types: ${getSupportedTypes().join(', ')}`);
@@ -26,11 +28,13 @@ async function main() {
 
   try {
     for (const type of types) {
+
       const mapper = mapperRegistry.get(type)!;
       console.log(`Migrating ${type}...`);
       const stats = await migrateResourceType(conns.sourceDb, conns.targetDb, config.sourceCollection, mapper, config.batchSize, config.dryRun);
       allStats.push(stats);
       console.log(`  ✓ ${stats.succeeded} succeeded, ${stats.failed} failed (${stats.processed} processed)`);
+
       if (stats.warnings.length > 0) {
         stats.warnings.forEach(w => console.log(`    ⚠ ${w}`));
       }
@@ -43,10 +47,17 @@ async function main() {
     const totalFailed = allStats.reduce((sum, s) => sum + s.failed, 0);
     const totalWarnings = allStats.reduce((sum, s) => sum + s.warnings.length, 0);
     console.log(`Total: ${totalProcessed} processed, ${totalSucceeded} succeeded, ${totalFailed} failed, ${totalWarnings} warnings`);
-    if (config.dryRun) console.log('(Dry run — no data was written)');
-  } finally {
+
+    if (config.dryRun) {
+      console.log('(Dry run — no data was written)');
+    }
+  }
+  finally {
     await disconnect(conns);
   }
 }
 
-main().catch(err => { console.error('Migration failed:', err); process.exit(1); });
+main().catch(err => {
+  console.error('Migration failed:', err);
+  process.exit(1);
+});

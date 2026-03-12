@@ -1,12 +1,13 @@
 import { ResourceMapper, MapperResult } from '../mapper.interface';
-import { applyCommonTransforms } from '../transforms/common';
 import { conditionClinicalStatus, conditionVerificationStatus } from '../transforms/clinical-status';
+import { applyCommonTransforms } from '../transforms/common';
 
 /** Maps STU3 Condition to R4. Key changes: assertedDate→recordedDate, status strings→CodeableConcepts, abatementBoolean removal. */
 export class ConditionMapper implements ResourceMapper {
   readonly sourceType = 'Condition';
 
   map(stu3: any): MapperResult {
+
     const warnings: string[] = [];
     const resource = { ...stu3 };
 
@@ -34,10 +35,12 @@ export class ConditionMapper implements ResourceMapper {
       } else {
         warnings.push(`Condition/${resource.id}: removed abatementBoolean=false (not valid in R4)`);
       }
+      
       delete resource.abatementBoolean;
     }
 
     applyCommonTransforms(resource);
+    
     return { resources: [resource], warnings };
   }
 }

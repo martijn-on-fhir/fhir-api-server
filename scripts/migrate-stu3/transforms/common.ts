@@ -9,18 +9,25 @@ const EXTENSION_URL_REWRITES: [RegExp, string][] = [
 ];
 
 /** Rewrite profile URLs from STU3 nl-core to R4 nl-core. */
-export function rewriteProfiles(profiles: string[] | undefined): string[] | undefined {
-  if (!profiles || profiles.length === 0) return profiles;
+export const rewriteProfiles = (profiles: string[] | undefined): string[] | undefined => {
+
+  if (!profiles || profiles.length === 0) {
+    return profiles;
+  }
+
   return profiles.map(url => {
     for (const [pattern, replacement] of PROFILE_REWRITES) {
-      if (pattern.test(url)) return url.replace(pattern, replacement);
+      if (pattern.test(url)) {
+        return url.replace(pattern, replacement);
+      }
     }
+
     return url;
   });
 }
 
 /** Reset meta to R4 defaults: versionId '1', fresh lastUpdated, rewritten profiles. */
-export function upgradeMeta(resource: any): void {
+export const upgradeMeta = (resource: any): void => {
   const meta = resource.meta || {};
   meta.versionId = '1';
   meta.lastUpdated = new Date().toISOString();
@@ -29,23 +36,45 @@ export function upgradeMeta(resource: any): void {
 }
 
 /** Recursively rewrite extension URLs throughout a resource. */
-export function rewriteExtensionUrls(obj: any): void {
-  if (obj == null || typeof obj !== 'object') return;
-  if (Array.isArray(obj)) { obj.forEach(item => rewriteExtensionUrls(item)); return; }
+export const rewriteExtensionUrls = (obj: any): void => {
+
+  if (obj == null || typeof obj !== 'object') {
+    return;
+  }
+
+  if (Array.isArray(obj)) {
+    obj.forEach(item => rewriteExtensionUrls(item));
+
+    return;
+  }
+
   if (obj.url && typeof obj.url === 'string') {
     for (const [pattern, replacement] of EXTENSION_URL_REWRITES) {
-      if (pattern.test(obj.url)) { obj.url = obj.url.replace(pattern, replacement); break; }
+      if (pattern.test(obj.url)) {
+        obj.url = obj.url.replace(pattern, replacement);
+        break;
+      }
     }
   }
-  if (obj.extension) rewriteExtensionUrls(obj.extension);
-  if (obj.modifierExtension) rewriteExtensionUrls(obj.modifierExtension);
+
+  if (obj.extension) {
+    rewriteExtensionUrls(obj.extension);
+  }
+
+  if (obj.modifierExtension) {
+    rewriteExtensionUrls(obj.modifierExtension);
+  }
+
   for (const key of Object.keys(obj)) {
-    if (key !== 'url' && typeof obj[key] === 'object') rewriteExtensionUrls(obj[key]);
+    if (key !== 'url' && typeof obj[key] === 'object') {
+      rewriteExtensionUrls(obj[key]);
+    }
   }
 }
 
 /** Apply all common transforms to a resource (mutates in place). */
-export function applyCommonTransforms(resource: any): void {
+export const applyCommonTransforms = (resource: any): void => {
+
   upgradeMeta(resource);
   rewriteExtensionUrls(resource);
   // Remove MongoDB _id if present
