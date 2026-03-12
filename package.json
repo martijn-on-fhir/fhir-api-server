@@ -33,6 +33,7 @@
     "fast-xml-parser": "^5.5.3",
     "fhir-models-r4": "^1.0.1",
     "fhir-validator-mx": "^0.1.3",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
     "mongoose": "^9.2.4",

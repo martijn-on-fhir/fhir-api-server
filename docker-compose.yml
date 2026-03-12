@@ -7,6 +7,9 @@ services:
       - MONGODB_URI=mongodb://mongo:27017/fhir
       - PORT=3000
       - LOG_FORMAT=json
+      - CORS_ORIGIN=${CORS_ORIGIN:?Set CORS_ORIGIN to allowed origins (e.g. https://app.example.com)}
+      - BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-5mb}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30000}
     volumes:
       - ./file-import:/app/file-import:ro
     depends_on:
