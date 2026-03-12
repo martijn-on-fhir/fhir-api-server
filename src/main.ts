@@ -11,7 +11,15 @@ const bootstrap = async () => {
   const useJsonLogger = process.env.LOG_FORMAT === 'json';
   const app = await NestFactory.create(AppModule, useJsonLogger ? { logger: new JsonLoggerService() } : {});
 
-  app.use(express.json({ type: ['application/json', 'application/fhir+json'] }));
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'If-Match', 'If-None-Exist', 'If-None-Match', 'If-Modified-Since', 'Prefer', 'X-Forwarded-Proto', 'X-Forwarded-Host'],
+    exposedHeaders: ['Content-Location', 'ETag', 'Last-Modified', 'Location'],
+    credentials: true,
+  });
+
+  app.use(express.json({ type: ['application/json', 'application/fhir+json', 'application/json-patch+json'] }));
   app.use(express.urlencoded({ extended: true }));
   app.useGlobalFilters(new FhirExceptionFilter());
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, Res, HttpStatus, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, Req, Res, HttpStatus, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
@@ -11,6 +11,38 @@ import { applySummary, applyElements } from './search/summary.utils';
 import { SmartConfig, SMART_CONFIG } from './smart/smart-config';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 import { FhirValidationService } from './validation/fhir-validation.service';
+
+/** FHIR R4 Patient compartment definition: maps resource types to their reference search parameters that link to Patient. */
+const COMPARTMENT_PARAMS: Record<string, Record<string, string[]>> = {
+  Patient: {
+    AllergyIntolerance: ['patient', 'recorder', 'asserter'], Condition: ['patient', 'asserter'], Observation: ['subject', 'performer'],
+    Encounter: ['patient'], Procedure: ['patient', 'performer'], Immunization: ['patient'], CareTeam: ['patient', 'participant'],
+    MedicationRequest: ['subject'], MedicationStatement: ['subject'], DiagnosticReport: ['subject'], CarePlan: ['subject'],
+    EpisodeOfCare: ['patient'], Consent: ['patient'], Coverage: ['beneficiary'], Claim: ['patient'],
+    DocumentReference: ['subject', 'author'], Composition: ['subject', 'author'], ServiceRequest: ['subject'],
+    Appointment: ['actor'], Communication: ['subject', 'sender', 'recipient'], QuestionnaireResponse: ['subject', 'author'],
+    Flag: ['patient'], Goal: ['patient'], NutritionOrder: ['patient'], DeviceRequest: ['subject'],
+    RiskAssessment: ['subject'], ClinicalImpression: ['subject'], DetectedIssue: ['patient'],
+    FamilyMemberHistory: ['patient'], List: ['subject', 'source'], Media: ['subject'],
+    MedicationAdministration: ['patient', 'performer', 'subject'], MedicationDispense: ['subject', 'patient', 'receiver'],
+    RelatedPerson: ['patient'], Schedule: ['actor'], Specimen: ['subject'], SupplyDelivery: ['patient'],
+    SupplyRequest: ['requester'], Task: ['owner', 'focus'], VisionPrescription: ['patient'],
+  },
+  Practitioner: {
+    Appointment: ['actor'], Encounter: ['practitioner', 'participant'], Observation: ['performer'],
+    Procedure: ['performer'], DiagnosticReport: ['performer'], EpisodeOfCare: ['care-manager'],
+    MedicationRequest: ['requester'], CarePlan: ['performer'], CareTeam: ['participant'],
+    ServiceRequest: ['performer', 'requester'], DocumentReference: ['author'], Composition: ['author'],
+    Communication: ['sender', 'recipient'], Schedule: ['actor'], Task: ['owner'],
+  },
+  Encounter: {
+    Observation: ['encounter'], Condition: ['encounter'], Procedure: ['encounter'],
+    DiagnosticReport: ['encounter'], MedicationRequest: ['encounter'], CarePlan: ['encounter'],
+    ServiceRequest: ['encounter'], Communication: ['encounter'], Composition: ['encounter'],
+    DocumentReference: ['context'], ClinicalImpression: ['encounter'], NutritionOrder: ['encounter'],
+    QuestionnaireResponse: ['encounter'], RiskAssessment: ['encounter'],
+  },
+};
 
 /**
  * Generic FHIR REST controller that handles all resource types via dynamic `:resourceType` routes.
@@ -314,6 +346,40 @@ export class FhirController {
   }
 
   /**
+   * FHIR compartment search. Searches resources within a compartment scope.
+   * E.g. GET /fhir/Patient/123/Observation returns all Observations for Patient 123.
+   */
+  @Get(':compartmentType/:compartmentId/:resourceType')
+  @ApiOperation({summary: 'Compartment Search', description: 'Search resources within a compartment (e.g. GET /Patient/123/Observation).'})
+  @ApiParam({name: 'compartmentType', example: 'Patient'})
+  @ApiParam({name: 'compartmentId', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiParam({name: 'resourceType', example: 'Observation'})
+  @ApiResponse({status: 200, description: 'Bundle (searchset)'})
+  async compartmentSearch(@Param('compartmentType') compartmentType: string, @Param('compartmentId') compartmentId: string, @Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
+    const compartmentRef = `${compartmentType}/${compartmentId}`;
+    const refParams = COMPARTMENT_PARAMS[compartmentType]?.[resourceType];
+
+    if (!refParams) {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.NotSupported, diagnostics: `Resource type '${resourceType}' is not part of the ${compartmentType} compartment`})]});
+
+      return res.status(HttpStatus.BAD_REQUEST).set('Content-Type', 'application/fhir+json').json(outcome);
+    }
+
+    // Build OR filter: any of the compartment's reference params must point to the focal resource
+    const refConditions = refParams.map((param) => {
+      const resolved = this.searchRegistry.resolvePaths(resourceType, param);
+      const mongoPath = resolved?.paths[0] || param;
+
+      return {[mongoPath]: {$in: [compartmentRef, `${this.getBaseUrl(req)}/${compartmentRef}`]}};
+    });
+
+    const extraFilter = refConditions.length === 1 ? refConditions[0] : {$or: refConditions};
+    const mergedParams = {...sanitizeSearchParams(queryParams), _compartmentFilter: JSON.stringify(extraFilter)};
+
+    return this.executeSearch(resourceType, mergedParams, req, res);
+  }
+
+  /**
    * FHIR read interaction. Returns a single resource by logical id.
    * @param resourceType - The FHIR resource type.
    * @param id - The logical resource id.
@@ -428,6 +494,45 @@ export class FhirController {
     const resource = await this.fhirService.update(resourceType, id, body, undefined, req);
     const baseUrl = this.getBaseUrl(req);
 
+    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+  }
+
+  /**
+   * FHIR patch interaction. Applies a JSON Patch (RFC 6902) or FHIRPath Patch to an existing resource.
+   * Content-Type determines patch format: application/json-patch+json for JSON Patch, application/fhir+json for FHIRPath Patch.
+   * Supports If-Match header for optimistic locking.
+   */
+  @Patch(':resourceType/:id')
+  @ApiOperation({summary: 'Patch', description: 'Partially update a resource using JSON Patch (RFC 6902) or FHIRPath Patch (Parameters).'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiHeader({name: 'Content-Type', required: true, description: 'application/json-patch+json or application/fhir+json'})
+  @ApiHeader({name: 'If-Match', required: false, description: 'Optimistic locking: W/"versionId"'})
+  @ApiResponse({status: 200, description: 'Patched resource with ETag header'})
+  @ApiResponse({status: 400, description: 'OperationOutcome (invalid patch)'})
+  @ApiResponse({status: 404, description: 'OperationOutcome (not found)'})
+  @ApiResponse({status: 412, description: 'OperationOutcome (version conflict)'})
+  async patch(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const ifMatch = req.headers['if-match'] as string;
+
+    if (ifMatch) {
+      await this.fhirService.checkIfMatch(resourceType, id, ifMatch);
+    }
+
+    const contentType = (req.headers['content-type'] || '').toLowerCase();
+    let resource;
+
+    if (contentType.includes('application/json-patch+json')) {
+      resource = await this.fhirService.patch(resourceType, id, body, undefined, req);
+    } else if (body?.resourceType === 'Parameters') {
+      resource = await this.fhirService.fhirPathPatch(resourceType, id, body, undefined, req);
+    } else {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: 'PATCH requires Content-Type application/json-patch+json (JSON Patch) or a Parameters resource (FHIRPath Patch)'})]});
+
+      return res.status(HttpStatus.BAD_REQUEST).set('Content-Type', 'application/fhir+json').json(outcome);
+    }
+
+    const baseUrl = this.getBaseUrl(req);
     res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
   }
 

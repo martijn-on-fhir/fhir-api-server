@@ -1317,6 +1317,171 @@
       "url": "{{ _.base_url }}/AuditEvent?_count=10&_offset=10",
       "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
       "body": {}
+    },
+
+    {
+      "_id": "fld_terminology",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Terminology"
+    },
+    {
+      "_id": "fld_term_expand",
+      "_type": "request_group",
+      "parentId": "fld_terminology",
+      "name": "$expand (ValueSet)"
+    },
+    {
+      "_id": "req_expand_by_url",
+      "_type": "request",
+      "parentId": "fld_term_expand",
+      "name": "$expand by URL",
+      "method": "GET",
+      "url": "{{ _.base_url }}/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/administrative-gender",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_expand_by_url_filter",
+      "_type": "request",
+      "parentId": "fld_term_expand",
+      "name": "$expand by URL (with filter)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/administrative-gender&filter=male",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_expand_by_url_paged",
+      "_type": "request",
+      "parentId": "fld_term_expand",
+      "name": "$expand by URL (paginated)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/administrative-gender&offset=0&count=10",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_expand_by_id",
+      "_type": "request",
+      "parentId": "fld_term_expand",
+      "name": "$expand by ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/ValueSet/VALUESET_ID/$expand",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_expand_post",
+      "_type": "request",
+      "parentId": "fld_term_expand",
+      "name": "$expand (POST Parameters)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/ValueSet/$expand",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Content-Type", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"url\", \"valueUri\": \"http://hl7.org/fhir/ValueSet/administrative-gender\" },\n    { \"name\": \"filter\", \"valueString\": \"male\" }\n  ]\n}"
+      }
+    },
+
+    {
+      "_id": "fld_term_lookup",
+      "_type": "request_group",
+      "parentId": "fld_terminology",
+      "name": "$lookup (CodeSystem)"
+    },
+    {
+      "_id": "req_lookup_by_system",
+      "_type": "request",
+      "parentId": "fld_term_lookup",
+      "name": "$lookup by system + code",
+      "method": "GET",
+      "url": "{{ _.base_url }}/CodeSystem/$lookup?system=http://hl7.org/fhir/administrative-gender&code=male",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_lookup_by_id",
+      "_type": "request",
+      "parentId": "fld_term_lookup",
+      "name": "$lookup by ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/CodeSystem/CODESYSTEM_ID/$lookup?code=male",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_lookup_post",
+      "_type": "request",
+      "parentId": "fld_term_lookup",
+      "name": "$lookup (POST Parameters)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/CodeSystem/$lookup",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Content-Type", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"system\", \"valueUri\": \"http://hl7.org/fhir/administrative-gender\" },\n    { \"name\": \"code\", \"valueCode\": \"male\" }\n  ]\n}"
+      }
+    },
+
+    {
+      "_id": "fld_term_translate",
+      "_type": "request_group",
+      "parentId": "fld_terminology",
+      "name": "$translate (ConceptMap)"
+    },
+    {
+      "_id": "req_translate_by_system",
+      "_type": "request",
+      "parentId": "fld_term_translate",
+      "name": "$translate by system + code",
+      "method": "GET",
+      "url": "{{ _.base_url }}/ConceptMap/$translate?system=http://hl7.org/fhir/administrative-gender&code=male&target=http://example.org/target-valueset",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_translate_by_url",
+      "_type": "request",
+      "parentId": "fld_term_translate",
+      "name": "$translate by ConceptMap URL",
+      "method": "GET",
+      "url": "{{ _.base_url }}/ConceptMap/$translate?url=http://example.org/fhir/ConceptMap/example&code=male&system=http://hl7.org/fhir/administrative-gender",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_translate_by_id",
+      "_type": "request",
+      "parentId": "fld_term_translate",
+      "name": "$translate by ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/ConceptMap/CONCEPTMAP_ID/$translate?code=male&system=http://hl7.org/fhir/administrative-gender",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_translate_post",
+      "_type": "request",
+      "parentId": "fld_term_translate",
+      "name": "$translate (POST Parameters)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/ConceptMap/$translate",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Content-Type", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"system\", \"valueUri\": \"http://hl7.org/fhir/administrative-gender\" },\n    { \"name\": \"code\", \"valueCode\": \"male\" },\n    { \"name\": \"target\", \"valueUri\": \"http://example.org/target-valueset\" }\n  ]\n}"
+      }
     }
   ]
 }

@@ -1,7 +1,8 @@
 import {randomUUID} from 'crypto';
-import {Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException} from '@nestjs/common';
+import {Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException, BadRequestException} from '@nestjs/common';
 import {EventEmitter2} from '@nestjs/event-emitter';
 import {InjectModel} from '@nestjs/mongoose';
+import * as jsonpatch from 'fast-json-patch';
 import {OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType} from 'fhir-models-r4';
 import {Model, ClientSession} from 'mongoose';
 import {FhirResourceHistory} from './fhir-resource-history.schema';
@@ -68,6 +69,12 @@ export class FhirService {
     // If any chain/has resolved to impossible (no matches), return empty
     if ([...chainConditions, ...hasConditions].some((c) => '_impossible' in c)) {
       return {resources: [], total: 0, included: []};
+    }
+
+    // Compartment search filter injected by controller
+    if (params._compartmentFilter) {
+      extraConditions.push(JSON.parse(params._compartmentFilter));
+      delete params._compartmentFilter;
     }
 
     if (extraConditions.length > 0) {
@@ -244,6 +251,249 @@ export class FhirService {
     this.emitResourceEvent('update', resourceType, id, snapshot, req);
 
     return updated;
+  }
+
+  /**
+   * Applies a JSON Patch (RFC 6902) to an existing resource.
+   * Validates patch operations, applies them, increments versionId and writes history.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The logical resource id.
+   * @param operations - Array of JSON Patch operations (add, remove, replace, move, copy, test).
+   * @returns The patched resource.
+   */
+  async patch(resourceType: string, id: string, operations: jsonpatch.Operation[], session?: ClientSession, req?: any): Promise<FhirResource> {
+    const existing = await this.findById(resourceType, id);
+    const obj = this.toPlainResource(existing);
+
+    // Prevent patching immutable fields
+    for (const op of operations) {
+      if (op.path === '/id' || op.path === '/resourceType' || op.path.startsWith('/meta/versionId') || op.path.startsWith('/meta/lastUpdated')) {
+        throw new BadRequestException(this.createOutcome(IssueSeverity.Error, IssueType.BusinessRule, `Cannot patch immutable field: ${op.path}`));
+      }
+    }
+
+    const validationErrors = jsonpatch.validate(operations, obj);
+
+    if (validationErrors) {
+      throw new BadRequestException(this.createOutcome(IssueSeverity.Error, IssueType.Invalid, `Invalid JSON Patch: ${validationErrors.message}`));
+    }
+
+    const patched = jsonpatch.applyPatch(jsonpatch.deepClone(obj), operations).newDocument;
+    const currentVersion = parseInt(existing.meta.versionId, 10);
+    const now = new Date().toISOString();
+    const newVersionId = String(currentVersion + 1);
+    patched.meta = {...patched.meta, versionId: newVersionId, lastUpdated: now};
+
+    const updated = await this.resourceModel.findOneAndUpdate({resourceType, id}, patched, {returnDocument: 'after', session}).exec();
+
+    const snapshot = this.toPlainResource(updated);
+    await new this.historyModel({...snapshot, request: {method: 'PATCH', url: `${resourceType}/${id}`}, response: {status: '200 OK', etag: `W/"${newVersionId}"`, lastModified: now}}).save({session});
+
+    this.emitResourceEvent('update', resourceType, id, snapshot, req);
+
+    return updated;
+  }
+
+  /**
+   * Applies a FHIRPath Patch (Parameters resource) to an existing resource.
+   * Supports add, insert, replace, delete, and move operations.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The logical resource id.
+   * @param parameters - FHIR Parameters resource with patch operations.
+   * @returns The patched resource.
+   */
+  async fhirPathPatch(resourceType: string, id: string, parameters: any, session?: ClientSession, req?: any): Promise<FhirResource> {
+    const existing = await this.findById(resourceType, id);
+    const obj = this.toPlainResource(existing);
+
+    const ops = (parameters.parameter || []).filter((p: any) => p.name === 'operation');
+
+    for (const op of ops) {
+      const parts = op.part || [];
+      const type = parts.find((p: any) => p.name === 'type')?.valueCode;
+      const path = parts.find((p: any) => p.name === 'path')?.valueString;
+      const name = parts.find((p: any) => p.name === 'name')?.valueString;
+      const valuePart = parts.find((p: any) => p.name === 'value');
+      const value = valuePart ? this.extractFhirPathValue(valuePart) : undefined;
+      const source = parts.find((p: any) => p.name === 'source')?.valueString;
+      const destination = parts.find((p: any) => p.name === 'destination')?.valueString;
+
+      if (!type || !path) {
+        throw new BadRequestException(this.createOutcome(IssueSeverity.Error, IssueType.Required, 'FHIRPath Patch operation requires "type" and "path"'));
+      }
+
+      this.applyFhirPathOp(obj, type, path, name, value, source, destination);
+    }
+
+    const currentVersion = parseInt(existing.meta.versionId, 10);
+    const now = new Date().toISOString();
+    const newVersionId = String(currentVersion + 1);
+    obj.meta = {...obj.meta, versionId: newVersionId, lastUpdated: now};
+
+    const updated = await this.resourceModel.findOneAndUpdate({resourceType, id}, obj, {returnDocument: 'after', session}).exec();
+
+    const snapshot = this.toPlainResource(updated);
+    await new this.historyModel({...snapshot, request: {method: 'PATCH', url: `${resourceType}/${id}`}, response: {status: '200 OK', etag: `W/"${newVersionId}"`, lastModified: now}}).save({session});
+
+    this.emitResourceEvent('update', resourceType, id, snapshot, req);
+
+    return updated;
+  }
+
+  /**
+   * Applies a single FHIRPath Patch operation to a resource object.
+   * Converts simplified FHIRPath expressions (e.g. "Patient.name") to object navigation.
+   */
+  private applyFhirPathOp(obj: any, type: string, path: string, name?: string, value?: any, source?: string, destination?: string): void {
+    // Convert FHIRPath to object path segments: "Patient.name" -> ["name"], "Patient.name.where(use='official').given" -> ["name", { where: "use='official'" }, "given"]
+    const segments = this.parseFhirPath(path, obj.resourceType);
+
+    switch (type) {
+      case 'add': {
+        if (!name) {
+throw new BadRequestException(this.createOutcome(IssueSeverity.Error, IssueType.Required, 'FHIRPath Patch "add" requires "name"'));
+}
+
+        const target = this.navigatePath(obj, segments);
+
+        if (Array.isArray(target)) {
+          for (const item of target) {
+            if (Array.isArray(item[name])) {
+              item[name].push(value);
+            } else {
+              item[name] = value;
+            }
+          }
+        } else if (target !== undefined) {
+          if (Array.isArray(target[name])) {
+            target[name].push(value);
+          } else {
+            target[name] = value;
+          }
+        }
+
+        break;
+      }
+
+      case 'insert': {
+        const parent = this.navigatePath(obj, segments.slice(0, -1));
+        const lastSeg = segments[segments.length - 1] as string;
+        const container = Array.isArray(parent) ? parent[0] : parent;
+
+        if (container && Array.isArray(container[lastSeg])) {
+          container[lastSeg].push(value);
+        } else if (container) {
+          container[lastSeg] = [value];
+        }
+
+        break;
+      }
+
+      case 'replace': {
+        const parent2 = this.navigatePath(obj, segments.slice(0, -1));
+        const lastSeg2 = segments[segments.length - 1] as string;
+        const container2 = Array.isArray(parent2) ? parent2[0] : parent2;
+
+        if (container2) {
+container2[lastSeg2] = value;
+}
+
+        break;
+      }
+
+      case 'delete': {
+        const parent3 = this.navigatePath(obj, segments.slice(0, -1));
+        const lastSeg3 = segments[segments.length - 1] as string;
+        const container3 = Array.isArray(parent3) ? parent3[0] : parent3;
+
+        if (container3) {
+delete container3[lastSeg3];
+}
+
+        break;
+      }
+
+      case 'move': {
+        if (!source || !destination) {
+throw new BadRequestException(this.createOutcome(IssueSeverity.Error, IssueType.Required, 'FHIRPath Patch "move" requires "source" and "destination"'));
+}
+
+        const sourceSegs = this.parseFhirPath(source, obj.resourceType);
+        const destSegs = this.parseFhirPath(destination, obj.resourceType);
+        const srcParent = this.navigatePath(obj, sourceSegs.slice(0, -1));
+        const srcKey = sourceSegs[sourceSegs.length - 1] as string;
+        const srcContainer = Array.isArray(srcParent) ? srcParent[0] : srcParent;
+
+        if (srcContainer) {
+          const val = srcContainer[srcKey];
+          delete srcContainer[srcKey];
+          const destParent = this.navigatePath(obj, destSegs.slice(0, -1));
+          const destKey = destSegs[destSegs.length - 1] as string;
+          const destContainer = Array.isArray(destParent) ? destParent[0] : destParent;
+
+          if (destContainer) {
+destContainer[destKey] = val;
+}
+        }
+
+        break;
+      }
+
+      default:
+        throw new BadRequestException(this.createOutcome(IssueSeverity.Error, IssueType.Invalid, `Unknown FHIRPath Patch operation type: ${type}`));
+    }
+  }
+
+  /** Parses a simplified FHIRPath expression into path segments, stripping the resource type prefix. */
+  private parseFhirPath(path: string, resourceType: string): string[] {
+    let normalized = path;
+
+    if (normalized.startsWith(`${resourceType}.`)) {
+      normalized = normalized.substring(resourceType.length + 1);
+    }
+
+    return normalized.split('.');
+  }
+
+  /** Navigates an object along path segments, returning the target value. */
+  private navigatePath(obj: any, segments: string[]): any {
+    let current = obj;
+
+    for (const seg of segments) {
+      if (current === undefined || current === null) {
+return undefined;
+}
+
+      if (Array.isArray(current)) {
+        current = current.map((item) => item[seg]).filter((v) => v !== undefined);
+      } else {
+        current = current[seg];
+      }
+    }
+
+    return current;
+  }
+
+  /** Extracts the typed value from a FHIRPath Patch value part. */
+  private extractFhirPathValue(part: any): any {
+    const valueKeys = Object.keys(part).filter((k) => k.startsWith('value'));
+
+    if (valueKeys.length > 0) {
+return part[valueKeys[0]];
+}
+
+    if (part.part) {
+      const result: any = {};
+
+      for (const p of part.part) {
+        const val = this.extractFhirPathValue(p);
+        result[p.name] = val;
+      }
+
+      return result;
+    }
+
+    return undefined;
   }
 
   /**
