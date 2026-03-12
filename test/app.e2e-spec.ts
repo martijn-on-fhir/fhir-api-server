@@ -1,10 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import * as request from 'supertest';
-import { MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { AppModule } from './../src/app.module';
 import { seedSearchParameters } from './helpers/seed-search-params';
 
 describe('AppController (e2e)', () => {
@@ -15,8 +12,9 @@ describe('AppController (e2e)', () => {
     mongod = await MongoMemoryServer.create();
     await seedSearchParameters(mongod.getUri());
 
-    // Set MONGODB_URI so AppModule's MongooseModule.forRoot() uses the in-memory server
+    // Must set env var before importing AppModule so MongooseModule.forRoot() picks it up
     process.env.MONGODB_URI = mongod.getUri();
+    const { AppModule } = await import('./../src/app.module');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
