@@ -1,5 +1,5 @@
-import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import {Injectable, NestMiddleware, Logger} from '@nestjs/common';
+import {Request, Response, NextFunction} from 'express';
 
 /** HTTP methods that mutate resources and require audit logging. */
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -26,7 +26,7 @@ export class AuditMiddleware implements NestMiddleware {
 
     res.on('finish', () => {
       const duration = Date.now() - start;
-      const { resourceType, resourceId } = this.parseUrl(req.originalUrl);
+      const {resourceType, resourceId} = this.parseUrl(req.originalUrl);
 
       this.logger.log(JSON.stringify({
         event: 'fhir.mutation',
@@ -48,15 +48,15 @@ export class AuditMiddleware implements NestMiddleware {
 
   /** Extracts resourceType and optional id from a FHIR URL like /fhir/Patient/123. */
   private parseUrl(url: string): { resourceType?: string; resourceId?: string } {
+
     const path = url.split('?')[0];
     const segments = path.split('/').filter(Boolean);
-    // Expected: ['fhir', 'Patient', '123'] or ['fhir', 'Patient']
     const fhirIdx = segments.indexOf('fhir');
 
     if (fhirIdx < 0) {
-return {};
-}
+      return {};
+    }
 
-    return { resourceType: segments[fhirIdx + 1], resourceId: segments[fhirIdx + 2] };
+    return {resourceType: segments[fhirIdx + 1], resourceId: segments[fhirIdx + 2]};
   }
 }

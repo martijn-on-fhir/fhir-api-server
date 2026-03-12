@@ -1,6 +1,6 @@
-import { randomUUID } from 'crypto';
-import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import {randomUUID} from 'crypto';
+import {Injectable, NestMiddleware, Logger} from '@nestjs/common';
+import {Request, Response, NextFunction} from 'express';
 
 /**
  * Middleware that assigns a correlation ID to each request and logs request/response details.
@@ -14,13 +14,14 @@ export class CorrelationMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction) {
 
-    const correlationId = (req.headers['x-correlation-id'] as string) || randomUUID();
+    const correlationId = (req.headers['X-Correlation-Id'] as string) || (req.headers['x-correlation-id'] as string) || randomUUID();
+    const start = Date.now();
+
     req['correlationId'] = correlationId;
     res.setHeader('X-Correlation-ID', correlationId);
 
-    const start = Date.now();
-
     res.on('finish', () => {
+
       const duration = Date.now() - start;
 
       this.logger.log(JSON.stringify({
