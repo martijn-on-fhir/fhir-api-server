@@ -31,6 +31,8 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | Compartment Search (Patient, Practitioner, Encounter) | ✅ |
 | CORS configuratie voor browser-based SMART apps | ✅ |
 | Terminology Services: $expand, $lookup, $translate | ✅ |
+| $lastn (Observation) — laatste N per code | ✅ |
+| Referential Integrity — blokkeer delete bij referenties | ✅ |
 
 ## Ontbrekende features
 
@@ -43,13 +45,13 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | ~~3~~ | ~~**Terminology Services**~~ | | | | | | ~~Geïmplementeerd: $expand, $lookup, $translate~~ |
 | 4 | **XML Format** | ✅ | ✅ | ✅ | ✅ | ✅ | `application/fhir+xml` + content negotiation via `Accept` header en `_format` parameter. FHIR spec beveelt beide formats sterk aan. |
 | 5 | **Binary Resource** | ✅ | ✅ | ✅ | ✅ | ✅ | Speciale content-type handling: FHIR JSON bij `Accept: application/fhir+json`, ruwe content bij eigen MIME type. |
-| 6 | **Referential Integrity** | — | ✅ | ✅ | ✅ | ✅ | Voorkom verwijzingen naar niet-bestaande resources. Blokkeer delete als resource nog gerefereerd wordt. |
+| ~~6~~ | ~~**Referential Integrity**~~ | | | | | | ~~Geïmplementeerd: delete geblokkeerd als resource nog gerefereerd wordt~~ |
 
 ### Medium prioriteit — 3-4 concurrenten hebben dit
 
 | # | Feature | Firely | HAPI | IBM | Google | Azure | Beschrijving |
 |---|---------|--------|------|-----|--------|-------|-------------|
-| 7 | **$lastn** | — | ✅ | — | ✅ | ✅ | Laatste N observaties per code — essentieel voor vitals/labs ("geef me de laatste 3 bloeddrukmetingen"). |
+| ~~7~~ | ~~**$lastn**~~ | | | | | | ~~Geïmplementeerd: Observation/$lastn met max, patient, code, category filters~~ |
 | 8 | **Custom SearchParameters** | ✅ | ✅ | ✅ | — | ✅ | Runtime-defined search parameters via SearchParameter resources + reindexering van bestaande data. |
 | 9 | **Cascading Deletes** | ✅ | ✅ | — | — | ✅ | `_cascade=delete` parameter: verwijder automatisch afhankelijke resources mee. |
 | ~~10~~ | ~~**CORS**~~ | | | | | | ~~Geïmplementeerd: configureerbaar via CORS_ORIGIN env var~~ |
@@ -75,10 +77,10 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 ~~2. **Compartment Search** — fundamenteel concept, relatief eenvoudig te bouwen~~
 ~~3. **CORS** — noodzakelijk voor browser-based SMART apps~~
 
-### ~~Fase 2 — Klinische waarde~~ (deels afgerond)
+### ~~Fase 2 — Klinische waarde~~ ✅ DONE
 ~~4. **Terminology Services** ($expand, $lookup, $translate) — kritiek voor validatie workflows~~
-5. **$lastn** — hoge klinische waarde, veel gevraagd door clients
-6. **Referential Integrity** — data kwaliteit en consistentie
+~~5. **$lastn** — hoge klinische waarde, veel gevraagd door clients~~
+~~6. **Referential Integrity** — data kwaliteit en consistentie~~
 
 ### Fase 3 — Uitbreidingen
 7. **Binary Resource** handling

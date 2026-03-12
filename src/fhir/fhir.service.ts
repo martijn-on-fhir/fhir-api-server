@@ -498,6 +498,7 @@ return part[valueKeys[0]];
 
   /**
    * Deletes a resource by type and logical id.
+   * Checks referential integrity before deletion — blocks if other resources reference this one.
    * Writes a tombstone entry to history before removing from the main collection.
    */
   async delete(resourceType: string, id: string, session?: ClientSession, req?: any): Promise<void> {
@@ -507,6 +508,9 @@ return part[valueKeys[0]];
     if (!existing) {
       throw new NotFoundException(this.createOutcome(IssueSeverity.Error, IssueType.NotFound, `${resourceType}/${id} not found`));
     }
+
+    // Referential integrity check: block delete if referenced by other resources
+    await this.checkReferentialIntegrity(resourceType, id);
 
     const currentVersion = parseInt(existing.meta.versionId, 10);
     const now = new Date().toISOString();
@@ -783,6 +787,98 @@ return part[valueKeys[0]];
     }
 
     return false;
+  }
+
+  /**
+   * FHIR $lastn operation: returns the most recent N Observations per code.
+   * Groups by code.coding[0].system + code.coding[0].code and returns max per group, sorted by effectiveDateTime descending.
+   * Supports patient, subject, category, and code filters.
+   */
+  async lastn(params: Record<string, string>, max: number): Promise<{resources: FhirResource[]; total: number}> {
+    const filter: Record<string, any> = {resourceType: 'Observation'};
+
+    if (params.patient) {
+      const ref = params.patient.includes('/') ? params.patient : `Patient/${params.patient}`;
+      filter.$or = [{'subject.reference': ref}, {'subject.reference': {$regex: `/${ref}$`}}];
+    }
+
+    if (params.subject) {
+      const ref = params.subject.includes('/') ? params.subject : `Patient/${params.subject}`;
+
+      if (filter.$or) {
+        filter.$and = [{$or: filter.$or}, {$or: [{'subject.reference': ref}, {'subject.reference': {$regex: `/${ref}$`}}]}];
+        delete filter.$or;
+      } else {
+        filter.$or = [{'subject.reference': ref}, {'subject.reference': {$regex: `/${ref}$`}}];
+      }
+    }
+
+    if (params.category) {
+      const [catSystem, catCode] = params.category.includes('|') ? params.category.split('|', 2) : [undefined, params.category];
+      const catFilter: Record<string, any> = {};
+
+      if (catCode) {
+catFilter['category.coding.code'] = catCode;
+}
+
+      if (catSystem) {
+catFilter['category.coding.system'] = catSystem;
+}
+
+      Object.assign(filter, catFilter);
+    }
+
+    if (params.code) {
+      const [codeSystem, codeVal] = params.code.includes('|') ? params.code.split('|', 2) : [undefined, params.code];
+      const codeFilter: Record<string, any> = {};
+
+      if (codeVal) {
+codeFilter['code.coding.code'] = codeVal;
+}
+
+      if (codeSystem) {
+codeFilter['code.coding.system'] = codeSystem;
+}
+
+      Object.assign(filter, codeFilter);
+    }
+
+    // Fetch all matching observations sorted by date descending
+    const allObs = await this.resourceModel.find(filter).sort({effectiveDateTime: -1, 'meta.lastUpdated': -1}).lean().exec();
+
+    // Group by code (system|code) and take last N per group
+    const groups = new Map<string, any[]>();
+
+    for (const obs of allObs) {
+      const coding = (obs as any).code?.coding?.[0];
+      const groupKey = coding ? `${coding.system || ''}|${coding.code || ''}` : `unknown|${(obs as any).id}`;
+      const group = groups.get(groupKey) || [];
+
+      if (group.length < max) {
+        group.push(obs);
+        groups.set(groupKey, group);
+      }
+    }
+
+    const resources = [...groups.values()].flat() as FhirResource[];
+
+    return {resources, total: resources.length};
+  }
+
+  /**
+   * Checks referential integrity: verifies that no other resource references the given resource.
+   * @throws ConflictException if the resource is still referenced by other resources.
+   */
+  async checkReferentialIntegrity(resourceType: string, id: string): Promise<void> {
+    const ref = `${resourceType}/${id}`;
+    const allDocs = await this.resourceModel.find({resourceType: {$nin: [resourceType, 'AuditEvent', 'Provenance']}}).lean().exec();
+    const referencingDoc = allDocs.find((doc) => this.containsReference(doc, ref));
+
+    if (referencingDoc) {
+      const refType = (referencingDoc as any).resourceType;
+      const refId = (referencingDoc as any).id;
+      throw new ConflictException(this.createOutcome(IssueSeverity.Error, IssueType.Conflict, `Cannot delete ${ref}: referenced by ${refType}/${refId}`));
+    }
   }
 
   /** Returns all distinct resourceType values currently stored in the database. */

@@ -1482,6 +1482,202 @@
         "mimeType": "application/json",
         "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"system\", \"valueUri\": \"http://hl7.org/fhir/administrative-gender\" },\n    { \"name\": \"code\", \"valueCode\": \"male\" },\n    { \"name\": \"target\", \"valueUri\": \"http://example.org/target-valueset\" }\n  ]\n}"
       }
+    },
+
+    {
+      "_id": "fld_patch",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "PATCH"
+    },
+    {
+      "_id": "req_patch_json",
+      "_type": "request",
+      "parentId": "fld_patch",
+      "name": "JSON Patch (RFC 6902)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Content-Type", "value": "application/json-patch+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  { \"op\": \"replace\", \"path\": \"/name/0/family\", \"value\": \"Jansen\" },\n  { \"op\": \"add\", \"path\": \"/name/0/prefix/-\", \"value\": \"Dr.\" }\n]"
+      }
+    },
+    {
+      "_id": "req_patch_json_ifmatch",
+      "_type": "request",
+      "parentId": "fld_patch",
+      "name": "JSON Patch (with If-Match)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Content-Type", "value": "application/json-patch+json" },
+        { "name": "If-Match", "value": "W/\"1\"" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "[\n  { \"op\": \"replace\", \"path\": \"/active\", \"value\": false }\n]"
+      }
+    },
+    {
+      "_id": "req_patch_fhirpath",
+      "_type": "request",
+      "parentId": "fld_patch",
+      "name": "FHIRPath Patch (Parameters)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Content-Type", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    {\n      \"name\": \"operation\",\n      \"part\": [\n        { \"name\": \"type\", \"valueCode\": \"replace\" },\n        { \"name\": \"path\", \"valueString\": \"Patient.name.family\" },\n        { \"name\": \"value\", \"valueString\": \"De Vries\" }\n      ]\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_patch_fhirpath_add",
+      "_type": "request",
+      "parentId": "fld_patch",
+      "name": "FHIRPath Patch — add telecom",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" },
+        { "name": "Content-Type", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    {\n      \"name\": \"operation\",\n      \"part\": [\n        { \"name\": \"type\", \"valueCode\": \"add\" },\n        { \"name\": \"path\", \"valueString\": \"Patient\" },\n        { \"name\": \"name\", \"valueString\": \"telecom\" },\n        { \"name\": \"value\", \"valueString\": \"{\\\"system\\\":\\\"phone\\\",\\\"value\\\":\\\"06-12345678\\\"}\" }\n      ]\n    }\n  ]\n}"
+      }
+    },
+
+    {
+      "_id": "fld_compartment",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Compartment Search"
+    },
+    {
+      "_id": "req_compartment_patient_obs",
+      "_type": "request",
+      "parentId": "fld_compartment",
+      "name": "Patient / Observation",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/Observation",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_compartment_patient_cond",
+      "_type": "request",
+      "parentId": "fld_compartment",
+      "name": "Patient / Condition",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/Condition",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_compartment_patient_encounter",
+      "_type": "request",
+      "parentId": "fld_compartment",
+      "name": "Patient / Encounter",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/Encounter",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_compartment_patient_medreq",
+      "_type": "request",
+      "parentId": "fld_compartment",
+      "name": "Patient / MedicationRequest",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/MedicationRequest",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_compartment_patient_search",
+      "_type": "request",
+      "parentId": "fld_compartment",
+      "name": "Patient / Observation (with search params)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/Observation?code=http://loinc.org|85354-9&_count=5",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_compartment_practitioner",
+      "_type": "request",
+      "parentId": "fld_compartment",
+      "name": "Practitioner / Encounter",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Practitioner/{{ _.practitioner_id }}/Encounter",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_lastn",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$lastn"
+    },
+    {
+      "_id": "req_lastn_all",
+      "_type": "request",
+      "parentId": "fld_lastn",
+      "name": "$lastn (alle observaties)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation/$lastn",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_lastn_max3",
+      "_type": "request",
+      "parentId": "fld_lastn",
+      "name": "$lastn (max=3)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation/$lastn?max=3",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_lastn_patient",
+      "_type": "request",
+      "parentId": "fld_lastn",
+      "name": "$lastn (per patient)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation/$lastn?patient=Patient/{{ _.patient_id }}&max=3",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_lastn_code",
+      "_type": "request",
+      "parentId": "fld_lastn",
+      "name": "$lastn (by code — bloeddruk)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation/$lastn?code=http://loinc.org|85354-9&max=3",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
+    },
+    {
+      "_id": "req_lastn_category",
+      "_type": "request",
+      "parentId": "fld_lastn",
+      "name": "$lastn (by category — vital-signs)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation/$lastn?category=vital-signs&max=5",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
+      "body": {}
     }
   ]
 }

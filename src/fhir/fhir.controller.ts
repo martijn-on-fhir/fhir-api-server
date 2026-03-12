@@ -113,6 +113,36 @@ export class FhirController {
   }
 
   /**
+   * FHIR $lastn operation (Observation). Returns the most recent N observations per code.
+   * Groups by code and returns max observations per group, sorted by date descending.
+   */
+  @Get('Observation/\\$lastn')
+  @ApiOperation({summary: '$lastn', description: 'Returns the last N observations grouped by code. Default max=1.'})
+  @ApiQuery({name: 'max', required: false, type: Number, description: 'Maximum observations per code group (default 1)'})
+  @ApiQuery({name: 'category', required: false, description: 'Filter by category'})
+  @ApiQuery({name: 'code', required: false, description: 'Filter by code (system|code)'})
+  @ApiQuery({name: 'patient', required: false, description: 'Filter by patient reference'})
+  @ApiQuery({name: 'subject', required: false, description: 'Filter by subject reference'})
+  @ApiResponse({status: 200, description: 'Bundle (searchset) with last N observations per code'})
+  async lastn(@Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
+    const params = sanitizeSearchParams(queryParams);
+    const max = params.max ? parseInt(params.max, 10) : 1;
+    const {resources, total} = await this.fhirService.lastn(params, max);
+    const baseUrl = this.getBaseUrl(req);
+
+    const entries = resources.map((r: any) => {
+      const fhir = this.toFhirJson(r, baseUrl);
+
+      return new BundleEntry({fullUrl: `${baseUrl}/Observation/${fhir.id}`, resource: fhir, search: new BundleEntrySearch({mode: SearchEntryMode.Match})});
+    });
+
+    const selfUrl = this.buildSelfUrl(baseUrl, 'Observation/$lastn', params);
+    const bundle = new Bundle({type: BundleType.Searchset, total, link: [new BundleLink({relation: 'self', url: selfUrl})], entry: entries});
+
+    res.set('Content-Type', 'application/fhir+json').json(bundle);
+  }
+
+  /**
    * FHIR $validate operation (type-level). Validates a resource against the R4 spec and optionally a specific profile.
    * Always returns HTTP 200 with an OperationOutcome — validation errors are reported as issues, not HTTP errors.
    */
