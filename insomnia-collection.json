@@ -1836,6 +1836,76 @@
       "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}",
       "headers": [{ "name": "Accept", "value": "application/fhir+json" }],
       "body": {}
+    },
+    {
+      "_id": "fld_expunge",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$expunge"
+    },
+    {
+      "_id": "req_expunge_instance",
+      "_type": "request",
+      "parentId": "fld_expunge",
+      "name": "$expunge (instance — hard delete Patient)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$expunge",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"expungeEverything\", \"valueBoolean\": true }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_expunge_type_deleted",
+      "_type": "request",
+      "parentId": "fld_expunge",
+      "name": "$expunge (type — purge deleted Patients)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/$expunge",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"expungeDeletedResources\", \"valueBoolean\": true }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_expunge_type_old_versions",
+      "_type": "request",
+      "parentId": "fld_expunge",
+      "name": "$expunge (type — purge old versions)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/$expunge",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"expungeOldVersions\", \"valueBoolean\": true }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_expunge_system",
+      "_type": "request",
+      "parentId": "fld_expunge",
+      "name": "$expunge (system — purge all deleted)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/$expunge",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"expungeDeletedResources\", \"valueBoolean\": true },\n    { \"name\": \"expungeOldVersions\", \"valueBoolean\": true }\n  ]\n}"
+      }
     }
   ]
 }

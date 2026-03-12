@@ -37,6 +37,7 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | Binary Resource — raw content negotiation + FHIR JSON/XML | ✅ |
 | Custom SearchParameters + $reindex operatie | ✅ |
 | Cascading Deletes (`_cascade=delete`) | ✅ |
+| $expunge — hard delete / fysieke purge (GDPR/AVG compliance) | ✅ |
 
 ## Ontbrekende features
 
@@ -66,7 +67,7 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 
 | # | Feature | Firely | HAPI | IBM | Google | Azure | Beschrijving |
 |---|---------|--------|------|-----|--------|-------|-------------|
-| 13 | **$expunge** | — | ✅ | ✅ | — | — | Hard delete / fysieke purge. Belangrijk voor AVG/GDPR compliance. |
+| ~~13~~ | ~~**$expunge**~~ | | | | | | ~~Geïmplementeerd: instance/type/system-level hard delete met expungeDeletedResources, expungeOldVersions, expungeEverything~~ |
 | ~~14~~ | ~~**$reindex**~~ | | | | | | ~~Geïmplementeerd als onderdeel van Custom SearchParameters~~ |
 | ~~15~~ | ~~**$translate**~~ | | | | | | ~~Geïmplementeerd als onderdeel van Terminology Services~~ |
 | 16 | **Consent-based Access** | ✅ | ✅ | — | — | — | Toegangscontrole op basis van FHIR Consent resources. Gaat verder dan OAuth scopes. |

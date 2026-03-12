@@ -127,6 +127,20 @@ export class FhirController {
   }
 
   /**
+   * FHIR $expunge operation (system-level). Physically purges deleted resources and/or old versions from the database.
+   * Used for GDPR/AVG compliance — permanently removes data that soft delete preserves.
+   */
+  @Post('\\$expunge')
+  @ApiOperation({summary: '$expunge (system)', description: 'Physically purge deleted resources and/or old history versions across all resource types.'})
+  @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
+  async expungeSystem(@Body() body: any, @Res() res: Response) {
+    const params = this.extractExpungeParams(body);
+    const result = await this.fhirService.expunge(params);
+    const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s)`})]});
+    res.set('Content-Type', 'application/fhir+json').json(outcome);
+  }
+
+  /**
    * FHIR $lastn operation (Observation). Returns the most recent N observations per code.
    * Groups by code and returns max observations per group, sorted by date descending.
    */
@@ -217,6 +231,35 @@ export class FhirController {
     const result = await this.validationService.validate(resource, profile);
 
     res.set('Content-Type', 'application/fhir+json').json(this.validationResultToOutcome(result));
+  }
+
+  /**
+   * FHIR $expunge operation (type-level). Purges deleted resources and/or old versions for a specific resource type.
+   */
+  @Post(':resourceType/\\$expunge')
+  @ApiOperation({summary: '$expunge (type)', description: 'Physically purge deleted resources and/or old history versions for a specific resource type.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
+  async expungeType(@Param('resourceType') resourceType: string, @Body() body: any, @Res() res: Response) {
+    const params = this.extractExpungeParams(body);
+    const result = await this.fhirService.expunge({...params, resourceType});
+    const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s) for ${resourceType}`})]});
+    res.set('Content-Type', 'application/fhir+json').json(outcome);
+  }
+
+  /**
+   * FHIR $expunge operation (instance-level). Purges a specific resource and all its history permanently.
+   */
+  @Post(':resourceType/:id/\\$expunge')
+  @ApiOperation({summary: '$expunge (instance)', description: 'Physically purge a specific resource instance and all its history.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
+  async expungeInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+    const params = this.extractExpungeParams(body);
+    const result = await this.fhirService.expunge({...params, resourceType, id});
+    const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s) for ${resourceType}/${id}`})]});
+    res.set('Content-Type', 'application/fhir+json').json(outcome);
   }
 
   /** FHIR type-level history. Returns a history Bundle for all resources of a given type. */
@@ -645,6 +688,24 @@ export class FhirController {
     const profile = body?.meta?.profile?.[0];
 
     return { resource: body, profile };
+  }
+
+  /** Extracts $expunge parameters from a FHIR Parameters resource body. */
+  private extractExpungeParams(body: any): {expungeDeletedResources?: boolean; expungeOldVersions?: boolean; expungeEverything?: boolean; limit?: number} {
+    if (!body || body.resourceType !== 'Parameters') {
+      return {expungeDeletedResources: true};
+    }
+
+    const params = body.parameter || [];
+    const getBool = (name: string) => params.find((p: any) => p.name === name)?.valueBoolean;
+    const getInt = (name: string) => params.find((p: any) => p.name === name)?.valueInteger;
+
+    return {
+      expungeDeletedResources: getBool('expungeDeletedResources') ?? false,
+      expungeOldVersions: getBool('expungeOldVersions') ?? false,
+      expungeEverything: getBool('expungeEverything') ?? false,
+      limit: getInt('_limit') || undefined,
+    };
   }
 
   /** Converts a ValidationResult from fhir-validator-mx into a FHIR OperationOutcome. */

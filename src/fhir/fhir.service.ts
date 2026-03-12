@@ -916,6 +916,82 @@ codeFilter['code.coding.system'] = codeSystem;
     }
   }
 
+  /**
+   * FHIR $expunge operation: physically removes resources and/or history entries from the database.
+   * Unlike regular delete (soft delete with tombstone), expunge permanently purges data — used for GDPR/AVG compliance.
+   * @param options.resourceType - Limit to a specific resource type (type-level).
+   * @param options.id - Limit to a specific resource instance (instance-level).
+   * @param options.expungeDeletedResources - Remove soft-deleted resources and their history tombstones.
+   * @param options.expungeOldVersions - Remove non-current history versions (keeps only the latest).
+   * @param options.expungeEverything - Hard-purge everything matching the scope (resource + all history).
+   * @param options.limit - Maximum number of entries to expunge (default 1000).
+   * @returns Count of expunged resources and history entries.
+   */
+  async expunge(options: {resourceType?: string; id?: string; expungeDeletedResources?: boolean; expungeOldVersions?: boolean; expungeEverything?: boolean; limit?: number}): Promise<{resources: number; versions: number}> {
+    const limit = options.limit || 1000;
+    let resourcesExpunged = 0;
+    let versionsExpunged = 0;
+    const baseFilter: Record<string, any> = {};
+
+    if (options.resourceType) {
+      baseFilter.resourceType = options.resourceType;
+    }
+
+    if (options.id) {
+      baseFilter.id = options.id;
+    }
+
+    if (options.expungeEverything) {
+      // Hard-purge: remove matching resources from both collections
+      const resResult = await this.resourceModel.deleteMany(baseFilter).exec();
+      resourcesExpunged = resResult.deletedCount || 0;
+      const histResult = await this.historyModel.deleteMany(baseFilter).exec();
+      versionsExpunged = histResult.deletedCount || 0;
+
+      return {resources: Math.min(resourcesExpunged, limit), versions: Math.min(versionsExpunged, limit)};
+    }
+
+    if (options.expungeDeletedResources) {
+      // Find soft-deleted tombstones in history and purge them + any remaining main collection entries
+      const tombstones = await this.historyModel.find({...baseFilter, _deleted: true}).limit(limit).lean().exec();
+
+      for (const tomb of tombstones) {
+        const ref = {resourceType: (tomb as any).resourceType, id: (tomb as any).id};
+        // Remove all history for this resource
+        const histDel = await this.historyModel.deleteMany(ref).exec();
+        versionsExpunged += histDel.deletedCount || 0;
+        // Remove from main collection if somehow still there
+        const resDel = await this.resourceModel.deleteMany(ref).exec();
+        resourcesExpunged += resDel.deletedCount || 0;
+      }
+    }
+
+    if (options.expungeOldVersions) {
+      // Remove non-current versions from history, keeping only the latest per resource
+      const histFilter = {...baseFilter, _deleted: {$ne: true}};
+      const allHistory = await this.historyModel.find(histFilter).sort({'meta.lastUpdated': -1}).lean().exec();
+      const seen = new Set<string>();
+
+      for (const entry of allHistory) {
+        const key = `${(entry as any).resourceType}/${(entry as any).id}`;
+
+        if (seen.has(key)) {
+          // This is an old version — expunge it
+          await this.historyModel.deleteOne({_id: (entry as any)._id}).exec();
+          versionsExpunged++;
+
+          if (versionsExpunged >= limit) {
+            break;
+          }
+        } else {
+          seen.add(key);
+        }
+      }
+    }
+
+    return {resources: resourcesExpunged, versions: versionsExpunged};
+  }
+
   /** Returns all distinct resourceType values currently stored in the database. */
   async getResourceTypes(): Promise<string[]> {
 
