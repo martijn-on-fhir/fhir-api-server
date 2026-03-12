@@ -1,6 +1,7 @@
-import {Controller, Get, Post, Param, Query, Body, Res} from '@nestjs/common';
+import {Controller, Get, Post, Param, Query, Body, Req, Res} from '@nestjs/common';
 import {ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse} from '@nestjs/swagger';
-import {Response} from 'express';
+import {Request, Response} from 'express';
+import {fhirJsonToXml} from '../../fhir/xml/fhir-xml.utils';
 import {TerminologyService} from './terminology.service';
 
 /**
@@ -14,6 +15,18 @@ export class TerminologyController {
 
   constructor(private readonly terminologyService: TerminologyService) {}
 
+  /** Sends a FHIR response in JSON or XML based on _format or Accept header. */
+  private sendFhirResponse(res: Response, req: Request, resource: any, statusCode = 200): void {
+    const format = (req.query as any)._format;
+    const isXml = format ? String(format).toLowerCase().includes('xml') : (req.headers.accept || '').includes('xml');
+
+    if (isXml) {
+      res.status(statusCode).set('Content-Type', 'application/fhir+xml').send(fhirJsonToXml(resource));
+    } else {
+      res.status(statusCode).set('Content-Type', 'application/fhir+json').json(resource);
+    }
+  }
+
   // ── $expand ──────────────────────────────────────────────
 
   @Get('ValueSet/\\$expand')
@@ -23,9 +36,9 @@ export class TerminologyController {
   @ApiQuery({name: 'offset', required: false, type: Number})
   @ApiQuery({name: 'count', required: false, type: Number})
   @ApiResponse({status: 200, description: 'Expanded ValueSet'})
-  async expandByUrl(@Query('url') url: string, @Query('filter') filter: string, @Query('offset') offset: string, @Query('count') count: string, @Res() res: Response) {
+  async expandByUrl(@Query('url') url: string, @Query('filter') filter: string, @Query('offset') offset: string, @Query('count') count: string, @Req() req: Request, @Res() res: Response) {
     const result = await this.terminologyService.expand({url, filter, offset, count});
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   @Get('ValueSet/:id/\\$expand')
@@ -35,18 +48,18 @@ export class TerminologyController {
   @ApiQuery({name: 'offset', required: false, type: Number})
   @ApiQuery({name: 'count', required: false, type: Number})
   @ApiResponse({status: 200, description: 'Expanded ValueSet'})
-  async expandById(@Param('id') id: string, @Query('filter') filter: string, @Query('offset') offset: string, @Query('count') count: string, @Res() res: Response) {
+  async expandById(@Param('id') id: string, @Query('filter') filter: string, @Query('offset') offset: string, @Query('count') count: string, @Req() req: Request, @Res() res: Response) {
     const result = await this.terminologyService.expand({filter, offset, count}, id);
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   @Post('ValueSet/\\$expand')
   @ApiOperation({summary: 'ValueSet $expand (POST)', description: 'Expands a ValueSet using a Parameters resource in the body.'})
   @ApiResponse({status: 200, description: 'Expanded ValueSet'})
-  async expandPost(@Body() body: any, @Res() res: Response) {
+  async expandPost(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const params = this.extractParameters(body, ['url', 'filter', 'offset', 'count', 'valueSet']);
     const result = await this.terminologyService.expand(params);
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   // ── $lookup ──────────────────────────────────────────────
@@ -57,9 +70,9 @@ export class TerminologyController {
   @ApiQuery({name: 'code', required: true})
   @ApiQuery({name: 'version', required: false})
   @ApiResponse({status: 200, description: 'Parameters resource with lookup result'})
-  async lookupBySystem(@Query('system') system: string, @Query('code') code: string, @Query('version') version: string, @Res() res: Response) {
+  async lookupBySystem(@Query('system') system: string, @Query('code') code: string, @Query('version') version: string, @Req() req: Request, @Res() res: Response) {
     const result = await this.terminologyService.lookup({system, code, version});
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   @Get('CodeSystem/:id/\\$lookup')
@@ -67,18 +80,18 @@ export class TerminologyController {
   @ApiParam({name: 'id', description: 'Logical id of the CodeSystem'})
   @ApiQuery({name: 'code', required: true})
   @ApiResponse({status: 200, description: 'Parameters resource with lookup result'})
-  async lookupById(@Param('id') id: string, @Query('code') code: string, @Res() res: Response) {
+  async lookupById(@Param('id') id: string, @Query('code') code: string, @Req() req: Request, @Res() res: Response) {
     const result = await this.terminologyService.lookup({code}, id);
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   @Post('CodeSystem/\\$lookup')
   @ApiOperation({summary: 'CodeSystem $lookup (POST)', description: 'Looks up a code using a Parameters resource in the body.'})
   @ApiResponse({status: 200, description: 'Parameters resource with lookup result'})
-  async lookupPost(@Body() body: any, @Res() res: Response) {
+  async lookupPost(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const params = this.extractParameters(body, ['system', 'code', 'version', 'display']);
     const result = await this.terminologyService.lookup(params);
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   // ── $translate ───────────────────────────────────────────
@@ -91,9 +104,9 @@ export class TerminologyController {
   @ApiQuery({name: 'target', required: false, description: 'Target ValueSet URL'})
   @ApiQuery({name: 'url', required: false, description: 'ConceptMap canonical URL'})
   @ApiResponse({status: 200, description: 'Parameters resource with translation result'})
-  async translateBySystem(@Query('url') url: string, @Query('system') system: string, @Query('code') code: string, @Query('source') source: string, @Query('target') target: string, @Res() res: Response) {
+  async translateBySystem(@Query('url') url: string, @Query('system') system: string, @Query('code') code: string, @Query('source') source: string, @Query('target') target: string, @Req() req: Request, @Res() res: Response) {
     const result = await this.terminologyService.translate({url, system, code, source, target});
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   @Get('ConceptMap/:id/\\$translate')
@@ -102,18 +115,18 @@ export class TerminologyController {
   @ApiQuery({name: 'code', required: true})
   @ApiQuery({name: 'system', required: false})
   @ApiResponse({status: 200, description: 'Parameters resource with translation result'})
-  async translateById(@Param('id') id: string, @Query('code') code: string, @Query('system') system: string, @Res() res: Response) {
+  async translateById(@Param('id') id: string, @Query('code') code: string, @Query('system') system: string, @Req() req: Request, @Res() res: Response) {
     const result = await this.terminologyService.translate({code, system}, id);
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   @Post('ConceptMap/\\$translate')
   @ApiOperation({summary: 'ConceptMap $translate (POST)', description: 'Translates a code using a Parameters resource in the body.'})
   @ApiResponse({status: 200, description: 'Parameters resource with translation result'})
-  async translatePost(@Body() body: any, @Res() res: Response) {
+  async translatePost(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const params = this.extractParameters(body, ['url', 'system', 'code', 'source', 'target']);
     const result = await this.terminologyService.translate(params);
-    res.set('Content-Type', 'application/fhir+json').json(result);
+    this.sendFhirResponse(res, req, result);
   }
 
   /**

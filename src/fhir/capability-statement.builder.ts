@@ -115,7 +115,7 @@ export const buildCapabilityStatement = (baseUrl: string, resourceTypes: string[
     date: new Date().toISOString(),
     kind: CapabilityStatementKind.Instance,
     fhirVersion: '4.0.1',
-    format: ['application/fhir+json'],
+    format: ['application/fhir+json', 'application/fhir+xml'],
     software: new CapabilityStatementSoftware({ name: 'fhir-api-server', version: '0.0.1' }),
     implementation: new CapabilityStatementImplementation({ description: 'FHIR R4 REST API Server with Dutch nl-core profile support', url: baseUrl }),
     rest: [rest],

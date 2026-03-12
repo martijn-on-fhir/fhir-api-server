@@ -85,7 +85,7 @@ export class FhirController {
     const searchParamsByType = new Map(resourceTypes.map((t) => [t, this.searchRegistry.getParamsForType(t)]));
     const statement = buildCapabilityStatement(baseUrl, resourceTypes, searchParamsByType, this.smartConfig);
 
-    res.set('Content-Type', 'application/fhir+json').json(statement);
+    this.sendFhirResponse(res, req, statement);
   }
 
   /** FHIR system-level history. Returns a history Bundle across all resource types. */
@@ -99,18 +99,18 @@ export class FhirController {
     const { entries, total } = await this.fhirService.systemHistory(sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
-    return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/_history`, baseUrl));
+    return this.sendFhirResponse(res, req, this.buildHistoryBundle(entries, total, `${baseUrl}/_history`, baseUrl));
   }
 
   /** FHIR $meta operation (system-level). Returns aggregated meta across all resources. */
   @Get('\\$meta')
   @ApiOperation({ summary: '$meta (system)', description: 'Returns aggregated profiles, tags and security labels across all resources.' })
   @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
-  async metaSystem(@Res() res: Response) {
+  async metaSystem(@Req() req: Request, @Res() res: Response) {
 
     const meta = await this.fhirService.getAggregatedMeta();
 
-    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
+    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
   }
 
   /**
@@ -120,10 +120,10 @@ export class FhirController {
   @Post('\\$reindex')
   @ApiOperation({summary: '$reindex', description: 'Reloads search parameter definitions from the database. Use after creating or updating SearchParameter resources.'})
   @ApiResponse({status: 200, description: 'OperationOutcome confirming reindex'})
-  async reindex(@Res() res: Response) {
+  async reindex(@Req() req: Request, @Res() res: Response) {
     const count = await this.searchRegistry.reload();
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Search parameter registry reloaded: ${count} parameters active`})]});
-    res.set('Content-Type', 'application/fhir+json').json(outcome);
+    this.sendFhirResponse(res, req, outcome);
   }
 
   /**
@@ -133,11 +133,11 @@ export class FhirController {
   @Post('\\$expunge')
   @ApiOperation({summary: '$expunge (system)', description: 'Physically purge deleted resources and/or old history versions across all resource types.'})
   @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
-  async expungeSystem(@Body() body: any, @Res() res: Response) {
+  async expungeSystem(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const params = this.extractExpungeParams(body);
     const result = await this.fhirService.expunge(params);
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s)`})]});
-    res.set('Content-Type', 'application/fhir+json').json(outcome);
+    this.sendFhirResponse(res, req, outcome);
   }
 
   /**
@@ -167,7 +167,7 @@ export class FhirController {
     const selfUrl = this.buildSelfUrl(baseUrl, 'Observation/$lastn', params);
     const bundle = new Bundle({type: BundleType.Searchset, total, link: [new BundleLink({relation: 'self', url: selfUrl})], entry: entries});
 
-    res.set('Content-Type', 'application/fhir+json').json(bundle);
+    this.sendFhirResponse(res, req, bundle);
   }
 
   /**
@@ -178,30 +178,30 @@ export class FhirController {
   @ApiOperation({ summary: '$validate (type-level)', description: 'Validates a resource against the FHIR R4 spec and optionally a specific profile. Always returns HTTP 200.' })
   @ApiParam({ name: 'resourceType', example: 'Patient' })
   @ApiResponse({ status: 200, description: 'OperationOutcome with validation results' })
-  async validateType(@Param('resourceType') resourceType: string, @Body() body: any, @Res() res: Response) {
+  async validateType(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     const { resource, profile } = this.extractValidateParams(body);
 
     if (!resource) {
       const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'No resource provided for validation' })] });
 
-      return res.set('Content-Type', 'application/fhir+json').json(outcome);
+      return this.sendFhirResponse(res, req, outcome);
     }
 
     if (!resource.resourceType) {
       const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Missing required field: resourceType' })] });
 
-      return res.set('Content-Type', 'application/fhir+json').json(outcome);
+      return this.sendFhirResponse(res, req, outcome);
     }
 
     if (resource.resourceType !== resourceType) {
       const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: `Resource type '${resource.resourceType}' does not match endpoint '${resourceType}'` })] });
 
-      return res.set('Content-Type', 'application/fhir+json').json(outcome);
+      return this.sendFhirResponse(res, req, outcome);
     }
 
     const result = await this.validationService.validate(resource, profile);
-    res.set('Content-Type', 'application/fhir+json').json(this.validationResultToOutcome(result));
+    this.sendFhirResponse(res, req, this.validationResultToOutcome(result));
   }
 
   /**
@@ -213,7 +213,7 @@ export class FhirController {
   @ApiParam({ name: 'resourceType', example: 'Patient' })
   @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
   @ApiResponse({ status: 200, description: 'OperationOutcome with validation results' })
-  async validateInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+  async validateInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     const { resource: bodyResource, profile } = this.extractValidateParams(body);
 
@@ -230,7 +230,7 @@ export class FhirController {
 
     const result = await this.validationService.validate(resource, profile);
 
-    res.set('Content-Type', 'application/fhir+json').json(this.validationResultToOutcome(result));
+    this.sendFhirResponse(res, req, this.validationResultToOutcome(result));
   }
 
   /**
@@ -240,11 +240,11 @@ export class FhirController {
   @ApiOperation({summary: '$expunge (type)', description: 'Physically purge deleted resources and/or old history versions for a specific resource type.'})
   @ApiParam({name: 'resourceType', example: 'Patient'})
   @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
-  async expungeType(@Param('resourceType') resourceType: string, @Body() body: any, @Res() res: Response) {
+  async expungeType(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     const params = this.extractExpungeParams(body);
     const result = await this.fhirService.expunge({...params, resourceType});
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s) for ${resourceType}`})]});
-    res.set('Content-Type', 'application/fhir+json').json(outcome);
+    this.sendFhirResponse(res, req, outcome);
   }
 
   /**
@@ -255,11 +255,65 @@ export class FhirController {
   @ApiParam({name: 'resourceType', example: 'Patient'})
   @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
   @ApiResponse({status: 200, description: 'OperationOutcome with expunge counts'})
-  async expungeInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+  async expungeInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     const params = this.extractExpungeParams(body);
     const result = await this.fhirService.expunge({...params, resourceType, id});
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Expunged ${result.resources} resource(s) and ${result.versions} history version(s) for ${resourceType}/${id}`})]});
-    res.set('Content-Type', 'application/fhir+json').json(outcome);
+    this.sendFhirResponse(res, req, outcome);
+  }
+
+  /**
+   * FHIR $diff operation (instance-level). Compares two versions of the same resource.
+   * Query params: versionId (required) — compare current version with this version.
+   * Optional: fromVersion — compare fromVersion with versionId instead of current.
+   */
+  @Get(':resourceType/:id/\\$diff')
+  @ApiOperation({summary: '$diff (instance)', description: 'Compare two versions of a resource. Returns a Parameters resource with the differences.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiQuery({name: 'versionId', required: true, description: 'Version to compare against (the "to" version)'})
+  @ApiQuery({name: 'fromVersion', required: false, description: 'Version to compare from (defaults to current version)'})
+  @ApiResponse({status: 200, description: 'Parameters resource with diff entries'})
+  async diffInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query('versionId') versionId: string, @Query('fromVersion') fromVersion: string, @Req() req: Request, @Res() res: Response) {
+    if (!versionId) {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Query parameter "versionId" is required'})]});
+
+      return this.sendFhirResponse(res, req, outcome, HttpStatus.BAD_REQUEST);
+    }
+
+    const right = await this.fhirService.vRead(resourceType, id, versionId);
+    const left = fromVersion ? await this.fhirService.vRead(resourceType, id, fromVersion) : await this.fhirService.findById(resourceType, id);
+    const result = await this.fhirService.diff(left, right);
+    this.sendFhirResponse(res, req, result);
+  }
+
+  /**
+   * FHIR $diff operation (type-level via POST). Compares two arbitrary resources provided in the body.
+   * Body: Parameters resource with "left" and "right" resource parameters.
+   */
+  @Post(':resourceType/\\$diff')
+  @ApiOperation({summary: '$diff (type, POST)', description: 'Compare two resources provided in the request body. Body must be a Parameters resource with "left" and "right" resource parameters.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiResponse({status: 200, description: 'Parameters resource with diff entries'})
+  async diffType(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    if (!body || body.resourceType !== 'Parameters') {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: 'Request body must be a Parameters resource with "left" and "right" resource parameters'})]});
+
+      return this.sendFhirResponse(res, req, outcome, HttpStatus.BAD_REQUEST);
+    }
+
+    const params = body.parameter || [];
+    const left = params.find((p: any) => p.name === 'left')?.resource;
+    const right = params.find((p: any) => p.name === 'right')?.resource;
+
+    if (!left || !right) {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Both "left" and "right" resource parameters are required'})]});
+
+      return this.sendFhirResponse(res, req, outcome, HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await this.fhirService.diff(left, right);
+    this.sendFhirResponse(res, req, result);
   }
 
   /** FHIR type-level history. Returns a history Bundle for all resources of a given type. */
@@ -274,7 +328,7 @@ export class FhirController {
     const { entries, total } = await this.fhirService.typeHistory(resourceType, sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
-    return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/_history`, baseUrl));
+    return this.sendFhirResponse(res, req, this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/_history`, baseUrl));
   }
 
   /** FHIR $meta operation (type-level). Returns aggregated meta for all resources of a given type. */
@@ -282,11 +336,11 @@ export class FhirController {
   @ApiOperation({ summary: '$meta (type-level)', description: 'Returns aggregated profiles, tags and security labels for a resource type.' })
   @ApiParam({ name: 'resourceType', example: 'Patient' })
   @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
-  async metaType(@Param('resourceType') resourceType: string, @Res() res: Response) {
+  async metaType(@Param('resourceType') resourceType: string, @Req() req: Request, @Res() res: Response) {
 
     const meta = await this.fhirService.getAggregatedMeta(resourceType);
 
-    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
+    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
   }
 
   /** FHIR $meta operation (instance-level). Returns the meta element for a specific resource. */
@@ -295,11 +349,11 @@ export class FhirController {
   @ApiParam({ name: 'resourceType', example: 'Patient' })
   @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
   @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
-  async metaInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
+  async metaInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.fhirService.findById(resourceType, id);
 
-    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: resource.meta }] });
+    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: resource.meta }] });
   }
 
   /** FHIR $meta-add operation. Adds profiles, tags and security labels to a resource's meta. */
@@ -308,12 +362,12 @@ export class FhirController {
   @ApiParam({ name: 'resourceType', example: 'Patient' })
   @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
   @ApiResponse({ status: 200, description: 'Parameters resource with updated Meta' })
-  async metaAdd(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+  async metaAdd(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     const inputMeta = body?.resourceType === 'Parameters' ? body.parameter?.find((p: any) => p.name === 'meta')?.valueMeta : body;
     const updatedMeta = await this.fhirService.metaAdd(resourceType, id, inputMeta || {});
 
-    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: updatedMeta }] });
+    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: updatedMeta }] });
   }
 
   /** FHIR $meta-delete operation. Removes profiles, tags and security labels from a resource's meta. */
@@ -322,12 +376,12 @@ export class FhirController {
   @ApiParam({ name: 'resourceType', example: 'Patient' })
   @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
   @ApiResponse({ status: 200, description: 'Parameters resource with updated Meta' })
-  async metaDelete(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+  async metaDelete(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     const inputMeta = body?.resourceType === 'Parameters' ? body.parameter?.find((p: any) => p.name === 'meta')?.valueMeta : body;
     const updatedMeta = await this.fhirService.metaDelete(resourceType, id, inputMeta || {});
 
-    res.set('Content-Type', 'application/fhir+json').json({ resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: updatedMeta }] });
+    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: updatedMeta }] });
   }
 
   /**
@@ -357,7 +411,7 @@ export class FhirController {
 
     const bundle = new Bundle({ type: BundleType.Searchset, total, link: [new BundleLink({ relation: 'self', url: `${baseUrl}/${resourceType}/${id}/$everything` })], entry: entries });
 
-    res.set('Content-Type', 'application/fhir+json').json(bundle);
+    this.sendFhirResponse(res, req, bundle);
   }
 
   /**
@@ -411,7 +465,7 @@ export class FhirController {
     const { entries, total } = await this.fhirService.instanceHistory(resourceType, id, sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
-    return res.set('Content-Type', 'application/fhir+json').json(this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/${id}/_history`, baseUrl));
+    return this.sendFhirResponse(res, req, this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/${id}/_history`, baseUrl));
   }
 
   /** FHIR vRead interaction. Returns a specific version of a resource. */
@@ -429,7 +483,8 @@ export class FhirController {
     const baseUrl = this.getBaseUrl(req);
     this.auditService.recordAudit('vread', resourceType, id, req);
 
-    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${versionId}"`).json(this.resolveReferences(resource, baseUrl));
+    res.set('ETag', `W/"${versionId}"`);
+    this.sendFhirResponse(res, req, this.resolveReferences(resource, baseUrl));
   }
 
   /**
@@ -449,7 +504,7 @@ export class FhirController {
     if (!refParams) {
       const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.NotSupported, diagnostics: `Resource type '${resourceType}' is not part of the ${compartmentType} compartment`})]});
 
-      return res.status(HttpStatus.BAD_REQUEST).set('Content-Type', 'application/fhir+json').json(outcome);
+      return this.sendFhirResponse(res, req, outcome, HttpStatus.BAD_REQUEST);
     }
 
     // Build OR filter: any of the compartment's reference params must point to the focal resource
@@ -518,15 +573,20 @@ export class FhirController {
       const { resource, created } = await this.fhirService.conditionalCreate(resourceType, body, searchParams, undefined, req);
 
       if (!created) {
-        return res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+        res.set('ETag', `W/"${resource.meta.versionId}"`);
+
+        return this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl));
       }
 
-      return res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+      res.set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`);
+
+      return this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED);
     }
 
     const resource = await this.fhirService.create(resourceType, body, undefined, req);
 
-    res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+    res.set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`);
+    this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED);
   }
 
   /**
@@ -548,10 +608,13 @@ export class FhirController {
     const { resource, created } = await this.fhirService.conditionalUpdate(resourceType, body, searchParams, undefined, req);
 
     if (created) {
-      return res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+      res.set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`);
+
+      return this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED);
     }
 
-    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+    res.set('ETag', `W/"${resource.meta.versionId}"`);
+    this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl));
   }
 
   /**
@@ -581,7 +644,8 @@ export class FhirController {
     const resource = await this.fhirService.update(resourceType, id, body, undefined, req);
     const baseUrl = this.getBaseUrl(req);
 
-    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+    res.set('ETag', `W/"${resource.meta.versionId}"`);
+    this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl));
   }
 
   /**
@@ -616,11 +680,12 @@ export class FhirController {
     } else {
       const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: 'PATCH requires Content-Type application/json-patch+json (JSON Patch) or a Parameters resource (FHIRPath Patch)'})]});
 
-      return res.status(HttpStatus.BAD_REQUEST).set('Content-Type', 'application/fhir+json').json(outcome);
+      return this.sendFhirResponse(res, req, outcome, HttpStatus.BAD_REQUEST);
     }
 
     const baseUrl = this.getBaseUrl(req);
-    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${resource.meta.versionId}"`).json(this.toFhirJson(resource, baseUrl));
+    res.set('ETag', `W/"${resource.meta.versionId}"`);
+    this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl));
   }
 
   /** FHIR conditional delete: DELETE /ResourceType?search-params */
@@ -634,7 +699,7 @@ export class FhirController {
     const count = await this.fhirService.conditionalDelete(resourceType, searchParams, undefined, req);
     const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Conditionally deleted ${count} ${resourceType} resource(s)` })] });
 
-    res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
+    this.sendFhirResponse(res, req, outcome);
   }
 
   /**
@@ -655,12 +720,12 @@ export class FhirController {
       const deleted = await this.fhirService.cascadeDelete(resourceType, id, undefined, req);
       const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Cascade deleted ${deleted} resource(s) including ${resourceType}/${id}`})]});
 
-      return res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
+      return this.sendFhirResponse(res, req, outcome);
     }
 
     await this.fhirService.delete(resourceType, id, undefined, req);
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted`})]});
-    res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
+    this.sendFhirResponse(res, req, outcome);
   }
 
   /**
@@ -738,7 +803,7 @@ export class FhirController {
     if (summary === 'count') {
       const bundle = new Bundle({ type: BundleType.Searchset, total, link: [new BundleLink({ relation: 'self', url: selfUrl })] });
 
-      return res.set('Content-Type', 'application/fhir+json').json(bundle);
+      return this.sendFhirResponse(res, req, bundle);
     }
 
     // Apply _summary or _elements projection
@@ -786,7 +851,7 @@ export class FhirController {
     const bundle = new Bundle({ type: BundleType.Searchset, total, link: links, entry: entries });
     this.auditService.recordAudit('search', resourceType, null, req);
 
-    return res.set('Content-Type', 'application/fhir+json').json(bundle);
+    return this.sendFhirResponse(res, req, bundle);
   }
 
   private buildSelfUrl(baseUrl: string, resourceType: string, params: Record<string, string>): string {

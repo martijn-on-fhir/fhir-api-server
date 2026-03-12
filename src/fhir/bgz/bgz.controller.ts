@@ -2,6 +2,7 @@ import { Controller, Get, Param, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleEntrySearch, BundleLink, BundleType, SearchEntryMode } from 'fhir-models-r4';
+import { fhirJsonToXml } from '../xml/fhir-xml.utils';
 import { BgzService } from './bgz.service';
 
 /**
@@ -31,7 +32,19 @@ export class BgzController {
 
     const bundle = new Bundle({ type: BundleType.Searchset, total: entries.length, link: [new BundleLink({ relation: 'self', url: `${baseUrl}/Patient/${id}/$bgz` })], entry: entries });
 
-    res.set('Content-Type', 'application/fhir+json').json(bundle);
+    this.sendFhirResponse(res, req, bundle);
+  }
+
+  /** Sends a FHIR response in JSON or XML based on _format or Accept header. */
+  private sendFhirResponse(res: Response, req: Request, resource: any, statusCode = 200): void {
+    const format = (req.query as any)._format;
+    const isXml = format ? String(format).toLowerCase().includes('xml') : (req.headers.accept || '').includes('xml');
+
+    if (isXml) {
+      res.status(statusCode).set('Content-Type', 'application/fhir+xml').send(fhirJsonToXml(resource));
+    } else {
+      res.status(statusCode).set('Content-Type', 'application/fhir+json').json(resource);
+    }
   }
 
   private getBaseUrl(req: Request): string {

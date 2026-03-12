@@ -15,7 +15,8 @@ export class TerminologyService {
 
   private readonly logger = new Logger(TerminologyService.name);
 
-  constructor(@InjectModel(ConformanceResource.name) private readonly model: Model<ConformanceResource>) {}
+  constructor(@InjectModel(ConformanceResource.name) private readonly model: Model<ConformanceResource>) {
+  }
 
   /**
    * Expands a ValueSet by resolving compose.include rules or returning a pre-computed expansion.
@@ -24,7 +25,7 @@ export class TerminologyService {
    * @param id - Optional logical id for instance-level invocation.
    * @returns A ValueSet resource with an expansion element.
    */
-  async expand(params: {url?: string; filter?: string; offset?: string; count?: string; valueSet?: any}, id?: string): Promise<any> {
+  async expand(params: { url?: string; filter?: string; offset?: string; count?: string; valueSet?: any }, id?: string): Promise<any> {
     let valueSet: any;
 
     if (params.valueSet) {
@@ -70,7 +71,7 @@ export class TerminologyService {
    * @param id - Optional logical id for instance-level invocation.
    * @returns A FHIR Parameters resource with name, version, display, designation, and property parameters.
    */
-  async lookup(params: {system?: string; code?: string; version?: string; display?: string}, id?: string): Promise<any> {
+  async lookup(params: { system?: string; code?: string; version?: string; display?: string }, id?: string): Promise<any> {
     if (!params.code) {
       throw new BadRequestException(this.operationOutcome('Parameter "code" is required', IssueType.Required));
     }
@@ -115,7 +116,8 @@ export class TerminologyService {
    * @param id - Optional logical id for instance-level invocation.
    * @returns A FHIR Parameters resource with result (boolean) and match array.
    */
-  async translate(params: {url?: string; system?: string; code?: string; source?: string; target?: string}, id?: string): Promise<any> {
+  async translate(params: { url?: string; system?: string; code?: string; source?: string; target?: string }, id?: string): Promise<any> {
+
     if (!params.code) {
       throw new BadRequestException(this.operationOutcome('Parameter "code" is required', IssueType.Required));
     }
@@ -134,7 +136,10 @@ export class TerminologyService {
         }
 
         for (const target of element.target || []) {
-          matches.push({name: 'match', part: [{name: 'equivalence', valueCode: target.equivalence || 'equivalent'}, {name: 'concept', valueCoding: {system: group.target, code: target.code, display: target.display}}]});
+          matches.push({
+            name: 'match', part: [{name: 'equivalence', valueCode: target.equivalence || 'equivalent'},
+              {name: 'concept', valueCoding: {system: group.target, code: target.code, display: target.display}}]
+          });
         }
       }
     }
@@ -150,6 +155,7 @@ export class TerminologyService {
    * Finds a ValueSet by canonical URL or logical id.
    */
   private async findValueSet(url?: string, id?: string): Promise<any> {
+
     const filter: Record<string, any> = {resourceType: 'ValueSet'};
 
     if (id) {
@@ -173,6 +179,7 @@ export class TerminologyService {
    * Finds a CodeSystem by system URL or logical id.
    */
   private async findCodeSystem(system?: string, id?: string): Promise<any> {
+
     const filter: Record<string, any> = {resourceType: 'CodeSystem'};
 
     if (id) {
@@ -196,13 +203,14 @@ export class TerminologyService {
    * Finds a ConceptMap by URL, source, target, or logical id.
    */
   private async findConceptMap(url?: string, source?: string, target?: string, id?: string): Promise<any> {
+
     const filter: Record<string, any> = {resourceType: 'ConceptMap'};
 
     if (id) {
       filter.id = id;
     } else if (url) {
       filter.url = url;
-    } else {
+    }  else {
       if (source) {
         filter.$or = [{sourceUri: source}, {sourceCanonical: source}];
       }
@@ -217,7 +225,8 @@ export class TerminologyService {
       }
 
       if (!source && !target) {
-        throw new BadRequestException(this.operationOutcome('Either "url", "source", "target" parameter or resource id is required', IssueType.Required));
+        throw new BadRequestException(this.operationOutcome('Either "url", "source", ' +
+          '"target" parameter or resource id is required', IssueType.Required));
       }
     }
 
@@ -234,6 +243,7 @@ export class TerminologyService {
    * Resolves compose.include rules into a flat list of concepts.
    */
   private async resolveCompose(includes: any[], depth: number): Promise<any[]> {
+
     if (depth >= MAX_RECURSION_DEPTH) {
       this.logger.warn('$expand: max recursion depth reached');
 
@@ -296,6 +306,7 @@ export class TerminologyService {
    * Flattens a hierarchical concept list into a flat array with system attached.
    */
   private flattenConcepts(concepts: any[], system: string): any[] {
+
     const result: any[] = [];
 
     for (const c of concepts) {
@@ -314,6 +325,7 @@ export class TerminologyService {
    * Supports op "is-a" (hierarchical), "=" (exact), and "regex".
    */
   private applyConceptFilter(concepts: any[], filter: any): any[] {
+
     if (filter.op === '=' || filter.op === 'is-a') {
       return concepts.filter((c) => filter.property === 'concept' || filter.property === 'code' ? c.code === filter.value || c.display === filter.value : true);
     }
@@ -335,6 +347,7 @@ export class TerminologyService {
    * Recursively searches a concept array for a code.
    */
   private findConceptInList(concepts: any[], code: string): any | null {
+
     for (const c of concepts) {
       if (c.code === code) {
         return c;
@@ -356,33 +369,34 @@ export class TerminologyService {
    * Converts a CodeSystem concept property to a FHIR Parameters part.
    */
   private propertyValueToPart(property: any): any | null {
+
     if (property.valueCode !== undefined) {
-return {name: 'value', valueCode: property.valueCode};
-}
+      return {name: 'value', valueCode: property.valueCode};
+    }
 
     if (property.valueString !== undefined) {
-return {name: 'value', valueString: property.valueString};
-}
+      return {name: 'value', valueString: property.valueString};
+    }
 
     if (property.valueCoding !== undefined) {
-return {name: 'value', valueCoding: property.valueCoding};
-}
+      return {name: 'value', valueCoding: property.valueCoding};
+    }
 
     if (property.valueInteger !== undefined) {
-return {name: 'value', valueInteger: property.valueInteger};
-}
+      return {name: 'value', valueInteger: property.valueInteger};
+    }
 
     if (property.valueBoolean !== undefined) {
-return {name: 'value', valueBoolean: property.valueBoolean};
-}
+      return {name: 'value', valueBoolean: property.valueBoolean};
+    }
 
     if (property.valueDateTime !== undefined) {
-return {name: 'value', valueDateTime: property.valueDateTime};
-}
+      return {name: 'value', valueDateTime: property.valueDateTime};
+    }
 
     if (property.valueDecimal !== undefined) {
-return {name: 'value', valueDecimal: property.valueDecimal};
-}
+      return {name: 'value', valueDecimal: property.valueDecimal};
+    }
 
     return null;
   }

@@ -1906,6 +1906,89 @@
         "mimeType": "application/json",
         "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    { \"name\": \"expungeDeletedResources\", \"valueBoolean\": true },\n    { \"name\": \"expungeOldVersions\", \"valueBoolean\": true }\n  ]\n}"
       }
+    },
+    {
+      "_id": "fld_ucum",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "UCUM Unit Conversion"
+    },
+    {
+      "_id": "req_ucum_search_kg",
+      "_type": "request",
+      "parentId": "fld_ucum",
+      "name": "Search Observation by weight in kg (matches g, mg too)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation?value-quantity=80|http://unitsofmeasure.org|kg",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ]
+    },
+    {
+      "_id": "req_ucum_search_mg",
+      "_type": "request",
+      "parentId": "fld_ucum",
+      "name": "Search Observation by value in mg (matches g, kg too)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation?value-quantity=6.3|http://unitsofmeasure.org|mmol/L",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ]
+    },
+    {
+      "_id": "req_ucum_search_gt",
+      "_type": "request",
+      "parentId": "fld_ucum",
+      "name": "Search Observation value > 5000 mg (matches > 5 g, > 0.005 kg)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Observation?value-quantity=gt5000|http://unitsofmeasure.org|mg",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ]
+    },
+    {
+      "_id": "fld_diff",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$diff"
+    },
+    {
+      "_id": "req_diff_instance",
+      "_type": "request",
+      "parentId": "fld_diff",
+      "name": "$diff (instance — compare current with version 1)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$diff?versionId=1",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ]
+    },
+    {
+      "_id": "req_diff_instance_versions",
+      "_type": "request",
+      "parentId": "fld_diff",
+      "name": "$diff (instance — compare version 1 with version 2)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/Patient/{{ _.patient_id }}/$diff?fromVersion=1&versionId=2",
+      "headers": [
+        { "name": "Accept", "value": "application/fhir+json" }
+      ]
+    },
+    {
+      "_id": "req_diff_type_post",
+      "_type": "request",
+      "parentId": "fld_diff",
+      "name": "$diff (type — compare two resources via POST)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/$diff",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    {\n      \"name\": \"left\",\n      \"resource\": {\n        \"resourceType\": \"Patient\",\n        \"id\": \"example-1\",\n        \"name\": [{ \"family\": \"Jansen\", \"given\": [\"Piet\"] }],\n        \"birthDate\": \"1990-01-01\"\n      }\n    },\n    {\n      \"name\": \"right\",\n      \"resource\": {\n        \"resourceType\": \"Patient\",\n        \"id\": \"example-1\",\n        \"name\": [{ \"family\": \"Jansen\", \"given\": [\"Pieter\"] }],\n        \"birthDate\": \"1990-01-01\",\n        \"gender\": \"male\"\n      }\n    }\n  ]\n}"
+      }
     }
   ]
 }

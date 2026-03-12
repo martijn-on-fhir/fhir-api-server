@@ -3,6 +3,7 @@ import {ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse} from '@nestjs/sw
 import {Request, Response} from 'express';
 // eslint-disable-next-line max-len
 import {Bundle, BundleEntry, BundleLink, BundleType, CapabilityStatement, CapabilityStatementImplementation, CapabilityStatementKind, CapabilityStatementRest, CapabilityStatementRestResource, CapabilityStatementRestResourceInteraction, CapabilityStatementRestResourceSearchParam, CapabilityStatementSoftware, IssueSeverity, IssueType, OperationOutcome, OperationOutcomeIssue, PublicationStatus, RestfulCapabilityMode, SearchParamType} from 'fhir-models-r4';
+import {fhirJsonToXml} from '../fhir/xml/fhir-xml.utils';
 import {AdministrationService} from './administration.service';
 
 @ApiTags('Administration')
@@ -17,6 +18,18 @@ export class AdministrationController {
     const host = req.headers['x-forwarded-host'] || req.get('host');
 
     return `${proto}://${host}/administration`;
+  }
+
+  /** Sends a FHIR response in JSON or XML based on _format or Accept header. */
+  private sendFhirResponse(res: Response, req: Request, resource: any, statusCode = 200): void {
+    const format = (req.query as any)._format;
+    const isXml = format ? String(format).toLowerCase().includes('xml') : (req.headers.accept || '').includes('xml');
+
+    if (isXml) {
+      res.status(statusCode).set('Content-Type', 'application/fhir+xml').send(fhirJsonToXml(resource));
+    } else {
+      res.status(statusCode).set('Content-Type', 'application/fhir+json').json(resource);
+    }
   }
 
   @Get('metadata')
@@ -49,13 +62,13 @@ export class AdministrationController {
       date: new Date().toISOString(),
       kind: CapabilityStatementKind.Instance,
       fhirVersion: '4.0.1',
-      format: ['application/fhir+json'],
+      format: ['application/fhir+json', 'application/fhir+xml'],
       software: new CapabilityStatementSoftware({ name: 'fhir-api-server-administration', version: '0.1.0' }),
       implementation: new CapabilityStatementImplementation({ description: 'FHIR R4 Administration API for conformance resources (Firely-style)', url: baseUrl }),
       rest: [new CapabilityStatementRest({ mode: RestfulCapabilityMode.Server, resource: resources })],
     });
 
-    res.set('Content-Type', 'application/fhir+json').json(statement);
+    this.sendFhirResponse(res, req, statement);
   }
 
   @Get(':resourceType')
@@ -85,7 +98,7 @@ export class AdministrationController {
     const selfUrl = selfParams ? `${baseUrl}/${resourceType}?${selfParams}` : `${baseUrl}/${resourceType}`;
     const bundle = new Bundle({type: BundleType.Searchset, total, link: [new BundleLink({relation: 'self', url: selfUrl})], entry: entries});
 
-    res.set('Content-Type', 'application/fhir+json').json(bundle);
+    this.sendFhirResponse(res, req, bundle);
   }
 
   @Get(':resourceType/:id')
@@ -94,12 +107,13 @@ export class AdministrationController {
   @ApiParam({name: 'id'})
   @ApiResponse({status: 200, description: 'The conformance resource'})
   @ApiResponse({status: 404, description: 'Not found'})
-  async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
+  async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.administrationService.findById(resourceType, id);
     const obj = resource.toObject ? resource.toObject() : resource;
     const {_id, __v, ...fhir} = obj;
-    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${fhir.meta.versionId}"`).json(fhir);
+    res.set('ETag', `W/"${fhir.meta.versionId}"`);
+    this.sendFhirResponse(res, req, fhir);
   }
 
   @Post(':resourceType')
@@ -112,7 +126,8 @@ export class AdministrationController {
     const baseUrl = this.getBaseUrl(req);
     const obj = resource.toObject ? resource.toObject() : resource;
     const {_id, __v, ...fhir} = obj;
-    res.status(HttpStatus.CREATED).set('Content-Type', 'application/fhir+json').set('Location', `${baseUrl}/${resourceType}/${fhir.id}`).set('ETag', `W/"${fhir.meta.versionId}"`).json(fhir);
+    res.set('Location', `${baseUrl}/${resourceType}/${fhir.id}`).set('ETag', `W/"${fhir.meta.versionId}"`);
+    this.sendFhirResponse(res, req, fhir, HttpStatus.CREATED);
   }
 
   @Put(':resourceType/:id')
@@ -120,12 +135,13 @@ export class AdministrationController {
   @ApiParam({name: 'resourceType', example: 'StructureDefinition'})
   @ApiParam({name: 'id'})
   @ApiResponse({status: 200, description: 'Updated'})
-  async update(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Res() res: Response) {
+  async update(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.administrationService.update(resourceType, id, body);
     const obj = resource.toObject ? resource.toObject() : resource;
     const {_id, __v, ...fhir} = obj;
-    res.set('Content-Type', 'application/fhir+json').set('ETag', `W/"${fhir.meta.versionId}"`).json(fhir);
+    res.set('ETag', `W/"${fhir.meta.versionId}"`);
+    this.sendFhirResponse(res, req, fhir);
   }
 
   @Delete(':resourceType/:id')
@@ -133,10 +149,10 @@ export class AdministrationController {
   @ApiParam({name: 'resourceType', example: 'StructureDefinition'})
   @ApiParam({name: 'id'})
   @ApiResponse({status: 200, description: 'Deleted'})
-  async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Res() res: Response) {
+  async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
     await this.administrationService.delete(resourceType, id);
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted`})]});
-    res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
+    this.sendFhirResponse(res, req, outcome);
   }
 }

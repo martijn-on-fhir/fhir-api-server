@@ -1012,6 +1012,50 @@ codeFilter['code.coding.system'] = codeSystem;
     this.eventEmitter.emit('fhir.resource.changed', {action, resourceType, id, resource, req} as FhirResourceEvent);
   }
 
+  /**
+   * FHIR $diff operation. Compares two versions of a resource (or two different resources) and returns
+   * a Parameters resource describing the differences. Each difference is a "diff" part containing
+   * the operation (insert/delete/replace), path, and optional previousValue/newValue.
+   */
+  async diff(left: any, right: any): Promise<any> {
+    const leftClean = this.stripInternalFields(left);
+    const rightClean = this.stripInternalFields(right);
+    const patches = jsonpatch.compare(leftClean, rightClean);
+
+    const parameters: any[] = patches.map((op) => {
+      const parts: any[] = [];
+      const fhirOp = op.op === 'add' ? 'insert' : op.op === 'remove' ? 'delete' : 'replace';
+      parts.push({name: 'type', valueCode: fhirOp});
+      parts.push({name: 'path', valueString: op.path});
+
+      if (op.op === 'replace' || op.op === 'remove') {
+        const prevValue = jsonpatch.getValueByPointer(leftClean, op.path);
+        parts.push({name: 'previousValue', valueString: typeof prevValue === 'object' ? JSON.stringify(prevValue) : String(prevValue)});
+      }
+
+      if (op.op === 'replace' || op.op === 'add') {
+        const newVal = (op as any).value;
+        parts.push({name: 'newValue', valueString: typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal)});
+      }
+
+      return {name: 'diff', part: parts};
+    });
+
+    return {resourceType: 'Parameters', parameter: parameters};
+  }
+
+  /** Strips MongoDB internal fields from a resource for clean comparison. */
+  private stripInternalFields(doc: any): any {
+    const obj = doc.toObject ? doc.toObject() : (typeof doc === 'object' ? {...doc} : doc);
+    delete obj._id;
+    delete obj.__v;
+    delete obj._deleted;
+    delete obj.request;
+    delete obj.response;
+
+    return obj;
+  }
+
   private createOutcome(severity: IssueSeverity, code: IssueType, diagnostics: string): OperationOutcome {
     return new OperationOutcome({issue: [new OperationOutcomeIssue({severity, code, diagnostics})]});
   }

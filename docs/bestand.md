@@ -38,6 +38,8 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | Custom SearchParameters + $reindex operatie | ✅ |
 | Cascading Deletes (`_cascade=delete`) | ✅ |
 | $expunge — hard delete / fysieke purge (GDPR/AVG compliance) | ✅ |
+| UCUM Unit Conversion — automatische eenheidsconversie bij quantity search | ✅ |
+| $diff — vergelijk twee versies of twee resources onderling | ✅ |
 
 ## Ontbrekende features
 
@@ -71,9 +73,9 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 | ~~14~~ | ~~**$reindex**~~ | | | | | | ~~Geïmplementeerd als onderdeel van Custom SearchParameters~~ |
 | ~~15~~ | ~~**$translate**~~ | | | | | | ~~Geïmplementeerd als onderdeel van Terminology Services~~ |
 | 16 | **Consent-based Access** | ✅ | ✅ | — | — | — | Toegangscontrole op basis van FHIR Consent resources. Gaat verder dan OAuth scopes. |
-| 17 | **UCUM Unit Conversion** | ✅ | ✅ | — | — | — | Automatische eenheidsconversie bij quantity search (bijv. "1 kg" matcht ook "1000 g"). |
+| ~~17~~ | ~~**UCUM Unit Conversion**~~ | | | | | | ~~Geïmplementeerd: conversietabel voor massa, lengte, volume, tijd, concentratie, druk, energie, bloedcellen, IU, enzymen~~ |
 | 18 | **$convert** | ✅ | ✅ | — | — | — | Conversie tussen FHIR versies (STU3 ↔ R4). Nuttig in mixed-version omgevingen. |
-| 19 | **$diff** | — | ✅ | — | — | — | Vergelijk twee versies van een resource of twee resources onderling. |
+| ~~19~~ | ~~**$diff**~~ | | | | | | ~~Geïmplementeerd: instance-level (GET, vergelijk versies) en type-level (POST, vergelijk twee resources)~~ |
 
 ## Aanbevolen implementatievolgorde
 
@@ -94,7 +96,7 @@ Vergelijking van onze FHIR API server met Firely Server, HAPI FHIR, IBM LinuxFor
 ~~10. **Cascading Deletes**~~
 
 ### Fase 4 — Geavanceerd
-11. **$expunge** (GDPR)
-12. **GraphQL**
-13. **Multi-tenancy**
-14. **Consent-based Access Control**
+11. ~~**$expunge** (GDPR)~~
+12. ~~**GraphQL**~~
+13. ~~**Multi-tenancy**~~
+14. ~~**Consent-based Access Control**~~
