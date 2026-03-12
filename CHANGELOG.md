@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.8.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.7.0...fhir-api-server-v0.8.0) (2026-03-12)
+
+
+### Features
+
+* add $expunge operation for hard delete / physical purge (GDPR/AVG) ([5aa66f5](https://github.com/martijn-on-fhir/fhir-api-server/commit/5aa66f5b9d0419553f6c0b57094b1ba0e5bc1b09))
+* add $lastn, referential integrity and Insomnia updates (Phase 2) ([ed6a3b2](https://github.com/martijn-on-fhir/fhir-api-server/commit/ed6a3b22c80fbb8e359fa3ac835ba359bbb2b137))
+* add FHIR terminology operations ($expand, $lookup, $translate) ([6e0ecd1](https://github.com/martijn-on-fhir/fhir-api-server/commit/6e0ecd17d7d792e64b191742fbd03184ef7e76e8))
+* add PATCH, Compartment Search and CORS (Phase 1) ([0da7c68](https://github.com/martijn-on-fhir/fhir-api-server/commit/0da7c68529fd36fa60cf5d16af16fc2aefd5e533))
+* add STU3 → R4 migration script for nl-core FHIR resources ([b36beda](https://github.com/martijn-on-fhir/fhir-api-server/commit/b36bedab8d977460501ff0b239e7923b0fb08aaf))
+* add XML format on all routes, UCUM unit conversion and $diff operation ([54165e7](https://github.com/martijn-on-fhir/fhir-api-server/commit/54165e7515e13386c6a7f97313d8948e64878fff))
+* add XML format, Binary resource, custom SearchParameters, $reindex and cascading deletes (Phase 3) ([a726120](https://github.com/martijn-on-fhir/fhir-api-server/commit/a726120e6199fe151557e09bd35133434b812135))
+
+
+### Documentation
+
+* add GraphQL and multi-tenancy implementation plans, remove outdated feature docs ([f4950f4](https://github.com/martijn-on-fhir/fhir-api-server/commit/f4950f410ff463be7663780081f97b1c9c5a1493))
+* add JSDoc documentation to AdministrationService and ConformanceSeederService ([3268030](https://github.com/martijn-on-fhir/fhir-api-server/commit/3268030aa24fdccc939ded4b6044b2b7c6a9d45d))
+* update README with all implemented features ([2cd3488](https://github.com/martijn-on-fhir/fhir-api-server/commit/2cd3488b975f5d18a06f7131c3818dbf6cdc6492))
+
 ## [0.7.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.6.0...fhir-api-server-v0.7.0) (2026-03-11)
 
 
