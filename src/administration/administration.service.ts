@@ -7,6 +7,11 @@ import {ConformanceResource} from './conformance-resource.schema';
 
 const ALLOWED_TYPES = new Set(['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter', 'CompartmentDefinition', 'OperationDefinition', 'NamingSystem', 'ConceptMap', 'ImplementationGuide']);
 
+/**
+ * Service for managing FHIR conformance resources (StructureDefinition, ValueSet, CodeSystem, etc.).
+ * Provides CRUD operations, search with filtering/pagination, and bulk upsert for seeding.
+ * All operations are scoped to the allowed conformance resource types defined in {@link ALLOWED_TYPES}.
+ */
 @Injectable()
 export class AdministrationService {
 
@@ -15,7 +20,15 @@ export class AdministrationService {
   constructor(@InjectModel(ConformanceResource.name) private readonly model: Model<ConformanceResource>) {
   }
 
+  /**
+   * Searches conformance resources by type with optional filtering on `url`, `name`, `version`, `status`, and `_id`.
+   * Supports pagination via `_count` (default 100) and `_offset` (default 0).
+   * @param resourceType - The FHIR resource type to search (must be an allowed conformance type).
+   * @param params - Query parameters for filtering and pagination.
+   * @returns The matching resources and total count.
+   */
   async search(resourceType: string, params: Record<string, string>): Promise<{ resources: ConformanceResource[]; total: number }> {
+
     this.assertAllowedType(resourceType);
     const filter: Record<string, any> = {resourceType};
 
@@ -49,6 +62,13 @@ export class AdministrationService {
     return {resources, total};
   }
 
+  /**
+   * Retrieves a single conformance resource by its resource type and logical id.
+   * @param resourceType - The FHIR resource type (must be an allowed conformance type).
+   * @param id - The logical id of the resource.
+   * @returns The matching conformance resource.
+   * @throws {NotFoundException} With an OperationOutcome if the resource does not exist.
+   */
   async findById(resourceType: string, id: string): Promise<ConformanceResource> {
     this.assertAllowedType(resourceType);
     const resource = await this.model.findOne({resourceType, id}).exec();
@@ -63,19 +83,37 @@ export class AdministrationService {
     return resource;
   }
 
+  /**
+   * Creates a new conformance resource. Assigns a random UUID if no `id` is provided,
+   * and initializes `meta.versionId` to `'1'` with the current timestamp.
+   * @param resourceType - The FHIR resource type (must be an allowed conformance type).
+   * @param body - The resource payload.
+   * @returns The persisted conformance resource.
+   */
   async create(resourceType: string, body: any): Promise<ConformanceResource> {
+
     this.assertAllowedType(resourceType);
     const id = body.id || randomUUID();
     const now = new Date().toISOString();
     const meta = {...body.meta, versionId: '1', lastUpdated: now};
     const resource = new this.model({...body, resourceType, id, meta});
     const saved = await resource.save();
+
     this.logger.log(`Created ${resourceType}/${id} (url: ${body.url || 'n/a'})`);
 
     return saved;
   }
 
+  /**
+   * Updates an existing conformance resource or creates it if it doesn't exist (upsert).
+   * Increments `meta.versionId` based on the current version.
+   * @param resourceType - The FHIR resource type (must be an allowed conformance type).
+   * @param id - The logical id of the resource.
+   * @param body - The updated resource payload.
+   * @returns The updated (or newly created) conformance resource.
+   */
   async update(resourceType: string, id: string, body: any): Promise<ConformanceResource> {
+
     this.assertAllowedType(resourceType);
     const existing = await this.model.findOne({resourceType, id}).exec();
     const now = new Date().toISOString();
@@ -89,7 +127,14 @@ export class AdministrationService {
     return updated;
   }
 
+  /**
+   * Deletes a conformance resource by its resource type and logical id.
+   * @param resourceType - The FHIR resource type (must be an allowed conformance type).
+   * @param id - The logical id of the resource to delete.
+   * @throws {NotFoundException} With an OperationOutcome if the resource does not exist.
+   */
   async delete(resourceType: string, id: string): Promise<void> {
+
     this.assertAllowedType(resourceType);
     const result = await this.model.deleteOne({resourceType, id}).exec();
 
@@ -101,7 +146,13 @@ export class AdministrationService {
     this.logger.log(`Deleted ${resourceType}/${id}`);
   }
 
-  /** Bulk upsert for seeding — upserts by resourceType + url + version. Returns count of upserted documents. */
+  /**
+   * Bulk upserts conformance resources for seeding purposes. Matches existing resources by
+   * `resourceType + url + version` (or `resourceType + id` if no URL). Uses `$setOnInsert`
+   * so existing resources are never overwritten. Processes in batches of 500.
+   * @param resources - Array of FHIR conformance resources to upsert.
+   * @returns The number of newly inserted documents.
+   */
   async bulkUpsert(resources: any[]): Promise<number> {
     if (resources.length === 0) {
       return 0;
@@ -129,18 +180,28 @@ export class AdministrationService {
     return upserted;
   }
 
-  /** Returns seed version marker, or null if not seeded yet. */
+  /**
+   * Returns the stored seed version hash used for change detection, or `null` if no seed has been performed yet.
+   */
   async getSeedVersion(): Promise<string | null> {
     const marker = await this.model.findOne({resourceType: '_SeedMarker', id: 'seed-version'}).lean().exec();
 
     return marker ? (marker as any).version : null;
   }
 
-  /** Stores seed version marker. */
+  /**
+   * Persists the seed version hash so subsequent startups can skip re-importing unchanged files.
+   * @param version - The MD5 hash representing the current state of the import directory.
+   */
   async setSeedVersion(version: string): Promise<void> {
     await this.model.updateOne({resourceType: '_SeedMarker', id: 'seed-version'}, {resourceType: '_SeedMarker', id: 'seed-version', version, meta: {versionId: '1', lastUpdated: new Date().toISOString()}}, {upsert: true}).exec();
   }
 
+  /**
+   * Guards that the given resource type is a supported conformance type.
+   * @param resourceType - The resource type to validate.
+   * @throws {NotFoundException} With an OperationOutcome listing supported types if the type is not allowed.
+   */
   private assertAllowedType(resourceType: string): void {
     if (!ALLOWED_TYPES.has(resourceType)) {
       throw new NotFoundException(new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.NotSupported, diagnostics: `Resource type '${resourceType}' is not a conformance resource. Supported: ${[...ALLOWED_TYPES].join(', ')}`})]}));

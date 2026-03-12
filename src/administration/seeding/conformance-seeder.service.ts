@@ -1,20 +1,34 @@
-import { createHash } from 'crypto';
-import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
-import { resolve, join } from 'path';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { AdministrationService } from '../administration.service';
+import {createHash} from 'crypto';
+import {readFileSync, readdirSync, statSync, existsSync} from 'fs';
+import {resolve, join} from 'path';
+import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
+import {AdministrationService} from '../administration.service';
 
-const CONFORMANCE_TYPES = new Set(['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter', 'CompartmentDefinition', 'OperationDefinition', 'NamingSystem', 'ConceptMap', 'ImplementationGuide']);
+const CONFORMANCE_TYPES = new Set(['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter', 'CompartmentDefinition',
+  'OperationDefinition', 'NamingSystem', 'ConceptMap', 'ImplementationGuide']);
 
+/**
+ * Seeds conformance resources (StructureDefinition, ValueSet, CodeSystem, etc.) from JSON files
+ * in the `file-import/` directory into the administration database on application startup.
+ *
+ * Uses MD5 hashing of file paths and sizes for change detection, so imports are skipped
+ * when the import directory hasn't changed since the last seed.
+ */
 @Injectable()
 export class ConformanceSeederService implements OnModuleInit {
 
   private readonly logger = new Logger(ConformanceSeederService.name);
   private readonly importDir = resolve(process.cwd(), 'file-import');
 
-  constructor(private readonly administrationService: AdministrationService) {}
+  constructor(private readonly administrationService: AdministrationService) {
+  }
 
+  /**
+   * NestJS lifecycle hook — triggers the seed process when the module initializes.
+   * Logs a warning and skips if the import directory does not exist.
+   */
   async onModuleInit() {
+
     if (!existsSync(this.importDir)) {
       this.logger.warn(`Import directory not found: ${this.importDir} — skipping seed`);
 
@@ -28,7 +42,13 @@ export class ConformanceSeederService implements OnModuleInit {
     }
   }
 
+  /**
+   * Reads all JSON files from the import directory, parses conformance resources
+   * (including Bundle entries), computes a change-detection hash, and bulk-upserts
+   * new or changed resources into the administration store.
+   */
   private async seed() {
+
     const files = this.collectJsonFiles(this.importDir);
     this.logger.log(`Found ${files.length} JSON files in ${this.importDir}`);
 
@@ -48,6 +68,7 @@ export class ConformanceSeederService implements OnModuleInit {
     let skipped = 0;
 
     for (const file of files) {
+
       try {
         const content = JSON.parse(readFileSync(file, 'utf-8'));
 
@@ -57,8 +78,8 @@ export class ConformanceSeederService implements OnModuleInit {
             const r = entry.resource || entry;
 
             if (r.resourceType && CONFORMANCE_TYPES.has(r.resourceType)) {
-resources.push(r);
-}
+              resources.push(r);
+            }
           }
 
           continue;
@@ -78,8 +99,8 @@ resources.push(r);
     this.logger.log(`Parsed ${resources.length} conformance resources (${skipped} non-conformance files skipped)`);
 
     if (resources.length === 0) {
-return;
-}
+      return;
+    }
 
     const upserted = await this.administrationService.bulkUpsert(resources);
     await this.administrationService.setSeedVersion(currentHash);
@@ -87,9 +108,15 @@ return;
     this.logger.log(`Seeding complete: ${upserted} new resources inserted, ${resources.length - upserted} already existed`);
   }
 
+  /**
+   * Recursively collects all `.json` file paths from the given directory.
+   * @param dir - The root directory to scan.
+   * @returns Array of absolute file paths to JSON files.
+   */
   private collectJsonFiles(dir: string): string[] {
+
     const results: string[] = [];
-    const entries = readdirSync(dir, { withFileTypes: true });
+    const entries = readdirSync(dir, {withFileTypes: true});
 
     for (const entry of entries) {
       const fullPath = join(dir, entry.name);
