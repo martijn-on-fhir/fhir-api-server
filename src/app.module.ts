@@ -25,11 +25,11 @@ import { ResilienceModule } from './resilience/resilience.module';
     ThrottlerModule.forRoot([{
       name: 'short',
       ttl: parseInt(process.env.RATE_LIMIT_TTL || '60', 10) * 1000,
-      limit: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+      limit: parseInt(process.env.RATE_LIMIT_MAX || '5000', 10),
     }, {
       name: 'long',
       ttl: 600_000, // 10 minutes
-      limit: parseInt(process.env.RATE_LIMIT_MAX_LONG || '1000', 10),
+      limit: parseInt(process.env.RATE_LIMIT_MAX_LONG || '50000', 10),
     }]),
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/fhir', {
       maxPoolSize: parseInt(process.env.MONGODB_POOL_SIZE || '10', 10),

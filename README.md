@@ -131,6 +131,13 @@ The FHIR validator (`fhir-validator-mx`) reads conformance resources directly fr
 
 - Node.js 18+
 - MongoDB running on `localhost:27017` (or set `MONGODB_URI` env var)
+- [k6](https://k6.io/docs/get-started/installation/) (optional, for load testing)
+  ```bash
+  # Windows
+  winget install GrafanaLabs.k6
+  # macOS
+  brew install k6
+  ```
 
 ## Setup
 
@@ -168,7 +175,79 @@ npm run test:load        # run full mixed traffic scenario
 k6 run test/load/scenarios/read.js    # individual scenario
 ```
 
-173 automated tests across 12 e2e test suites + unit tests. See [test/load/README.md](test/load/README.md) for load testing details.
+173 automated tests across 12 e2e test suites + unit tests.
+
+### Load Testing (k6)
+
+Load tests simulate realistic mixed traffic against a running server. Requires [k6](https://k6.io/) and a running FHIR server with MongoDB.
+
+**1. Install k6**
+
+```bash
+# Windows
+winget install GrafanaLabs.k6
+
+# macOS
+brew install k6
+
+# Linux (Debian/Ubuntu)
+sudo gpg -k
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+  --keyserver hkp://keyserver.ubuntu.com:80 \
+  --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+  | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update && sudo apt-get install k6
+```
+
+Herstart je terminal na installatie zodat `k6` in je PATH staat.
+
+**2. Start de server zonder rate limiting**
+
+```bash
+# Linux/macOS
+RATE_LIMIT_DISABLED=true npm run start:dev
+
+# Windows (PowerShell)
+$env:RATE_LIMIT_DISABLED="true"; npm run start:dev
+```
+
+**3. Seed testdata**
+
+In een tweede terminal:
+
+```bash
+npm run test:load:seed
+```
+
+Dit maakt 1500+ resources aan (100 patients, 10 practitioners, 5 organizations, 200 encounters, 1000 observations, 200 conditions). Resource IDs worden opgeslagen in `test/load/.seed-ids.json`.
+
+**4. Run de load test**
+
+```bash
+# Volledig scenario (100 reads/s + 30 searches/s + 10 writes/s, 2 minuten)
+npm run test:load
+
+# Individuele scenario's
+k6 run test/load/scenarios/read.js        # reads only (p95 < 200ms)
+k6 run test/load/scenarios/search.js       # searches only (p95 < 500ms)
+k6 run test/load/scenarios/crud-mix.js     # mixed CRUD
+k6 run test/load/scenarios/transaction.js  # batch/transaction bundles
+
+# Custom base URL
+k6 run -e BASE_URL=http://staging:3000 test/load/scenarios/read.js
+```
+
+**Thresholds**
+
+| Scenario | Target |
+|----------|--------|
+| Reads (Patient, Observation, Encounter, metadata) | p95 < 200ms |
+| Searches (name, patient, code, date, `_include`) | p95 < 500ms |
+| Writes (create, update) | p95 < 1000ms |
+| Error rate | < 1% |
+
+Zie [test/load/README.md](test/load/README.md) voor meer details.
 
 ## API Documentation
 
@@ -189,8 +268,9 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 | `OTEL_ENABLED` | `false` | Enable OpenTelemetry tracing (Jaeger UI at http://localhost:16686) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | OTLP collector endpoint (auto-configured in docker-compose) |
 | `RATE_LIMIT_TTL` | `60` | Rate limit window in seconds |
-| `RATE_LIMIT_MAX` | `100` | Max requests per short window |
-| `RATE_LIMIT_MAX_LONG` | `1000` | Max requests per 10-minute window |
+| `RATE_LIMIT_MAX` | `5000` | Max requests per short window |
+| `RATE_LIMIT_MAX_LONG` | `50000` | Max requests per 10-minute window |
+| `RATE_LIMIT_DISABLED` | `false` | Disable rate limiting entirely (useful for load testing) |
 | `SMART_ENABLED` | `false` | Enable SMART on FHIR authentication |
 | `SMART_ISSUER` | - | JWT issuer (must match authorization server) |
 | `SMART_AUDIENCE` | `fhir-api` | JWT audience |

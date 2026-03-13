@@ -7,8 +7,8 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  * See: https://www.hl7.org/fhir/R4/search.html#string
  */
 const STRING_SEARCH_SUBFIELDS: Record<string, string[]> = {
-  HumanName: ['family', 'given', 'text', 'prefix', 'suffix'],
-  Address: ['line', 'city', 'district', 'state', 'postalCode', 'country', 'text'],
+  HumanName: ['family', 'given', 'text'],
+  Address: ['line', 'city', 'postalCode', 'country', 'text'],
 };
 
 /** FHIRPath expression hints that indicate a complex type target. */

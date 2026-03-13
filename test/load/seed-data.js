@@ -31,8 +31,14 @@ const randomDate = (yearFrom, yearTo) => {
   return new Date(start + Math.random() * (end - start)).toISOString().split('T')[0];
 };
 
-async function post(resourceType, body) {
+async function post(resourceType, body, retries = 5) {
   const res = await fetch(`${FHIR_URL}/${resourceType}`, {method: 'POST', headers: HEADERS, body: JSON.stringify(body)});
+  if (res.status === 429 && retries > 0) {
+    const delay = parseInt(res.headers.get('retry-after') || '10', 10) * 1000;
+    console.log(`  Rate limited, waiting ${delay / 1000}s (${retries} retries left)...`);
+    await new Promise((r) => setTimeout(r, delay));
+    return post(resourceType, body, retries - 1);
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`POST ${resourceType} failed: ${res.status} ${text.substring(0, 200)}`);

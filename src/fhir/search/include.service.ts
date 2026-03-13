@@ -166,12 +166,26 @@ export class IncludeService {
       return [];
     }
 
-    // Build OR query for all referenced resources
-    const orConditions = [...refsToFetch].map((ref) => {
+    // Group by resourceType and use $in for efficient batched lookup
+    const byType = new Map<string, string[]>();
+
+    for (const ref of refsToFetch) {
       const [type, id] = ref.split('/');
 
-      return { resourceType: type, id };
-    });
+      if (!byType.has(type)) {
+        byType.set(type, []);
+      }
+
+      byType.get(type).push(id);
+    }
+
+    if (byType.size === 1) {
+      const [type, ids] = [...byType.entries()][0];
+
+      return this.resourceModel.find({ resourceType: type, id: { $in: ids } }).exec();
+    }
+
+    const orConditions = [...byType.entries()].map(([type, ids]) => ({ resourceType: type, id: { $in: ids } }));
 
     return this.resourceModel.find({ $or: orConditions }).exec();
   }
@@ -196,9 +210,16 @@ export class IncludeService {
         continue;
       }
 
-      const orFilters = resolved.paths.flatMap((path) => targetRefs.map((ref) => ({ [`${path}.reference`]: ref })));
-      const filter = { resourceType: inc.sourceType, $or: orFilters };
-      const results = await this.resourceModel.find(filter).exec();
+      const orFilters = resolved.paths.map((path) => ({ [`${path}.reference`]: { $in: targetRefs } }));
+      const filter: Record<string, any> = { resourceType: inc.sourceType };
+
+      if (orFilters.length === 1) {
+        Object.assign(filter, orFilters[0]);
+      } else {
+        filter.$or = orFilters;
+      }
+
+      const results = await this.resourceModel.find(filter).limit(MAX_INCLUDE_RESULTS).exec();
       allResults.push(...results);
     }
 

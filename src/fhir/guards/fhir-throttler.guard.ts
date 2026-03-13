@@ -18,8 +18,9 @@ export class FhirThrottlerGuard extends ThrottlerGuard {
     return req.ip || req.socket?.remoteAddress || 'unknown';
   }
 
-  /** Skips rate limiting for health and metrics endpoints. */
+  /** Skips rate limiting for health/metrics endpoints and when RATE_LIMIT_DISABLED is set. */
   protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
+    if (process.env.RATE_LIMIT_DISABLED === 'true') return true;
     const req = context.switchToHttp().getRequest<Request>();
     const path = req.path;
 

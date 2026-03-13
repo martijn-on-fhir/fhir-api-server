@@ -117,12 +117,6 @@ export class FhirService {
       query.sort(sortObj);
     }
 
-    // _total parameter: accurate (default), estimate, or none
-    const totalMode = params._total || 'accurate';
-    let total: number | undefined;
-    if (totalMode === 'none') { total = undefined; }
-    else if (totalMode === 'estimate') { total = await this.resourceModel.estimatedDocumentCount().exec(); }
-    else { total = await this.resourceModel.countDocuments(filter).exec(); }
     const count = clampCount(params._count, 10);
     query.limit(count);
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
@@ -131,7 +125,10 @@ export class FhirService {
       query.skip(offset);
     }
 
-    const resources = await query.exec();
+    // Run find and countDocuments in parallel — they are independent MongoDB operations
+    const totalMode = params._total || 'accurate';
+    const countPromise = totalMode === 'none' ? Promise.resolve(undefined) : totalMode === 'estimate' ? this.resourceModel.estimatedDocumentCount().exec() : this.resourceModel.countDocuments(filter).exec();
+    const [resources, total] = await Promise.all([query.exec(), countPromise]);
 
     // Resolve _include and _revinclude
     const included = await this.includeService.resolveIncludes(resources, resourceType, params);

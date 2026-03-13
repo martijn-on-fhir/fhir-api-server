@@ -55,6 +55,7 @@ FhirResourceSchema.index({ resourceType: 1, status: 1 });
 // Name search: Patient?name=..., Practitioner?name=...
 FhirResourceSchema.index({ resourceType: 1, 'name.family': 1 });
 FhirResourceSchema.index({ resourceType: 1, 'name.given': 1 });
+FhirResourceSchema.index({ resourceType: 1, 'name.text': 1 });
 
 // Category search: Observation?category=..., Condition?category=...
 FhirResourceSchema.index({ resourceType: 1, 'category.coding.system': 1, 'category.coding.code': 1 });
