@@ -31,7 +31,7 @@ Resterende stappen voordat de disclaimer "niet gevalideerd voor productiegebruik
 
 - [x] NEN 7510 self-assessment (`docs/nen7510-self-assessment.md`) — 18 technische controls afgedekt
 - [x] DPIA (`docs/dpia.md`) — risicobeoordeling met 10 risico's en maatregelen
-- [ ] AVG/GDPR verwerkersovereenkomst opstellen (template per klant-relatie)
+- [x] AVG/GDPR verwerkersovereenkomst template (`docs/verwerkersovereenkomst-template.md`) — invullen per klant-relatie
 - [x] Logging retentie: `AUDIT_RETENTION_DAYS` instellen op 1825 (5 jaar, NEN 7513) voor productie
 - [x] WGBO bewaartermijnen: medische data heeft geen automatische verwijdering (20 jaar bewaard)
 
