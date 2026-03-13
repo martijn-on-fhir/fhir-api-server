@@ -99,6 +99,18 @@ export class FhirService {
       delete params._compartmentFilter;
     }
 
+    // Consent exclusion filter injected by controller
+    if (params._consentExclusion) {
+      const consentFilter = JSON.parse(params._consentExclusion);
+
+      if ('_impossible' in consentFilter) {
+        return {resources: [], total: 0, included: [], warnings};
+      }
+
+      extraConditions.push(consentFilter);
+      delete params._consentExclusion;
+    }
+
     if (extraConditions.length > 0) {
       const existing = filter.$and || [];
       filter.$and = [...existing, ...extraConditions];

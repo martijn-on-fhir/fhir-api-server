@@ -231,7 +231,15 @@ Bestaand plan in `docs/multi-tenancy-plan.md`. URL-based routing + database-per-
 
 ### 5.2 Consent enforcement
 
-Consent resources opslaan en afdwingen bij data access op basis van purpose-of-use en actor.
+- [x] `ConsentEnforcementService` met cached policy loading en deny-provision evaluatie
+- [x] Search filtering: denied resource types geven leeg resultaat, denied specifieke resources worden uitgesloten via `$nin`
+- [x] Read access control: ForbiddenException bij denied resources
+- [x] Actor-based denials: blokkeer toegang voor specifieke Practitioners/Organizations
+- [x] Purpose-of-use denials: blokkeer toegang voor specifieke doeleinden (TREAT, HPAYMT, etc.)
+- [x] Opt-in model: geen Consent = volledige toegang
+- [x] Cache met 60s TTL + event-based invalidatie bij Consent wijzigingen
+- [x] Alleen actieve Consent resources met scope=patient-privacy worden geëvalueerd
+- [x] 9 e2e tests: opt-in, type denial, specific resource denial, actor denial, inactive consent ignored
 
 ### ~~5.3 GraphQL API~~ (geschrapt)
 

@@ -9,6 +9,7 @@ import { BulkExportController } from './bulk-export/bulk-export.controller';
 import { BulkExportService } from './bulk-export/bulk-export.service';
 import { BundleProcessorService } from './bundle-processor.service';
 import { BundleMiddleware } from './bundle.middleware';
+import { ConsentEnforcementService } from './consent/consent-enforcement.service';
 import { FhirResourceHistory, FhirResourceHistorySchema } from './fhir-resource-history.schema';
 import { FhirResource, FhirResourceSchema } from './fhir-resource.schema';
 import { FhirController } from './fhir.controller';
@@ -30,7 +31,8 @@ import { FhirValidationService } from './validation/fhir-validation.service';
 @Module({
   imports: [CacheModule, JobQueueModule, MongooseModule.forFeature([{ name: FhirResource.name, schema: FhirResourceSchema }, { name: FhirResourceHistory.name, schema: FhirResourceHistorySchema }]), SmartModule],
   controllers: [BulkExportController, BgzController, FhirController],
-  providers: [FhirService, FhirValidationService, FhirValidationPipe, SearchParameterRegistry, QueryBuilderService, IncludeService, ChainingService, BundleProcessorService, SubscriptionService, SubscriptionNotificationService, BulkExportService, BgzService, AuditEventService],
+  providers: [FhirService, FhirValidationService, FhirValidationPipe, SearchParameterRegistry, QueryBuilderService, IncludeService, ChainingService,
+    BundleProcessorService, SubscriptionService, SubscriptionNotificationService, BulkExportService, BgzService, AuditEventService, ConsentEnforcementService],
 })
 export class FhirModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

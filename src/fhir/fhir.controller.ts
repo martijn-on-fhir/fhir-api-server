@@ -5,6 +5,7 @@ import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEnt
 import { CacheService } from '../cache/cache.service';
 import { AuditEventService } from './audit/audit-event.service';
 import { buildCapabilityStatement } from './capability-statement.builder';
+import { ConsentEnforcementService } from './consent/consent-enforcement.service';
 import { FhirService } from './fhir.service';
 import { sanitizeSearchParams } from './search/sanitize';
 import { SearchParameterRegistry } from './search/search-parameter-registry.service';
@@ -58,7 +59,7 @@ export class FhirController {
    * @param validationPipe - Pipe that validates incoming resource bodies against FHIR R4 rules.
    */
   // eslint-disable-next-line max-len
-  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig, private readonly auditService: AuditEventService, private readonly cacheService: CacheService) {}
+  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig, private readonly auditService: AuditEventService, private readonly cacheService: CacheService, private readonly consentService: ConsentEnforcementService) {}
 
   /**
    * Derives the FHIR base URL from the incoming request, respecting reverse proxy headers.
@@ -558,6 +559,9 @@ return;
     // SMART patient-context: verify the resource belongs to the authorized patient
     this.assertPatientContextAccess(resourceType, resource, req);
 
+    // Consent enforcement: verify the resource is not denied by patient consent
+    await this.assertConsentAccess(resourceType, id, req);
+
     if (this.checkConditionalRead(req, res, resource.meta)) {
 return;
 }
@@ -839,6 +843,9 @@ return;
 
     // SMART patient-context: restrict search results to resources linked to the authorized patient
     this.applyPatientContextFilter(resourceType, params, req);
+
+    // Consent enforcement: exclude resources denied by patient consent directives
+    await this.applyConsentFilter(resourceType, params, req);
 
     const { resources, total, included, warnings } = await this.fhirService.search(resourceType, params);
 
@@ -1147,6 +1154,50 @@ return 'xml';
     }
 
     return current;
+  }
+
+  /** Applies consent-based exclusion filters to search queries. */
+  private async applyConsentFilter(resourceType: string, params: Record<string, string>, req: Request): Promise<void> {
+    const patientId = (req as any).smartPatientContext;
+
+    if (!patientId) {
+      return;
+    }
+
+    const policy = await this.consentService.getPolicy(patientId);
+    const actorRef = (req as any).user?.fhirUser;
+    const purposeOfUse = (req as any).user?.purpose_of_use;
+    const exclusion = this.consentService.buildSearchExclusion(policy, resourceType, actorRef, purposeOfUse);
+
+    if (!exclusion) {
+      return;
+    }
+
+    // Merge with existing compartment filter or set new one
+    if (params._consentExclusion) {
+      const existing = JSON.parse(params._consentExclusion);
+      params._consentExclusion = JSON.stringify({ $and: [existing, exclusion] });
+    } else {
+      params._consentExclusion = JSON.stringify(exclusion);
+    }
+  }
+
+  /** Checks consent for a single resource read. Throws ForbiddenException if denied. */
+  private async assertConsentAccess(resourceType: string, resourceId: string, req: Request): Promise<void> {
+    const patientId = (req as any).smartPatientContext;
+
+    if (!patientId) {
+      return;
+    }
+
+    const policy = await this.consentService.getPolicy(patientId);
+    const actorRef = (req as any).user?.fhirUser;
+    const purposeOfUse = (req as any).user?.purpose_of_use;
+    const decision = this.consentService.evaluateAccess(policy, resourceType, resourceId, actorRef, purposeOfUse);
+
+    if (decision.denied) {
+      throw new ForbiddenException(decision.reason);
+    }
   }
 
   /**

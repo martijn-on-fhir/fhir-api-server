@@ -13,7 +13,7 @@ import { SearchParameterRegistry } from './search-parameter-registry.service';
 import { SearchParamType } from './search-parameter.types';
 
 /** Search result parameters that are handled separately (not translated to MongoDB filters). */
-const RESULT_PARAMS = new Set(['_sort', '_count', '_offset', '_include', '_revinclude', '_summary', '_total', '_elements', '_contained', '_containedType', '_format', '_pretty', '_compartmentFilter']);
+const RESULT_PARAMS = new Set(['_sort', '_count', '_offset', '_include', '_revinclude', '_summary', '_total', '_elements', '_contained', '_containedType', '_format', '_pretty', '_compartmentFilter', '_consentExclusion']);
 
 /** Pattern to detect chained search params (e.g. subject:Patient.name or subject.name). */
 const CHAIN_PATTERN = /^[a-zA-Z_-]+(?::[A-Za-z]+)?\./;
