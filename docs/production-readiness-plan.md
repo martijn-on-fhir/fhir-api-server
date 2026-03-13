@@ -48,7 +48,7 @@ Geen observability buiten logging. Productie vereist metrics voor dashboards en 
 - [x] Default metrics (request count, duration histogram, error rate via status label)
 - [x] Custom metrics: search duration, validation duration, bundle entries, active subscriptions
 - [x] `/metrics` endpoint (publieke route, geen auth vereist)
-- [ ] Voorbeeld Grafana dashboard JSON meenemen in `docs/`
+- [x] Voorbeeld Grafana dashboard JSON in `docs/grafana-dashboard.json`
 
 **Bestanden:** `src/metrics/metrics.module.ts`, `src/metrics/metrics.interceptor.ts`
 
