@@ -10,6 +10,10 @@ export interface ServerConfig {
   snapshot: { enabled: boolean };
   /** POST /admin/restore — wipe and reimport FHIR data. */
   restore: { enabled: boolean };
+  /** POST /admin/backup — create mongodump backup. */
+  backup: { enabled: boolean };
+  /** POST /admin/backup/restore — restore from mongodump backup. */
+  backupRestore: { enabled: boolean };
 }
 
 /** NestJS injection token for ServerConfig. */
@@ -32,5 +36,7 @@ export const loadServerConfig = (): ServerConfig => {
     cascadeDelete: { enabled: process.env.SERVER_CASCADE_DELETE_ENABLED === 'true' || fileConfig.cascadeDelete?.enabled === true },
     snapshot: { enabled: process.env.SERVER_SNAPSHOT_ENABLED === 'true' || fileConfig.snapshot?.enabled === true },
     restore: { enabled: process.env.SERVER_RESTORE_ENABLED === 'true' || fileConfig.restore?.enabled === true },
+    backup: { enabled: process.env.SERVER_BACKUP_ENABLED === 'true' || fileConfig.backup?.enabled === true },
+    backupRestore: { enabled: process.env.SERVER_BACKUP_RESTORE_ENABLED === 'true' || fileConfig.backupRestore?.enabled === true },
   };
 };

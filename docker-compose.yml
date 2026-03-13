@@ -14,6 +14,7 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     volumes:
       - ./file-import:/app/file-import:ro
+      - backups:/app/backups
     depends_on:
       mongo:
         condition: service_healthy
@@ -95,3 +96,4 @@ volumes:
   mongo-data:
   prometheus-data:
   grafana-data:
+  backups:

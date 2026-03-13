@@ -37,6 +37,14 @@ export class DangerousOperationGuard implements CanActivate {
       this.deny('restore', 'server.restore.enabled', 'SERVER_RESTORE_ENABLED');
     }
 
+    if (path === '/admin/backup' && req.method === 'POST' && !this.config.backup.enabled) {
+      this.deny('backup', 'server.backup.enabled', 'SERVER_BACKUP_ENABLED');
+    }
+
+    if (path === '/admin/backup/restore' && !this.config.backupRestore.enabled) {
+      this.deny('backup restore', 'server.backupRestore.enabled', 'SERVER_BACKUP_RESTORE_ENABLED');
+    }
+
     return true;
   }
 

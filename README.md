@@ -307,6 +307,11 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 | `SERVER_CASCADE_DELETE_ENABLED` | `false` | Enable `_cascade=delete` (recursive delete) |
 | `SERVER_SNAPSHOT_ENABLED` | `false` | Enable `POST /admin/snapshot` |
 | `SERVER_RESTORE_ENABLED` | `false` | Enable `POST /admin/restore` |
+| `SERVER_BACKUP_ENABLED` | `false` | Enable `POST /admin/backup` (mongodump) |
+| `SERVER_BACKUP_RESTORE_ENABLED` | `false` | Enable `POST /admin/backup/restore` (mongorestore) |
+| `BACKUP_DIR` | `./backups` | Directory for backup files |
+| `BACKUP_INTERVAL_MS` | `86400000` | Automated backup interval (24h). `0` = disabled |
+| `BACKUP_RETENTION_COUNT` | `7` | Max number of backups to retain |
 
 SMART and server settings can also be configured in `config/app-config.json` (see `config/app-config.example.json`). Environment variables take precedence.
 
