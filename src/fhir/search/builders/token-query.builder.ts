@@ -16,6 +16,7 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  */
 export class TokenQueryBuilder implements SearchQueryBuilder {
 
+  /** Builds a MongoDB filter for token search. Supports :text, :not, :missing modifiers. Comma-separated values are OR'd. */
   buildQuery(ctx: QueryBuilderContext, rawValue: string, modifier?: string): Record<string, any> | null {
 
     const values = rawValue.split(',').map((v) => v.trim()).filter(Boolean);
@@ -34,6 +35,7 @@ export class TokenQueryBuilder implements SearchQueryBuilder {
     return combined;
   }
 
+  /** Builds a filter for a single path and token value. Handles system|code, |code, code, system| and boolean formats across all coded FHIR types. */
   private buildPathFilter(path: string, value: string, modifier?: string): Record<string, any> {
 
     if (modifier === 'text') {
@@ -95,6 +97,7 @@ export class TokenQueryBuilder implements SearchQueryBuilder {
     ] };
   }
 
+  /** Parses a token value into system, code and whether a pipe separator was present. */
   private parseTokenValue(value: string): { system: string; code: string; hasBar: boolean } {
 
     const barIndex = value.indexOf('|');

@@ -7,6 +7,7 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  */
 export class NumberQueryBuilder implements SearchQueryBuilder {
 
+  /** Builds a MongoDB filter for number search. Supports :missing modifier and comparison prefixes. Comma-separated values are OR'd. */
   buildQuery(ctx: QueryBuilderContext, rawValue: string, modifier?: string): Record<string, any> | null {
 
     if (modifier === 'missing') {
@@ -26,6 +27,7 @@ export class NumberQueryBuilder implements SearchQueryBuilder {
     return pathFilters.length === 1 ? pathFilters[0] : { $or: pathFilters };
   }
 
+  /** Builds a numeric filter for a single path. Uses implicit precision range for 'eq'/'ne' and direct comparison for other prefixes. */
   private buildPathFilter(path: string, rawValue: string): Record<string, any> {
 
     const { prefix, value } = this.parsePrefix(rawValue);
@@ -54,6 +56,7 @@ export class NumberQueryBuilder implements SearchQueryBuilder {
     }
   }
 
+  /** Extracts a comparison prefix (eq, ne, gt, lt, ge, le, sa, eb, ap) from the raw value. Defaults to 'eq'. */
   private parsePrefix(value: string): ParsedPrefixValue {
 
     const match = value.match(/^(eq|ne|gt|lt|ge|le|sa|eb|ap)(.+)$/);

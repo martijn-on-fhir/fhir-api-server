@@ -7,12 +7,18 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  */
 export class CompositeQueryBuilder implements SearchQueryBuilder {
 
+  /**
+   * @param builderLookup - Resolves a FHIR search parameter type (e.g. 'token', 'date') to its query builder.
+   * @param pathResolver - Resolves a resource type and parameter code to MongoDB paths.
+   * @param paramLookup - Resolves a resource type and parameter code to the search parameter definition.
+   */
   constructor(
     private readonly builderLookup: (type: string) => SearchQueryBuilder | undefined,
     private readonly pathResolver: (resourceType: string, code: string) => { paths: string[]; isPolymorphic: boolean } | undefined,
     private readonly paramLookup: (resourceType: string, code: string) => { code: string; type: string; expression: string; base: string[] } | undefined,
   ) {}
 
+  /** Builds a MongoDB filter for composite search. Splits value by '$' separator and delegates each component to its sub-parameter builder. Supports :missing modifier. */
   buildQuery(ctx: QueryBuilderContext, rawValue: string, modifier?: string): Record<string, any> | null {
 
     if (modifier === 'missing') {
@@ -38,6 +44,7 @@ export class CompositeQueryBuilder implements SearchQueryBuilder {
     return orFilters.length === 1 ? orFilters[0] : { $or: orFilters };
   }
 
+  /** Builds a $and filter for a single composite value by resolving each component's sub-parameter and delegating to the appropriate builder. */
   private buildSingleComposite(ctx: QueryBuilderContext, rawValue: string, components: { definition: string; expression: string }[]): Record<string, any> | null {
 
     // Split composite value by $ separator

@@ -7,6 +7,7 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  */
 export class UriQueryBuilder implements SearchQueryBuilder {
 
+  /** Builds a MongoDB filter for URI search. Supports :below (prefix match), :above (inverse prefix) and :missing modifiers. Comma-separated values are OR'd. */
   buildQuery(ctx: QueryBuilderContext, rawValue: string, modifier?: string): Record<string, any> | null {
 
     if (modifier === 'missing') {
@@ -26,6 +27,7 @@ export class UriQueryBuilder implements SearchQueryBuilder {
     return pathFilters.length === 1 ? pathFilters[0] : { $or: pathFilters };
   }
 
+  /** Builds a filter for a single URI path. :below uses regex prefix match, :above uses inverse prefix, default is exact match. */
   private buildPathFilter(path: string, value: string, modifier?: string): Record<string, any> {
 
     const escaped = escapeRegex(value);

@@ -10,6 +10,7 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  */
 export class QuantityQueryBuilder implements SearchQueryBuilder {
 
+  /** Builds a MongoDB filter for quantity search. Supports :missing modifier and UCUM unit conversion. Comma-separated values are OR'd. */
   buildQuery(ctx: QueryBuilderContext, rawValue: string, modifier?: string): Record<string, any> | null {
 
     if (modifier === 'missing') {
@@ -121,6 +122,7 @@ export class QuantityQueryBuilder implements SearchQueryBuilder {
     return conditions;
   }
 
+  /** Extracts a comparison prefix (eq, ne, gt, lt, ge, le, sa, eb, ap) from the raw value. Defaults to 'eq'. */
   private parsePrefix(value: string): ParsedPrefixValue {
 
     const match = value.match(/^(eq|ne|gt|lt|ge|le|sa|eb|ap)(.+)$/);

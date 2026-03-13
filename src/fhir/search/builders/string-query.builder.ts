@@ -24,6 +24,7 @@ const COMPLEX_TYPE_HINTS: Record<string, string> = {
  */
 export class StringQueryBuilder implements SearchQueryBuilder {
 
+  /** Builds a MongoDB filter for string search. Supports :exact, :contains and :missing modifiers. Comma-separated values are OR'd. */
   buildQuery(ctx: QueryBuilderContext, rawValue: string, modifier?: string): Record<string, any> | null {
 
     if (modifier === 'missing') {
@@ -55,6 +56,7 @@ export class StringQueryBuilder implements SearchQueryBuilder {
     return pathFilters.length === 1 ? pathFilters[0] : { $or: pathFilters };
   }
 
+  /** Builds a regex filter for a single path and value. :exact uses literal match, :contains matches anywhere, default is starts-with. */
   private buildPathFilter(path: string, value: string, modifier?: string): Record<string, any> {
 
     const escaped = escapeRegex(value);

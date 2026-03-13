@@ -7,6 +7,7 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  */
 export class DateQueryBuilder implements SearchQueryBuilder {
 
+  /** Builds a MongoDB filter for date/dateTime search. Supports :missing modifier. Comma-separated values are OR'd. */
   buildQuery(ctx: QueryBuilderContext, rawValue: string, modifier?: string): Record<string, any> | null {
 
     if (modifier === 'missing') {
@@ -26,6 +27,7 @@ export class DateQueryBuilder implements SearchQueryBuilder {
     return pathFilters.length === 1 ? pathFilters[0] : { $or: pathFilters };
   }
 
+  /** Builds a date range filter for a single path. Parses the prefix and computes the implicit range for partial dates. */
   private buildPathFilter(path: string, rawValue: string): Record<string, any> {
 
     const { prefix, value } = this.parsePrefix(rawValue);
@@ -57,6 +59,7 @@ export class DateQueryBuilder implements SearchQueryBuilder {
     }
   }
 
+  /** Extracts a comparison prefix (eq, ne, gt, lt, ge, le, sa, eb, ap) from the raw value. Defaults to 'eq'. */
   private parsePrefix(value: string): ParsedPrefixValue {
 
     const prefixMatch = value.match(/^(eq|ne|gt|lt|ge|le|sa|eb|ap)(.+)$/);

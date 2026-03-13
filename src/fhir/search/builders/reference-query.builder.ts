@@ -10,6 +10,7 @@ import { SearchQueryBuilder, QueryBuilderContext } from './query-builder.interfa
  */
 export class ReferenceQueryBuilder implements SearchQueryBuilder {
 
+  /** Builds a MongoDB filter for reference search. Supports :[type], :identifier and :missing modifiers. Comma-separated values are OR'd. */
   buildQuery(ctx: QueryBuilderContext, rawValue: string, modifier?: string): Record<string, any> | null {
 
     const values = rawValue.split(',').map((v) => v.trim()).filter(Boolean);
@@ -33,6 +34,7 @@ export class ReferenceQueryBuilder implements SearchQueryBuilder {
     return pathFilters.length === 1 ? pathFilters[0] : { $or: pathFilters };
   }
 
+  /** Builds a filter for a single reference path. Normalizes absolute URLs to relative, handles bare ids and Type/id formats. */
   private buildPathFilter(path: string, value: string, modifier?: string): Record<string, any> {
 
     const refPath = `${path}.reference`;
@@ -62,6 +64,7 @@ export class ReferenceQueryBuilder implements SearchQueryBuilder {
     return { [refPath]: { $regex: `/${escapeRegex(normalizedValue)}$` } };
   }
 
+  /** Builds a filter for the :identifier modifier. Matches on the identifier sub-element of the reference target with optional system|value format. */
   private buildIdentifierQuery(ctx: QueryBuilderContext, values: string[]): Record<string, any> {
 
     const filters = ctx.resolvedPaths.paths.flatMap((path) => values.map((value) => {
