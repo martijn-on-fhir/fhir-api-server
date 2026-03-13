@@ -54,9 +54,9 @@ export class FhirService {
   /**
    * Searches for resources matching the given type and FHIR search parameters.
    */
-  async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number; included: FhirResource[] }> {
+  async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number; included: FhirResource[]; warnings: string[] }> {
 
-    const filter = this.queryBuilder.buildFilter(resourceType, params);
+    const { filter, warnings } = this.queryBuilder.buildFilter(resourceType, params);
 
     // Resolve chained search params and _has reverse chaining
     const [chainConditions, hasConditions] = await Promise.all([
@@ -68,7 +68,7 @@ export class FhirService {
 
     // If any chain/has resolved to impossible (no matches), return empty
     if ([...chainConditions, ...hasConditions].some((c) => '_impossible' in c)) {
-      return {resources: [], total: 0, included: []};
+      return {resources: [], total: 0, included: [], warnings};
     }
 
     // Compartment search filter injected by controller
@@ -113,7 +113,7 @@ export class FhirService {
     // Resolve _include and _revinclude
     const included = await this.includeService.resolveIncludes(resources, resourceType, params);
 
-    return {resources, total, included};
+    return {resources, total, included, warnings};
   }
 
   /**

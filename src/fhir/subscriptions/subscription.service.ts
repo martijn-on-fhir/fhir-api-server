@@ -92,7 +92,7 @@ return;
     }
 
     // Use QueryBuilderService to build a filter and check if the resource matches
-    const filter = this.queryBuilder.buildFilter(event.resourceType, parsed.searchParams);
+    const { filter } = this.queryBuilder.buildFilter(event.resourceType, parsed.searchParams);
     // Add the specific resource id to narrow to just this resource
     filter.id = event.id;
 

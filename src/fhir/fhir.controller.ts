@@ -516,11 +516,12 @@ export class FhirController {
     }
 
     // Build OR filter: any of the compartment's reference params must point to the focal resource
+    const baseUrl = this.getBaseUrl(req);
     const refConditions = refParams.map((param) => {
       const resolved = this.searchRegistry.resolvePaths(resourceType, param);
-      const mongoPath = resolved?.paths[0] || param;
+      const mongoPath = (resolved?.paths[0] || param) + '.reference';
 
-      return {[mongoPath]: {$in: [compartmentRef, `${this.getBaseUrl(req)}/${compartmentRef}`]}};
+      return {[mongoPath]: {$in: [compartmentRef, `${baseUrl}/${compartmentRef}`]}};
     });
 
     const extraFilter = refConditions.length === 1 ? refConditions[0] : {$or: refConditions};
@@ -806,7 +807,7 @@ export class FhirController {
     // Sanitize all search params to prevent NoSQL injection via Express bracket notation
     params = sanitizeSearchParams(params);
 
-    const { resources, total, included } = await this.fhirService.search(resourceType, params);
+    const { resources, total, included, warnings } = await this.fhirService.search(resourceType, params);
     const baseUrl = this.getBaseUrl(req);
     const selfUrl = this.buildSelfUrl(baseUrl, resourceType, params);
     const summary = params._summary;
@@ -837,6 +838,12 @@ export class FhirController {
     // Included resources with search.mode = 'include'
     for (const r of included) {
       entries.push(new BundleEntry({ fullUrl: `${baseUrl}/${r.resourceType}/${r.id}`, resource: transformResource(r), search: new BundleEntrySearch({ mode: SearchEntryMode.Include }) }));
+    }
+
+    // Search outcome: unknown/unsupported parameters as OperationOutcome with search.mode = 'outcome'
+    if (warnings.length > 0) {
+      const issues = warnings.map((w) => new OperationOutcomeIssue({ severity: IssueSeverity.Warning, code: IssueType.NotFound, diagnostics: w }));
+      entries.push(new BundleEntry({ resource: new OperationOutcome({ issue: issues }), search: new BundleEntrySearch({ mode: SearchEntryMode.Outcome }) }));
     }
 
     // Pagination links (FHIR spec: self, first, previous, next, last)

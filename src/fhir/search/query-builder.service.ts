@@ -13,7 +13,7 @@ import { SearchParameterRegistry } from './search-parameter-registry.service';
 import { SearchParamType } from './search-parameter.types';
 
 /** Search result parameters that are handled separately (not translated to MongoDB filters). */
-const RESULT_PARAMS = new Set(['_sort', '_count', '_offset', '_include', '_revinclude', '_summary', '_total', '_elements', '_contained', '_containedType', '_format', '_pretty']);
+const RESULT_PARAMS = new Set(['_sort', '_count', '_offset', '_include', '_revinclude', '_summary', '_total', '_elements', '_contained', '_containedType', '_format', '_pretty', '_compartmentFilter']);
 
 /** Pattern to detect chained search params (e.g. subject:Patient.name or subject.name). */
 const CHAIN_PATTERN = /^[a-zA-Z_-]+(?::[A-Za-z]+)?\./;
@@ -66,12 +66,13 @@ export class QueryBuilderService {
    * Builds a MongoDB filter from FHIR search parameters.
    * @param resourceType - The FHIR resource type being searched.
    * @param params - Raw query parameters from the HTTP request.
-   * @returns A MongoDB filter object suitable for Mongoose .find().
+   * @returns Object with a MongoDB filter and any warnings about unknown/unsupported parameters.
    */
-  buildFilter(resourceType: string, params: Record<string, string>): Record<string, any> {
+  buildFilter(resourceType: string, params: Record<string, string>): { filter: Record<string, any>; warnings: string[] } {
 
     const filter: Record<string, any> = { resourceType };
     const andConditions: Record<string, any>[] = [];
+    const warnings: string[] = [];
 
     for (const [rawKey, value] of Object.entries(params)) {
 
@@ -100,7 +101,7 @@ export class QueryBuilderService {
       const code = colonIndex >= 0 ? rawKey.substring(0, colonIndex) : rawKey;
       const modifier = colonIndex >= 0 ? rawKey.substring(colonIndex + 1) : undefined;
 
-      const condition = this.buildCondition(resourceType, code, value, modifier);
+      const condition = this.buildCondition(resourceType, code, value, modifier, warnings);
 
       if (condition) {
         andConditions.push(condition);
@@ -111,10 +112,10 @@ export class QueryBuilderService {
       Object.assign(filter, andConditions.length === 1 ? andConditions[0] : { $and: andConditions });
     }
 
-    return filter;
+    return { filter, warnings };
   }
 
-  private buildCondition(resourceType: string, code: string, value: string, modifier?: string): Record<string, any> | null {
+  private buildCondition(resourceType: string, code: string, value: string, modifier?: string, warnings: string[] = []): Record<string, any> | null {
 
     // Full-text search: _text searches narrative, _content searches full resource JSON
     if (code === '_text') {
@@ -144,6 +145,7 @@ export class QueryBuilderService {
 
     if (!paramDef) {
       this.logger.debug(`Unknown search parameter '${code}' for ${resourceType}, ignoring`);
+      warnings.push(`Unknown search parameter '${code}' for resource type ${resourceType}`);
 
       return null;
     }
