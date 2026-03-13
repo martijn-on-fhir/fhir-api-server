@@ -99,7 +99,10 @@ A generic FHIR R4 REST API server built with NestJS 11, TypeScript and MongoDB. 
 - MongoDB replica set support with transaction atomicity for Bundle operations
 - Configurable connection pooling (`MONGODB_POOL_SIZE`)
 - MongoDB compound indexes for common search patterns
-- Docker + docker-compose support (MongoDB replica set + Jaeger tracing UI)
+- Grafana dashboard with 18 panels (auto-provisioned via docker-compose)
+- Persistent async job queue (MongoDB-backed, no Redis needed) for bulk export
+- FHIR Consent enforcement: deny-based access control with actor/purpose-of-use filtering
+- Docker + docker-compose support (MongoDB replica set, Jaeger, Prometheus, Grafana)
 - GitHub Actions CI/CD (lint, test, build, Docker)
 - Automated releases via release-please
 - Swagger/OpenAPI documentation + Insomnia collection
@@ -155,7 +158,16 @@ npm run start:dev
 # production
 npm run build
 npm run start:prod
+
+# docker-compose (full stack: MongoDB, Prometheus, Grafana, Jaeger)
+CORS_ORIGIN=http://localhost:3000 docker compose up -d
 ```
+
+Docker-compose starts:
+- **FHIR API** on `http://localhost:3000`
+- **Grafana** on `http://localhost:3001` (admin/admin) — dashboard auto-provisioned
+- **Jaeger** on `http://localhost:16686` — distributed tracing UI
+- **Prometheus** on `http://localhost:9090` — metrics
 
 ## Test
 
@@ -284,6 +296,11 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 | `MAX_INCLUDE_RESULTS` | `1000` | Max resources returned via `_include`/`_revinclude` |
 | `CACHE_TTL_MS` | `300000` | In-memory cache TTL in milliseconds (5 min) |
 | `AUDIT_RETENTION_DAYS` | `365` | AuditEvent auto-deletion after N days (TTL index) |
+| `CONSENT_CACHE_TTL_MS` | `60000` | Consent policy cache TTL in milliseconds (1 min) |
+| `MAX_CONCURRENT_EXPORTS` | `3` | Max concurrent bulk export jobs |
+| `BULK_EXPORT_TIMEOUT_MS` | `600000` | Bulk export job timeout (10 min) |
+| `JOB_RETENTION_DAYS` | `7` | Completed job cleanup after N days |
+| `MONGODB_SLOW_QUERY_MS` | `100` | MongoDB profiler threshold for slow queries (ms) |
 | `CORS_ORIGIN` | `*` | Allowed CORS origins (comma-separated) |
 | `SERVER_REINDEX_ENABLED` | `false` | Enable `$reindex` operation |
 | `SERVER_EXPUNGE_ENABLED` | `false` | Enable `$expunge` operation (permanent data deletion) |
