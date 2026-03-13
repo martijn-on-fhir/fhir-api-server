@@ -5,6 +5,9 @@ import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } fro
 import { FhirService } from './fhir.service';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 
+/** Maximum allowed entries in a batch or transaction Bundle. Configurable via MAX_BUNDLE_ENTRIES env var. */
+const MAX_BUNDLE_ENTRIES = parseInt(process.env.MAX_BUNDLE_ENTRIES || '1000', 10);
+
 /**
  * Processes FHIR Bundle resources of type batch and transaction.
  * - Batch: each entry processed independently, failures don't affect other entries.
@@ -22,6 +25,11 @@ export class BundleProcessorService {
 
     if (!bundle || bundle.resourceType !== 'Bundle') {
       throw new BadRequestException(this.createOutcome('Request body must be a Bundle resource'));
+    }
+
+    const entryCount = Array.isArray(bundle.entry) ? bundle.entry.length : 0;
+    if (entryCount > MAX_BUNDLE_ENTRIES) {
+      throw new BadRequestException(this.createOutcome(`Bundle contains ${entryCount} entries, which exceeds the maximum of ${MAX_BUNDLE_ENTRIES}`));
     }
 
     if (bundle.type === 'transaction') {

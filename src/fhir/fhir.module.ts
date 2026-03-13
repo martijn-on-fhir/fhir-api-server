@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CacheModule } from '../cache/cache.module';
 import { AuditEventService } from './audit/audit-event.service';
 import { BgzController } from './bgz/bgz.controller';
 import { BgzService } from './bgz/bgz.service';
@@ -26,7 +27,7 @@ import { FhirValidationService } from './validation/fhir-validation.service';
  * resource persistence service, and FHIR validation pipeline.
  */
 @Module({
-  imports: [MongooseModule.forFeature([{ name: FhirResource.name, schema: FhirResourceSchema }, { name: FhirResourceHistory.name, schema: FhirResourceHistorySchema }]), SmartModule],
+  imports: [CacheModule, MongooseModule.forFeature([{ name: FhirResource.name, schema: FhirResourceSchema }, { name: FhirResourceHistory.name, schema: FhirResourceHistorySchema }]), SmartModule],
   controllers: [BulkExportController, BgzController, FhirController],
   providers: [FhirService, FhirValidationService, FhirValidationPipe, SearchParameterRegistry, QueryBuilderService, IncludeService, ChainingService, BundleProcessorService, SubscriptionService, SubscriptionNotificationService, BulkExportService, BgzService, AuditEventService],
 })

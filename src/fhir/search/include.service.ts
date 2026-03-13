@@ -4,6 +4,9 @@ import { Model } from 'mongoose';
 import { FhirResource } from '../fhir-resource.schema';
 import { SearchParameterRegistry } from './search-parameter-registry.service';
 
+/** Maximum number of included resources returned per search. Configurable via MAX_INCLUDE_RESULTS env var. */
+const MAX_INCLUDE_RESULTS = parseInt(process.env.MAX_INCLUDE_RESULTS || '1000', 10);
+
 /** Parsed _include or _revinclude directive. */
 interface IncludeDirective {
   sourceType: string;
@@ -80,7 +83,12 @@ export class IncludeService {
       }
     }
 
-    return [...includedMap.values()];
+    const results = [...includedMap.values()];
+    if (results.length > MAX_INCLUDE_RESULTS) {
+      this.logger.warn(`_include results truncated from ${results.length} to ${MAX_INCLUDE_RESULTS}`);
+      return results.slice(0, MAX_INCLUDE_RESULTS);
+    }
+    return results;
   }
 
   private parseIncludeParams(raw: string, defaultSourceType?: string): IncludeDirective[] {

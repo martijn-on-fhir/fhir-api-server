@@ -4,6 +4,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from './admin/admin.module';
+import { CacheModule } from './cache/cache.module';
 import { AdministrationModule } from './administration/administration.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -34,6 +35,7 @@ import { ResilienceModule } from './resilience/resilience.module';
       maxPoolSize: parseInt(process.env.MONGODB_POOL_SIZE || '10', 10),
       minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE || '2', 10),
     }),
+    CacheModule,
     FhirModule,
     AdminModule,
     AdministrationModule,

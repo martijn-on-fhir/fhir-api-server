@@ -2,6 +2,7 @@ import {BadRequestException, Injectable, Logger, NotFoundException} from '@nestj
 import {InjectModel} from '@nestjs/mongoose';
 import {IssueSeverity, IssueType, OperationOutcome, OperationOutcomeIssue} from 'fhir-models-r4';
 import {Model} from 'mongoose';
+import {CacheService} from '../../cache/cache.service';
 import {ConformanceResource} from '../conformance-resource.schema';
 
 const MAX_RECURSION_DEPTH = 5;
@@ -15,7 +16,7 @@ export class TerminologyService {
 
   private readonly logger = new Logger(TerminologyService.name);
 
-  constructor(@InjectModel(ConformanceResource.name) private readonly model: Model<ConformanceResource>) {
+  constructor(@InjectModel(ConformanceResource.name) private readonly model: Model<ConformanceResource>, private readonly cacheService: CacheService) {
   }
 
   /**
@@ -156,23 +157,19 @@ export class TerminologyService {
    */
   private async findValueSet(url?: string, id?: string): Promise<any> {
 
-    const filter: Record<string, any> = {resourceType: 'ValueSet'};
-
-    if (id) {
-      filter.id = id;
-    } else if (url) {
-      filter.url = url;
-    } else {
+    if (!url && !id) {
       throw new BadRequestException(this.operationOutcome('Either "url" parameter or resource id is required', IssueType.Required));
     }
 
-    const resource = await this.model.findOne(filter).lean().exec();
-
-    if (!resource) {
-      throw new NotFoundException(this.operationOutcome(`ValueSet not found: ${url || id}`, IssueType.NotFound));
-    }
-
-    return resource;
+    const cacheKey = `terminology:ValueSet:${id || url}`;
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const filter: Record<string, any> = {resourceType: 'ValueSet'};
+      if (id) filter.id = id;
+      else filter.url = url;
+      const resource = await this.model.findOne(filter).lean().exec();
+      if (!resource) throw new NotFoundException(this.operationOutcome(`ValueSet not found: ${url || id}`, IssueType.NotFound));
+      return resource;
+    });
   }
 
   /**
@@ -180,23 +177,19 @@ export class TerminologyService {
    */
   private async findCodeSystem(system?: string, id?: string): Promise<any> {
 
-    const filter: Record<string, any> = {resourceType: 'CodeSystem'};
-
-    if (id) {
-      filter.id = id;
-    } else if (system) {
-      filter.url = system;
-    } else {
+    if (!system && !id) {
       throw new BadRequestException(this.operationOutcome('Either "system" parameter or resource id is required', IssueType.Required));
     }
 
-    const resource = await this.model.findOne(filter).lean().exec();
-
-    if (!resource) {
-      throw new NotFoundException(this.operationOutcome(`CodeSystem not found: ${system || id}`, IssueType.NotFound));
-    }
-
-    return resource;
+    const cacheKey = `terminology:CodeSystem:${id || system}`;
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const filter: Record<string, any> = {resourceType: 'CodeSystem'};
+      if (id) filter.id = id;
+      else filter.url = system;
+      const resource = await this.model.findOne(filter).lean().exec();
+      if (!resource) throw new NotFoundException(this.operationOutcome(`CodeSystem not found: ${system || id}`, IssueType.NotFound));
+      return resource;
+    });
   }
 
   /**
@@ -204,39 +197,26 @@ export class TerminologyService {
    */
   private async findConceptMap(url?: string, source?: string, target?: string, id?: string): Promise<any> {
 
-    const filter: Record<string, any> = {resourceType: 'ConceptMap'};
+    if (!id && !url && !source && !target) {
+      throw new BadRequestException(this.operationOutcome('Either "url", "source", "target" parameter or resource id is required', IssueType.Required));
+    }
 
-    if (id) {
-      filter.id = id;
-    } else if (url) {
-      filter.url = url;
-    }  else {
-      if (source) {
-        filter.$or = [{sourceUri: source}, {sourceCanonical: source}];
-      }
-
-      if (target) {
-        if (filter.$or) {
-          filter.$and = [{$or: filter.$or}, {$or: [{targetUri: target}, {targetCanonical: target}]}];
-          delete filter.$or;
-        } else {
-          filter.$or = [{targetUri: target}, {targetCanonical: target}];
+    const cacheKey = `terminology:ConceptMap:${id || url || ''}:${source || ''}:${target || ''}`;
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const filter: Record<string, any> = {resourceType: 'ConceptMap'};
+      if (id) { filter.id = id; }
+      else if (url) { filter.url = url; }
+      else {
+        if (source) filter.$or = [{sourceUri: source}, {sourceCanonical: source}];
+        if (target) {
+          if (filter.$or) { filter.$and = [{$or: filter.$or}, {$or: [{targetUri: target}, {targetCanonical: target}]}]; delete filter.$or; }
+          else { filter.$or = [{targetUri: target}, {targetCanonical: target}]; }
         }
       }
-
-      if (!source && !target) {
-        throw new BadRequestException(this.operationOutcome('Either "url", "source", ' +
-          '"target" parameter or resource id is required', IssueType.Required));
-      }
-    }
-
-    const resource = await this.model.findOne(filter).lean().exec();
-
-    if (!resource) {
-      throw new NotFoundException(this.operationOutcome(`ConceptMap not found`, IssueType.NotFound));
-    }
-
-    return resource;
+      const resource = await this.model.findOne(filter).lean().exec();
+      if (!resource) throw new NotFoundException(this.operationOutcome(`ConceptMap not found`, IssueType.NotFound));
+      return resource;
+    });
   }
 
   /**

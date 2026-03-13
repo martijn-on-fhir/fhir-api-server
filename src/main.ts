@@ -5,8 +5,6 @@ import {NestExpressApplication} from '@nestjs/platform-express';
 import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
 import * as express from 'express';
 import helmet from 'helmet';
-
-const {version} = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 import {AppModule} from './app.module';
 import {FhirExceptionFilter} from './fhir/filters/fhir-exception.filter';
 import {TimeoutInterceptor} from './fhir/interceptors/timeout.interceptor';
@@ -16,6 +14,8 @@ import {initTelemetry} from './telemetry/telemetry';
 
 // Initialize OpenTelemetry before NestJS bootstrap (required for auto-instrumentation)
 const otelSdk = initTelemetry();
+
+const {version} = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 
 /** Bootstraps the NestJS application with FHIR-specific middleware and global filters. */
 const bootstrap = async () => {

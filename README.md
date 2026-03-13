@@ -93,6 +93,9 @@ A generic FHIR R4 REST API server built with NestJS 11, TypeScript and MongoDB. 
 - OpenTelemetry tracing support (opt-in via `OTEL_ENABLED=true`)
 - Slow query logging (configurable threshold via `SLOW_QUERY_THRESHOLD_MS`)
 - Circuit breaker for external service calls (JWKS)
+- In-memory TTL cache for CapabilityStatement, conformance resources and terminology operations (configurable via `CACHE_TTL_MS`)
+- Request size limits: max body size, max `_count`, max Bundle entries, max include results
+- AuditEvent TTL index for automatic retention (configurable via `AUDIT_RETENTION_DAYS`)
 - MongoDB replica set support with transaction atomicity for Bundle operations
 - Configurable connection pooling (`MONGODB_POOL_SIZE`)
 - MongoDB compound indexes for common search patterns
@@ -100,6 +103,7 @@ A generic FHIR R4 REST API server built with NestJS 11, TypeScript and MongoDB. 
 - GitHub Actions CI/CD (lint, test, build, Docker)
 - Automated releases via release-please
 - Swagger/OpenAPI documentation + Insomnia collection
+- k6 load testing suite with seed data and 5 scenarios
 
 ## Architecture
 
@@ -157,9 +161,14 @@ npm run test:e2e
 
 # single test file
 npx jest --testPathPattern=<pattern>
+
+# load tests (requires k6 installed and server running)
+npm run test:load:seed   # seed 1500+ test resources
+npm run test:load        # run full mixed traffic scenario
+k6 run test/load/scenarios/read.js    # individual scenario
 ```
 
-173 automated tests across 12 e2e test suites + unit tests.
+173 automated tests across 12 e2e test suites + unit tests. See [test/load/README.md](test/load/README.md) for load testing details.
 
 ## API Documentation
 
@@ -189,6 +198,12 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 | `SMART_SCOPE_CLAIM` | `scope` | JWT claim containing SMART scopes |
 | `SMART_AUTHORIZE_URL` | - | OAuth2 authorization endpoint |
 | `SMART_TOKEN_URL` | - | OAuth2 token endpoint |
+| `BODY_SIZE_LIMIT` | `5mb` | Max request body size |
+| `MAX_COUNT` | `1000` | Max `_count` parameter value for search/history |
+| `MAX_BUNDLE_ENTRIES` | `1000` | Max entries in a batch/transaction Bundle |
+| `MAX_INCLUDE_RESULTS` | `1000` | Max resources returned via `_include`/`_revinclude` |
+| `CACHE_TTL_MS` | `300000` | In-memory cache TTL in milliseconds (5 min) |
+| `AUDIT_RETENTION_DAYS` | `365` | AuditEvent auto-deletion after N days (TTL index) |
 | `CORS_ORIGIN` | `*` | Allowed CORS origins (comma-separated) |
 | `SERVER_REINDEX_ENABLED` | `false` | Enable `$reindex` operation |
 | `SERVER_EXPUNGE_ENABLED` | `false` | Enable `$expunge` operation (permanent data deletion) |

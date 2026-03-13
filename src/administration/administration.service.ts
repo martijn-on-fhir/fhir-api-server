@@ -3,6 +3,7 @@ import {Injectable, Logger, NotFoundException} from '@nestjs/common';
 import {InjectModel} from '@nestjs/mongoose';
 import {OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType} from 'fhir-models-r4';
 import {Model} from 'mongoose';
+import {CacheService} from '../cache/cache.service';
 import {ConformanceResource} from './conformance-resource.schema';
 
 const ALLOWED_TYPES = new Set(['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter', 'CompartmentDefinition', 'OperationDefinition', 'NamingSystem', 'ConceptMap', 'ImplementationGuide']);
@@ -17,7 +18,7 @@ export class AdministrationService {
 
   private readonly logger = new Logger(AdministrationService.name);
 
-  constructor(@InjectModel(ConformanceResource.name) private readonly model: Model<ConformanceResource>) {
+  constructor(@InjectModel(ConformanceResource.name) private readonly model: Model<ConformanceResource>, private readonly cacheService: CacheService) {
   }
 
   /**
@@ -71,6 +72,9 @@ export class AdministrationService {
    */
   async findById(resourceType: string, id: string): Promise<ConformanceResource> {
     this.assertAllowedType(resourceType);
+    const cacheKey = `conformance:${resourceType}:${id}`;
+    const cached = this.cacheService.get<ConformanceResource>(cacheKey);
+    if (cached) return cached;
     const resource = await this.model.findOne({resourceType, id}).exec();
 
     if (!resource) {
@@ -79,6 +83,7 @@ export class AdministrationService {
     }
 
     this.logger.log(`Read ${resourceType}/${id} (url: ${resource.url || 'n/a'})`);
+    this.cacheService.set(cacheKey, resource);
 
     return resource;
   }
@@ -100,6 +105,7 @@ export class AdministrationService {
     const saved = await resource.save();
 
     this.logger.log(`Created ${resourceType}/${id} (url: ${body.url || 'n/a'})`);
+    this.invalidateConformanceCache(resourceType);
 
     return saved;
   }
@@ -123,6 +129,7 @@ export class AdministrationService {
 
     const updated = await this.model.findOneAndUpdate({resourceType, id}, {...body, resourceType, id, meta}, {returnDocument: 'after', upsert: true}).exec();
     this.logger.log(`Updated ${resourceType}/${id} to version ${newVersionId} (url: ${body.url || 'n/a'})`);
+    this.invalidateConformanceCache(resourceType, id);
 
     return updated;
   }
@@ -144,6 +151,7 @@ export class AdministrationService {
     }
 
     this.logger.log(`Deleted ${resourceType}/${id}`);
+    this.invalidateConformanceCache(resourceType, id);
   }
 
   /**
@@ -206,5 +214,13 @@ export class AdministrationService {
     if (!ALLOWED_TYPES.has(resourceType)) {
       throw new NotFoundException(new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.NotSupported, diagnostics: `Resource type '${resourceType}' is not a conformance resource. Supported: ${[...ALLOWED_TYPES].join(', ')}`})]}));
     }
+  }
+
+  /** Invalidates conformance-related caches after a mutation. Also clears CapabilityStatement and terminology caches. */
+  private invalidateConformanceCache(resourceType: string, id?: string): void {
+    this.cacheService.invalidateByPrefix(`conformance:${resourceType}`);
+    if (id) this.cacheService.delete(`conformance:${resourceType}:${id}`);
+    this.cacheService.invalidateByPrefix('capability:');
+    this.cacheService.invalidateByPrefix('terminology:');
   }
 }

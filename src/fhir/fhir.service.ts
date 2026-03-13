@@ -22,6 +22,16 @@ import {FhirResourceEvent} from './subscriptions/subscription.types';
 /** Threshold in ms above which search queries are logged as slow. Configurable via SLOW_QUERY_THRESHOLD_MS. */
 const SLOW_QUERY_THRESHOLD_MS = parseInt(process.env.SLOW_QUERY_THRESHOLD_MS || '500', 10);
 
+/** Maximum allowed value for _count parameter. Configurable via MAX_COUNT env var. */
+const MAX_COUNT = parseInt(process.env.MAX_COUNT || '1000', 10);
+
+/** Clamps a _count value to be between 0 and MAX_COUNT. */
+const clampCount = (raw: string | undefined, defaultValue: number): number => {
+  const parsed = raw ? parseInt(raw, 10) : defaultValue;
+  if (isNaN(parsed) || parsed < 0) return defaultValue;
+  return Math.min(parsed, MAX_COUNT);
+};
+
 @Injectable()
 export class FhirService {
 
@@ -113,7 +123,7 @@ export class FhirService {
     if (totalMode === 'none') { total = undefined; }
     else if (totalMode === 'estimate') { total = await this.resourceModel.estimatedDocumentCount().exec(); }
     else { total = await this.resourceModel.countDocuments(filter).exec(); }
-    const count = params._count ? parseInt(params._count, 10) : 10;
+    const count = clampCount(params._count, 10);
     query.limit(count);
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
@@ -191,7 +201,7 @@ export class FhirService {
     }
 
     const total = await this.historyModel.countDocuments(filter).exec();
-    const count = params._count ? parseInt(params._count, 10) : 10;
+    const count = clampCount(params._count, 10);
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
     const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();
@@ -215,7 +225,7 @@ export class FhirService {
     }
 
     const total = await this.historyModel.countDocuments(filter).exec();
-    const count = params._count ? parseInt(params._count, 10) : 10;
+    const count = clampCount(params._count, 10);
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
     const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();
@@ -239,7 +249,7 @@ export class FhirService {
     }
 
     const total = await this.historyModel.countDocuments(filter).exec();
-    const count = params._count ? parseInt(params._count, 10) : 10;
+    const count = clampCount(params._count, 10);
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
     const entries = await this.historyModel.find(filter).sort({'meta.lastUpdated': -1}).skip(offset).limit(count).lean().exec();
@@ -766,7 +776,7 @@ return part[valueKeys[0]];
     const matchingDocs = allDocs.filter((doc) => this.containsReference(doc, ref));
 
     // Apply count/offset
-    const count = params._count ? parseInt(params._count, 10) : 1000;
+    const count = clampCount(params._count, 1000);
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
 
     // Combine focal resource + matching resources

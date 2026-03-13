@@ -76,3 +76,7 @@ FhirResourceSchema.index({ resourceType: 1, 'encounter.reference': 1 });
 
 // BgZ: Coverage beneficiary reference
 FhirResourceSchema.index({ resourceType: 1, 'beneficiary.reference': 1 });
+
+// --- TTL index for AuditEvent retention (configurable via AUDIT_RETENTION_DAYS, default 365 days) ---
+const auditRetentionDays = parseInt(process.env.AUDIT_RETENTION_DAYS || '365', 10);
+FhirResourceSchema.index({ 'meta.lastUpdated': 1 }, { expireAfterSeconds: auditRetentionDays * 86400, partialFilterExpression: { resourceType: 'AuditEvent' } });

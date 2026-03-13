@@ -145,7 +145,7 @@ AuditEvent en Provenance resources zijn nu immutable (append-only).
 
 - [x] AuditEvent en Provenance geblokkeerd voor update en delete operaties
 - [x] `assertMutable()` check in `FhirService.update()` en `FhirService.delete()`
-- [ ] Audit log retentie beleid configureerbaar (TTL index)
+- [x] Audit log retentie beleid configureerbaar (TTL index via `AUDIT_RETENTION_DAYS`)
 
 **Bestanden:** `src/fhir/fhir.service.ts`
 
@@ -176,42 +176,45 @@ Volledige procedure voor recht op verwijdering gedocumenteerd.
 
 ### 4.1 Load testing
 
-Geen performance baseline. Onbekend hoe de server zich gedraagt onder load.
+k6 load test suite met seed script en 5 scenario's.
 
-- [ ] k6 of Artillery test suite schrijven
-- [ ] Scenario's: CRUD mix, zware zoekqueries, bulk export, concurrent transactions
-- [ ] Baseline meten: throughput (req/s), p50/p95/p99 latency, error rate
+- [x] k6 test suite geschreven met seed data script
+- [x] Scenario's: simple reads, search queries, CRUD mix, transaction/batch bundles, full mixed traffic
+- [x] Thresholds gedefinieerd: p95 < 200ms reads, p95 < 500ms search, error rate < 1%
+- [ ] Baseline meten op development/staging omgeving
 - [ ] Bottlenecks identificeren en oplossen
-- [ ] Target: 500 req/s bij p95 < 200ms voor eenvoudige reads
 
-**Bestanden:** nieuw `test/load/` directory
+**Bestanden:** `test/load/` directory
 
 ### 4.2 Caching layer
 
-Conformance resources en veelgebruikte zoekresultaten worden elke keer uit MongoDB geladen.
+In-memory TTL cache voor conformance resources, CapabilityStatement en terminology operaties.
 
-- [ ] In-memory cache voor CapabilityStatement, SearchParameter, StructureDefinition
-- [ ] Cache invalidatie bij conformance resource wijzigingen
+- [x] In-memory cache service met TTL (`CacheService`, `CacheModule`)
+- [x] CapabilityStatement gecached in `FhirController.metadata()`
+- [x] Conformance resource reads gecached in `AdministrationService.findById()`
+- [x] Terminology lookups gecached ($expand, $lookup, $translate)
+- [x] Cache invalidatie bij conformance resource create/update/delete
+- [x] `CACHE_TTL_MS` configureerbaar (default 300000 = 5 min)
 - [ ] Optioneel: Redis voor shared cache bij horizontaal schalen
-- [ ] `CACHE_TTL` configureerbaar (default 5 min)
 
-**Bestanden:** `src/fhir/administration/`
+**Bestanden:** `src/cache/cache.service.ts`, `src/cache/cache.module.ts`, `src/fhir/fhir.controller.ts`, `src/administration/administration.service.ts`, `src/administration/terminology/terminology.service.ts`
 
 ### 4.3 Request/response size limits
 
-Geen limiet op request body size of Bundle entries. Kan misbruikt worden.
+Limieten op request body size, Bundle entries en zoekresultaten om misbruik te voorkomen.
 
-- [ ] Max request body size configureerbaar (default 10MB)
-- [ ] Max Bundle entries limiet (default 1000)
-- [ ] Max `_count` parameter begrenzen (default max 1000)
-- [ ] Max include depth begrenzen
+- [x] Max request body size configureerbaar via `BODY_SIZE_LIMIT` (default 5MB)
+- [x] Max Bundle entries limiet via `MAX_BUNDLE_ENTRIES` (default 1000)
+- [x] Max `_count` parameter begrensd via `MAX_COUNT` (default 1000)
+- [x] Max include resultaten begrensd via `MAX_INCLUDE_RESULTS` (default 1000)
 
-**Bestanden:** `src/main.ts`, `src/fhir/fhir.controller.ts`
+**Bestanden:** `src/main.ts`, `src/fhir/fhir.service.ts`, `src/fhir/bundle-processor.service.ts`, `src/fhir/search/include.service.ts`
 
 ### 4.4 Database optimalisatie
 
 - [ ] Partial indexes voor soft-deleted resources (`{ _deleted: { $ne: true } }`)
-- [ ] TTL index op AuditEvent resources (configureerbare retentie)
+- [x] TTL index op AuditEvent resources (configureerbaar via `AUDIT_RETENTION_DAYS`, default 365)
 - [ ] Index usage analyseren met `db.collection.aggregate([{$indexStats}])`
 - [ ] Overweeg sharding strategie voor > 10M resources
 

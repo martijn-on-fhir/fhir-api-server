@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, Req, Res
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
+import { CacheService } from '../cache/cache.service';
 import { AuditEventService } from './audit/audit-event.service';
 import { buildCapabilityStatement } from './capability-statement.builder';
 import { FhirService } from './fhir.service';
@@ -57,7 +58,7 @@ export class FhirController {
    * @param validationPipe - Pipe that validates incoming resource bodies against FHIR R4 rules.
    */
   // eslint-disable-next-line max-len
-  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig, private readonly auditService: AuditEventService) {}
+  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig, private readonly auditService: AuditEventService, private readonly cacheService: CacheService) {}
 
   /**
    * Derives the FHIR base URL from the incoming request, respecting reverse proxy headers.
@@ -81,9 +82,11 @@ export class FhirController {
   async metadata(@Req() req: Request, @Res() res: Response) {
 
     const baseUrl = this.getBaseUrl(req);
-    const resourceTypes = await this.fhirService.getResourceTypes();
-    const searchParamsByType = new Map(resourceTypes.map((t) => [t, this.searchRegistry.getParamsForType(t)]));
-    const statement = buildCapabilityStatement(baseUrl, resourceTypes, searchParamsByType, this.smartConfig);
+    const statement = await this.cacheService.getOrSet(`capability:${baseUrl}`, async () => {
+      const resourceTypes = await this.fhirService.getResourceTypes();
+      const searchParamsByType = new Map(resourceTypes.map((t) => [t, this.searchRegistry.getParamsForType(t)]));
+      return buildCapabilityStatement(baseUrl, resourceTypes, searchParamsByType, this.smartConfig);
+    });
 
     this.sendFhirResponse(res, req, statement);
   }
