@@ -1,15 +1,18 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
+import { NodeSDK } from '@opentelemetry/sdk-node';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 
 /** Loads telemetry config from app-config.json. Env vars take precedence. */
-function loadTelemetryConfig(): { enabled: boolean; endpoint: string } {
+const loadTelemetryConfig = (): { enabled: boolean; endpoint: string } => {
   let fileConfig: any = {};
-  try { fileConfig = JSON.parse(readFileSync(resolve(process.cwd(), 'config/app-config.json'), 'utf-8')).telemetry || {}; } catch { /* no config file */ }
+
+  try {
+ fileConfig = JSON.parse(readFileSync(resolve(process.cwd(), 'config/app-config.json'), 'utf-8')).telemetry || {}; 
+} catch { /* no config file */ }
 
   return {
     enabled: process.env.OTEL_ENABLED === 'true' || fileConfig.enabled === true,
@@ -22,9 +25,12 @@ function loadTelemetryConfig(): { enabled: boolean; endpoint: string } {
  * Must be called before NestJS bootstrap to ensure all modules are instrumented.
  * Exports traces via OTLP HTTP to the configured endpoint (default: http://localhost:4318).
  */
-export function initTelemetry(): NodeSDK | null {
+export const initTelemetry = (): NodeSDK | null => {
   const config = loadTelemetryConfig();
-  if (!config.enabled) return null;
+
+  if (!config.enabled) {
+return null;
+}
 
   const sdk = new NodeSDK({
     resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: 'fhir-api-server', [ATTR_SERVICE_VERSION]: process.env.npm_package_version || '0.0.0' }),

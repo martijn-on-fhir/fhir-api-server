@@ -84,10 +84,13 @@ export class IncludeService {
     }
 
     const results = [...includedMap.values()];
+
     if (results.length > MAX_INCLUDE_RESULTS) {
       this.logger.warn(`_include results truncated from ${results.length} to ${MAX_INCLUDE_RESULTS}`);
+
       return results.slice(0, MAX_INCLUDE_RESULTS);
     }
+
     return results;
   }
 

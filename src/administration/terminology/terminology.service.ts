@@ -162,12 +162,22 @@ export class TerminologyService {
     }
 
     const cacheKey = `terminology:ValueSet:${id || url}`;
+
     return this.cacheService.getOrSet(cacheKey, async () => {
       const filter: Record<string, any> = {resourceType: 'ValueSet'};
-      if (id) filter.id = id;
-      else filter.url = url;
+
+      if (id) {
+filter.id = id;
+} else {
+filter.url = url;
+}
+
       const resource = await this.model.findOne(filter).lean().exec();
-      if (!resource) throw new NotFoundException(this.operationOutcome(`ValueSet not found: ${url || id}`, IssueType.NotFound));
+
+      if (!resource) {
+throw new NotFoundException(this.operationOutcome(`ValueSet not found: ${url || id}`, IssueType.NotFound));
+}
+
       return resource;
     });
   }
@@ -182,12 +192,22 @@ export class TerminologyService {
     }
 
     const cacheKey = `terminology:CodeSystem:${id || system}`;
+
     return this.cacheService.getOrSet(cacheKey, async () => {
       const filter: Record<string, any> = {resourceType: 'CodeSystem'};
-      if (id) filter.id = id;
-      else filter.url = system;
+
+      if (id) {
+filter.id = id;
+} else {
+filter.url = system;
+}
+
       const resource = await this.model.findOne(filter).lean().exec();
-      if (!resource) throw new NotFoundException(this.operationOutcome(`CodeSystem not found: ${system || id}`, IssueType.NotFound));
+
+      if (!resource) {
+throw new NotFoundException(this.operationOutcome(`CodeSystem not found: ${system || id}`, IssueType.NotFound));
+}
+
       return resource;
     });
   }
@@ -202,19 +222,34 @@ export class TerminologyService {
     }
 
     const cacheKey = `terminology:ConceptMap:${id || url || ''}:${source || ''}:${target || ''}`;
+
     return this.cacheService.getOrSet(cacheKey, async () => {
       const filter: Record<string, any> = {resourceType: 'ConceptMap'};
-      if (id) { filter.id = id; }
-      else if (url) { filter.url = url; }
-      else {
-        if (source) filter.$or = [{sourceUri: source}, {sourceCanonical: source}];
+
+      if (id) {
+ filter.id = id; 
+} else if (url) {
+ filter.url = url; 
+} else {
+        if (source) {
+filter.$or = [{sourceUri: source}, {sourceCanonical: source}];
+}
+
         if (target) {
-          if (filter.$or) { filter.$and = [{$or: filter.$or}, {$or: [{targetUri: target}, {targetCanonical: target}]}]; delete filter.$or; }
-          else { filter.$or = [{targetUri: target}, {targetCanonical: target}]; }
+          if (filter.$or) {
+ filter.$and = [{$or: filter.$or}, {$or: [{targetUri: target}, {targetCanonical: target}]}]; delete filter.$or; 
+} else {
+ filter.$or = [{targetUri: target}, {targetCanonical: target}]; 
+}
         }
       }
+
       const resource = await this.model.findOne(filter).lean().exec();
-      if (!resource) throw new NotFoundException(this.operationOutcome(`ConceptMap not found`, IssueType.NotFound));
+
+      if (!resource) {
+throw new NotFoundException(this.operationOutcome(`ConceptMap not found`, IssueType.NotFound));
+}
+
       return resource;
     });
   }

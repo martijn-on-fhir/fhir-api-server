@@ -85,6 +85,7 @@ export class FhirController {
     const statement = await this.cacheService.getOrSet(`capability:${baseUrl}`, async () => {
       const resourceTypes = await this.fhirService.getResourceTypes();
       const searchParamsByType = new Map(resourceTypes.map((t) => [t, this.searchRegistry.getParamsForType(t)]));
+
       return buildCapabilityStatement(baseUrl, resourceTypes, searchParamsByType, this.smartConfig);
     });
 
@@ -305,6 +306,7 @@ export class FhirController {
   @ApiResponse({status: 200, description: 'Parameters resource with diff entries'})
   async diffType(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     body = this.parseRequestBody(req);
+
     if (!body || body.resourceType !== 'Parameters') {
       const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: 'Request body must be a Parameters resource with "left" and "right" resource parameters'})]});
 
@@ -491,7 +493,11 @@ export class FhirController {
   async vRead(@Param('resourceType') resourceType: string, @Param('id') id: string, @Param('versionId') versionId: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.fhirService.vRead(resourceType, id, versionId);
-    if (this.checkConditionalRead(req, res, { versionId, lastUpdated: resource.meta?.lastUpdated || new Date().toISOString() })) return;
+
+    if (this.checkConditionalRead(req, res, { versionId, lastUpdated: resource.meta?.lastUpdated || new Date().toISOString() })) {
+return;
+}
+
     const baseUrl = this.getBaseUrl(req);
     this.auditService.recordAudit('vread', resourceType, id, req);
     this.sendFhirResponse(res, req, this.resolveReferences(resource, baseUrl));
@@ -548,7 +554,11 @@ export class FhirController {
   async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.fhirService.findById(resourceType, id);
-    if (this.checkConditionalRead(req, res, resource.meta)) return;
+
+    if (this.checkConditionalRead(req, res, resource.meta)) {
+return;
+}
+
     const baseUrl = this.getBaseUrl(req);
     const fhir = this.toFhirJson(resource, baseUrl);
     this.auditService.recordAudit('read', resourceType, id, req);
@@ -731,16 +741,29 @@ export class FhirController {
   @ApiResponse({status: 409, description: 'OperationOutcome (referential integrity violation)'})
   async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query('_cascade') cascade: string, @Req() req: Request, @Res() res: Response) {
     const prefer = this.parsePrefer(req);
+
     if (cascade === 'delete') {
       const deleted = await this.fhirService.cascadeDelete(resourceType, id, undefined, req);
-      if (prefer.return === 'minimal') { res.status(HttpStatus.NO_CONTENT).end(); return; }
+
+      if (prefer.return === 'minimal') {
+ res.status(HttpStatus.NO_CONTENT).end();
+
+ return; 
+}
+
       const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Cascade deleted ${deleted} resource(s) including ${resourceType}/${id}`})]});
 
       return this.sendFhirResponse(res, req, outcome);
     }
 
     await this.fhirService.delete(resourceType, id, undefined, req);
-    if (prefer.return === 'minimal') { res.status(HttpStatus.NO_CONTENT).end(); return; }
+
+    if (prefer.return === 'minimal') {
+ res.status(HttpStatus.NO_CONTENT).end();
+
+ return; 
+}
+
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted`})]});
     this.sendFhirResponse(res, req, outcome);
   }
@@ -815,8 +838,10 @@ export class FhirController {
 
     // Prefer: handling=strict → reject unknown search parameters with 400
     const prefer = this.parsePrefer(req);
+
     if (prefer.handling === 'strict' && warnings.length > 0) {
       const issues = warnings.map((w) => new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.NotFound, diagnostics: w }));
+
       return this.sendFhirResponse(res, req, new OperationOutcome({ issue: issues }), HttpStatus.BAD_REQUEST);
     }
 
@@ -827,7 +852,11 @@ export class FhirController {
     // _summary=count returns only total, no entries
     if (summary === 'count') {
       const bundle = new Bundle({ type: BundleType.Searchset, total, link: [new BundleLink({ relation: 'self', url: selfUrl })] });
-      if (total === undefined) delete (bundle as any).total;
+
+      if (total === undefined) {
+delete (bundle as any).total;
+}
+
       return this.sendFhirResponse(res, req, bundle);
     }
 
@@ -883,7 +912,11 @@ export class FhirController {
     }
 
     const bundle = new Bundle({ type: BundleType.Searchset, total, link: links, entry: entries });
-    if (total === undefined) delete (bundle as any).total;
+
+    if (total === undefined) {
+delete (bundle as any).total;
+}
+
     this.auditService.recordAudit('search', resourceType, null, req);
 
     return this.sendFhirResponse(res, req, bundle);
@@ -1050,12 +1083,21 @@ return 'xml';
    */
   private parsePrefer(req: Request): Record<string, string> {
     const header = req.headers.prefer as string;
-    if (!header) return {};
+
+    if (!header) {
+return {};
+}
+
     const result: Record<string, string> = {};
+
     for (const part of header.split(/[;,]\s*/)) {
       const [key, value] = part.split('=');
-      if (key && value) result[key.trim()] = value.trim();
+
+      if (key && value) {
+result[key.trim()] = value.trim();
+}
     }
+
     return result;
   }
 
@@ -1065,11 +1107,19 @@ return 'xml';
    */
   private sendWriteResponse(res: Response, req: Request, resource: any, statusCode: number, diagnostics: string) {
     const prefer = this.parsePrefer(req);
-    if (prefer.return === 'minimal') { res.status(statusCode === HttpStatus.CREATED ? HttpStatus.CREATED : HttpStatus.NO_CONTENT).end(); return; }
+
+    if (prefer.return === 'minimal') {
+ res.status(statusCode === HttpStatus.CREATED ? HttpStatus.CREATED : HttpStatus.NO_CONTENT).end();
+
+ return; 
+}
+
     if (prefer.return === 'OperationOutcome') {
       const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics })] });
+
       return this.sendFhirResponse(res, req, outcome, statusCode);
     }
+
     this.sendFhirResponse(res, req, resource, statusCode);
   }
 
@@ -1081,15 +1131,27 @@ return 'xml';
     res.set('Last-Modified', new Date(meta.lastUpdated).toUTCString());
 
     const ifNoneMatch = req.headers['if-none-match'] as string;
+
     if (ifNoneMatch) {
       const etag = ifNoneMatch.replace(/^W\//, '').replace(/"/g, '');
-      if (etag === meta.versionId) { res.status(304).end(); return true; }
+
+      if (etag === meta.versionId) {
+ res.status(304).end();
+
+ return true; 
+}
     }
 
     const ifModifiedSince = req.headers['if-modified-since'] as string;
+
     if (ifModifiedSince) {
       const sinceDate = new Date(ifModifiedSince);
-      if (!isNaN(sinceDate.getTime()) && new Date(meta.lastUpdated) <= sinceDate) { res.status(304).end(); return true; }
+
+      if (!isNaN(sinceDate.getTime()) && new Date(meta.lastUpdated) <= sinceDate) {
+ res.status(304).end();
+
+ return true; 
+}
     }
 
     return false;

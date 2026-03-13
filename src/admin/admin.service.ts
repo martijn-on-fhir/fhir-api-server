@@ -1,8 +1,8 @@
+import { writeFile, readFile } from 'fs/promises';
+import { join } from 'path';
 import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { writeFile, readFile } from 'fs/promises';
-import { join } from 'path';
 import { FhirResourceHistory } from '../fhir/fhir-resource-history.schema';
 import { FhirResource } from '../fhir/fhir-resource.schema';
 
@@ -25,6 +25,7 @@ export class AdminService {
 
     // Count per resourceType
     const resourceTypes: Record<string, number> = {};
+
     for (const r of resources) {
       resourceTypes[r.resourceType] = (resourceTypes[r.resourceType] || 0) + 1;
     }
@@ -42,20 +43,24 @@ export class AdminService {
   async restore(filename: string): Promise<{ resources: number; history: number }> {
     const filePath = join(FIXTURES_DIR, filename);
     let data: any;
+
     try {
       const raw = await readFile(filePath, 'utf-8');
       data = JSON.parse(raw);
     } catch (error) {
       throw new BadRequestException(`Cannot read snapshot file "${filename}": ${(error as Error).message}`);
     }
+
     if (!data || !Array.isArray(data.resources)) {
       throw new BadRequestException(`Snapshot file "${filename}" does not contain a valid "resources" array`);
     }
+
     try {
       await Promise.all([this.resourceModel.deleteMany({}).exec(), this.historyModel.deleteMany({}).exec()]);
       const resourceCount = data.resources.length > 0 ? (await this.resourceModel.insertMany(data.resources, { ordered: false })).length : 0;
       const historyCount = Array.isArray(data.history) && data.history.length > 0 ? (await this.historyModel.insertMany(data.history, { ordered: false })).length : 0;
       this.logger.log(`Restore complete from ${filename}: ${resourceCount} resources, ${historyCount} history entries`);
+
       return { resources: resourceCount, history: historyCount };
     } catch (error) {
       this.logger.error('Restore failed', error);

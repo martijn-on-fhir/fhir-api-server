@@ -27,8 +27,10 @@ export class AdminController {
   async restore(@Body() body: { filename: string }, @Res() res: Response) {
     if (!body?.filename) {
       res.status(HttpStatus.BAD_REQUEST).set('Content-Type', 'application/fhir+json').json(new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Request body must contain a "filename" field' })] }));
+
       return;
     }
+
     const counts = await this.adminService.restore(body.filename);
     const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Restore complete from ${body.filename}: ${counts.resources} resources, ${counts.history} history entries imported` })] });
     res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);

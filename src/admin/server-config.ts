@@ -18,6 +18,7 @@ export const SERVER_CONFIG = 'SERVER_CONFIG';
 /** Loads server operation config from app-config.json with env var overrides. Defaults to disabled. */
 export const loadServerConfig = (): ServerConfig => {
   let fileConfig: any = {};
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     fileConfig = require('../../../config/app-config.json').server || {};

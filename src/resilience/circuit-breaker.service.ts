@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import CircuitBreaker from 'opossum';
 
 /** Options for creating a circuit breaker. */

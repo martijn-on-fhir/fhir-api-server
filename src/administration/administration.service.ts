@@ -74,7 +74,11 @@ export class AdministrationService {
     this.assertAllowedType(resourceType);
     const cacheKey = `conformance:${resourceType}:${id}`;
     const cached = this.cacheService.get<ConformanceResource>(cacheKey);
-    if (cached) return cached;
+
+    if (cached) {
+return cached;
+}
+
     const resource = await this.model.findOne({resourceType, id}).exec();
 
     if (!resource) {
@@ -219,7 +223,11 @@ export class AdministrationService {
   /** Invalidates conformance-related caches after a mutation. Also clears CapabilityStatement and terminology caches. */
   private invalidateConformanceCache(resourceType: string, id?: string): void {
     this.cacheService.invalidateByPrefix(`conformance:${resourceType}`);
-    if (id) this.cacheService.delete(`conformance:${resourceType}:${id}`);
+
+    if (id) {
+this.cacheService.delete(`conformance:${resourceType}:${id}`);
+}
+
     this.cacheService.invalidateByPrefix('capability:');
     this.cacheService.invalidateByPrefix('terminology:');
   }

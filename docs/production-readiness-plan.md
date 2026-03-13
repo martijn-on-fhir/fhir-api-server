@@ -36,7 +36,7 @@ Minimaal nodig voordat de server betrouwbaar requests kan afhandelen in een omge
 
 - [x] `enableShutdownHooks()` aanroepen in bootstrap
 - [x] `OnModuleDestroy` implementeren in services met open connections (SubscriptionNotificationService)
-- [ ] Testen met `kill -SIGTERM` tijdens actieve requests
+- [x] Testen met graceful shutdown (e2e test: in-flight requests completen, server stopt daarna)
 
 **Bestanden:** `src/main.ts`, `src/fhir/subscriptions/subscription-notification.service.ts`
 
@@ -57,10 +57,10 @@ Geen observability buiten logging. Productie vereist metrics voor dashboards en 
 Transactions in `BundleProcessorService` vereisen een replica set. Zonder replica set is er geen atomiciteit bij transaction Bundles.
 
 - [x] `docker-compose.yml` updaten naar single-node replica set (`--replSet rs0`)
-- [ ] Development: `mongodb-memory-server` ondersteunt replica set al (optie `replSet`)
+- [x] Development: `MongoMemoryReplSet` gebruikt in e2e tests voor echte transactions
 - [x] Connection string updaten met `replicaSet` parameter
 - [x] `BundleProcessorService` gebruikt nu `session.withTransaction()` met fallback voor standalone
-- [ ] Transaction rollback testen bij fout halverwege een Bundle
+- [x] Transaction rollback getest: fout halverwege Bundle → alle entries gerollbackt (e2e test)
 
 **Bestanden:** `docker-compose.yml`, `src/fhir/bundle-processor.service.ts`
 
@@ -69,7 +69,7 @@ Transactions in `BundleProcessorService` vereisen een replica set. Zonder replic
 Mongoose gebruikt standaard ~10 connecties. Voor productie moet dit configureerbaar zijn.
 
 - [x] `MONGODB_POOL_SIZE` + `MONGODB_MIN_POOL_SIZE` env vars toegevoegd
-- [ ] Connection pool metrics exposen via Prometheus
+- [x] Connection pool metrics exposen via Prometheus (`mongodb_pool_size`, `mongodb_pool_available`, `mongodb_pool_waiting`)
 - [x] Gedocumenteerd in `.env.example`
 
 **Bestanden:** `src/app.module.ts`, `.env.example`
@@ -181,8 +181,8 @@ k6 load test suite met seed script en 5 scenario's.
 - [x] k6 test suite geschreven met seed data script
 - [x] Scenario's: simple reads, search queries, CRUD mix, transaction/batch bundles, full mixed traffic
 - [x] Thresholds gedefinieerd: p95 < 200ms reads, p95 < 500ms search, error rate < 1%
-- [ ] Baseline meten op development/staging omgeving
-- [ ] Bottlenecks identificeren en oplossen
+- [x] Baseline meten op development/staging omgeving
+- [x] Bottlenecks identificeren en oplossen (_include/$in batching, parallel find+count, seed retry-logica, RATE_LIMIT_DISABLED env var)
 
 **Bestanden:** `test/load/` directory
 

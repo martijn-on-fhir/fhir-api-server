@@ -22,11 +22,17 @@ export class CacheService {
   /** Gets a cached value, or returns undefined if expired or missing. */
   get<T>(key: string): T | undefined {
     const entry = this.store.get(key);
-    if (!entry) return undefined;
+
+    if (!entry) {
+return undefined;
+}
+
     if (Date.now() > entry.expiresAt) {
       this.store.delete(key);
+
       return undefined;
     }
+
     return entry.value as T;
   }
 
@@ -38,9 +44,14 @@ export class CacheService {
   /** Gets a cached value or computes it using the factory function, caching the result. */
   async getOrSet<T>(key: string, factory: () => Promise<T>, ttlMs?: number): Promise<T> {
     const cached = this.get<T>(key);
-    if (cached !== undefined) return cached;
+
+    if (cached !== undefined) {
+return cached;
+}
+
     const value = await factory();
     this.set(key, value, ttlMs);
+
     return value;
   }
 
@@ -52,13 +63,18 @@ export class CacheService {
   /** Invalidates all cache entries whose key starts with the given prefix. */
   invalidateByPrefix(prefix: string): number {
     let count = 0;
+
     for (const key of this.store.keys()) {
       if (key.startsWith(prefix)) {
         this.store.delete(key);
         count++;
       }
     }
-    if (count > 0) this.logger.debug(`Invalidated ${count} cache entries with prefix '${prefix}'`);
+
+    if (count > 0) {
+this.logger.debug(`Invalidated ${count} cache entries with prefix '${prefix}'`);
+}
+
     return count;
   }
 
@@ -66,7 +82,10 @@ export class CacheService {
   clear(): void {
     const size = this.store.size;
     this.store.clear();
-    if (size > 0) this.logger.debug(`Cleared ${size} cache entries`);
+
+    if (size > 0) {
+this.logger.debug(`Cleared ${size} cache entries`);
+}
   }
 
   /** Returns the number of entries currently in the cache (including possibly expired). */

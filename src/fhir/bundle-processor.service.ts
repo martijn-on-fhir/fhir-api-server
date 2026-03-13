@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
 import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
+import { Connection } from 'mongoose';
 import { FhirService } from './fhir.service';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 
@@ -28,6 +28,7 @@ export class BundleProcessorService {
     }
 
     const entryCount = Array.isArray(bundle.entry) ? bundle.entry.length : 0;
+
     if (entryCount > MAX_BUNDLE_ENTRIES) {
       throw new BadRequestException(this.createOutcome(`Bundle contains ${entryCount} entries, which exceeds the maximum of ${MAX_BUNDLE_ENTRIES}`));
     }
@@ -85,8 +86,13 @@ export class BundleProcessorService {
         uuidMap.clear();
 
         for (const entry of ordered) {
-          if (entry.resource) { entry.resource = this.resolveUuidReferences(entry.resource, uuidMap); }
-          if (entry.request?.url) { entry.request.url = this.resolveUuidInUrl(entry.request.url, uuidMap); }
+          if (entry.resource) {
+ entry.resource = this.resolveUuidReferences(entry.resource, uuidMap); 
+}
+
+          if (entry.request?.url) {
+ entry.request.url = this.resolveUuidInUrl(entry.request.url, uuidMap); 
+}
 
           const result = await this.processEntry(entry, baseUrl, session);
           responseEntries.push(result);
@@ -109,7 +115,10 @@ export class BundleProcessorService {
 
       throw err;
     } finally {
-      if (session.inTransaction()) { await session.abortTransaction(); }
+      if (session.inTransaction()) {
+ await session.abortTransaction(); 
+}
+
       await session.endSession();
     }
   }
@@ -119,8 +128,13 @@ export class BundleProcessorService {
     const responseEntries: any[] = [];
 
     for (const entry of ordered) {
-      if (entry.resource) { entry.resource = this.resolveUuidReferences(entry.resource, uuidMap); }
-      if (entry.request?.url) { entry.request.url = this.resolveUuidInUrl(entry.request.url, uuidMap); }
+      if (entry.resource) {
+ entry.resource = this.resolveUuidReferences(entry.resource, uuidMap); 
+}
+
+      if (entry.request?.url) {
+ entry.request.url = this.resolveUuidInUrl(entry.request.url, uuidMap); 
+}
 
       const result = await this.processEntry(entry, baseUrl);
       responseEntries.push(result);

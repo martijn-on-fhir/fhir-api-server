@@ -1,8 +1,9 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, Logger, Optional, UnauthorizedException } from '@nestjs/common';
-import CircuitBreaker from 'opossum';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import CircuitBreaker from 'opossum';
 import { CircuitBreakerService } from '../../resilience/circuit-breaker.service';
 import { SmartConfig, SMART_CONFIG } from '../smart/smart-config';
 import { extractScopes, hasRequiredScope, resolveAction } from '../smart/smart-scopes';
@@ -21,9 +22,12 @@ export class SmartAuthGuard implements CanActivate {
   constructor(@Inject(SMART_CONFIG) private readonly config: SmartConfig, @Optional() private readonly cbService?: CircuitBreakerService) {
     if (config.enabled && config.jwksUri) {
       this.jwksClient = new JwksClient({ jwksUri: config.jwksUri, cache: true, cacheMaxAge: 36_000_000, rateLimit: true });
+
       if (cbService) {
         this.jwksBreaker = cbService.create((kid: string) => this.jwksClient!.getSigningKey(kid), { name: 'jwks', timeout: 5000, errorThresholdPercentage: 50, resetTimeout: 30_000 });
-        this.jwksBreaker.fallback(() => { throw new UnauthorizedException('JWKS service temporarily unavailable'); });
+        this.jwksBreaker.fallback(() => {
+ throw new UnauthorizedException('JWKS service temporarily unavailable'); 
+});
       }
     }
   }

@@ -28,7 +28,11 @@ const MAX_COUNT = parseInt(process.env.MAX_COUNT || '1000', 10);
 /** Clamps a _count value to be between 0 and MAX_COUNT. */
 const clampCount = (raw: string | undefined, defaultValue: number): number => {
   const parsed = raw ? parseInt(raw, 10) : defaultValue;
-  if (isNaN(parsed) || parsed < 0) return defaultValue;
+
+  if (isNaN(parsed) || parsed < 0) {
+return defaultValue;
+}
+
   return Math.min(parsed, MAX_COUNT);
 };
 
@@ -136,6 +140,7 @@ export class FhirService {
 
     // Log slow queries for performance monitoring
     const durationMs = elapsed !== undefined ? elapsed * 1000 : undefined;
+
     if (durationMs !== undefined && durationMs > SLOW_QUERY_THRESHOLD_MS) {
       this.logger.warn(`Slow search: ${resourceType} took ${Math.round(durationMs)}ms (threshold: ${SLOW_QUERY_THRESHOLD_MS}ms) filter=${JSON.stringify(filter)}`);
     }
