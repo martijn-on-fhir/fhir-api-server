@@ -235,9 +235,9 @@ Bestaand plan in `docs/multi-tenancy-plan.md`. URL-based routing + database-per-
 
 Consent resources opslaan en afdwingen bij data access op basis van purpose-of-use en actor.
 
-### 5.3 GraphQL API
+### ~~5.3 GraphQL API~~ (geschrapt)
 
-Bestaand plan in `docs/graphql-plan.md`.
+~~Bestaand plan in `docs/graphql-plan.md`.~~ Besloten om niet te implementeren.
 
 ### 5.4 Async job queue
 
@@ -253,6 +253,6 @@ Bulk export en $reindex draaien nu in-process. Voor grote datasets is een job qu
 | **P1 — Kritiek** | 1.2 metrics, 2.4 probes, 3.1 scope enforcement, 4.3 size limits | 2-3 dagen |
 | **P2 — Belangrijk** | 1.4 pooling, 2.1 tracing, 2.3 circuit breaker, 3.2 audit immutability, 4.1 load testing | 3-4 dagen |
 | **P3 — Wenselijk** | 2.2 slow queries, 3.3 per-client rate limit, 3.4 GDPR docs, 4.2 caching, 4.4 DB optimalisatie | 2-3 dagen |
-| **P4 — Platform** | 5.1-5.4 multi-tenancy, consent, GraphQL, job queue | weken |
+| **P4 — Platform** | 5.1 multi-tenancy, 5.2 consent, 5.4 job queue | weken |
 
-**Totaal voor productie-waardig (P0-P2): ~1-2 weken**
+**Status: P0-P3 volledig afgerond.** Resterend: sharding strategie (operationeel), Redis cache (optioneel), platform features (fase 5).
