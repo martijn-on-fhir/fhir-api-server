@@ -10,6 +10,8 @@ services:
       - CORS_ORIGIN=${CORS_ORIGIN:?Set CORS_ORIGIN to allowed origins (e.g. https://app.example.com)}
       - BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-5mb}
       - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30000}
+      - OTEL_ENABLED=${OTEL_ENABLED:-false}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     volumes:
       - ./file-import:/app/file-import:ro
     depends_on:
@@ -40,6 +42,15 @@ services:
       timeout: 10s
       retries: 5
       start_period: 15s
+
+  jaeger:
+    image: jaegertracing/jaeger:2
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
 
 volumes:
   mongo-data:

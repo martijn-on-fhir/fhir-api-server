@@ -96,7 +96,7 @@ A generic FHIR R4 REST API server built with NestJS 11, TypeScript and MongoDB. 
 - MongoDB replica set support with transaction atomicity for Bundle operations
 - Configurable connection pooling (`MONGODB_POOL_SIZE`)
 - MongoDB compound indexes for common search patterns
-- Docker + docker-compose support (MongoDB with replica set)
+- Docker + docker-compose support (MongoDB replica set + Jaeger tracing UI)
 - GitHub Actions CI/CD (lint, test, build, Docker)
 - Automated releases via release-please
 - Swagger/OpenAPI documentation + Insomnia collection
@@ -177,8 +177,8 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 | `MONGODB_MIN_POOL_SIZE` | `2` | MongoDB minimum pool connections |
 | `LOG_FORMAT` | - | Set to `json` for structured JSON logging |
 | `SLOW_QUERY_THRESHOLD_MS` | `500` | Log search queries slower than this (ms) |
-| `OTEL_ENABLED` | `false` | Enable OpenTelemetry tracing |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | OTLP collector endpoint |
+| `OTEL_ENABLED` | `false` | Enable OpenTelemetry tracing (Jaeger UI at http://localhost:16686) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | OTLP collector endpoint (auto-configured in docker-compose) |
 | `RATE_LIMIT_TTL` | `60` | Rate limit window in seconds |
 | `RATE_LIMIT_MAX` | `100` | Max requests per short window |
 | `RATE_LIMIT_MAX_LONG` | `1000` | Max requests per 10-minute window |
