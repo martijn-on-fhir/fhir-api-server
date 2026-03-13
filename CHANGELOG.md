@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.9.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.8.0...fhir-api-server-v0.9.0) (2026-03-13)
+
+
+### Features
+
+* add admin module with snapshot and restore endpoints ([7e75a96](https://github.com/martijn-on-fhir/fhir-api-server/commit/7e75a9640ea88bec347c9d1b74abb80a0af09796))
+* add FHIR R4 conformity features (Prefer header, conditional read, _total) ([a6c592a](https://github.com/martijn-on-fhir/fhir-api-server/commit/a6c592a982f7253ad2ee00fab41169fa14aa787a))
+* add guard for dangerous operations with config-based feature flags ([5744858](https://github.com/martijn-on-fhir/fhir-api-server/commit/574485830acb805d48b586c33597af460333a948))
+* add Jaeger tracing to docker-compose ([0df5632](https://github.com/martijn-on-fhir/fhir-api-server/commit/0df5632c9a4a3554d20a934c2170ac681a4d85db))
+* add observability and resilience (phase 2) ([77c7d99](https://github.com/martijn-on-fhir/fhir-api-server/commit/77c7d992f794d237f30d78dc9194055cf462b03c))
+* add performance and hardening features (phase 4) ([70026e9](https://github.com/martijn-on-fhir/fhir-api-server/commit/70026e9c9d570718aae7bbcfd367fb85fc625a04))
+* add production infrastructure (phase 1) ([d79a103](https://github.com/martijn-on-fhir/fhir-api-server/commit/d79a1034a3a46853803c3c2be6deac9a1b03b889))
+* add security and compliance features (phase 3) ([7db92a7](https://github.com/martijn-on-fhir/fhir-api-server/commit/7db92a731099a6037d53e4fd59f5ef4bbd78a3d1))
+* add security hardening (helmet, timeout, body limits, CI audit) ([8c6b89c](https://github.com/martijn-on-fhir/fhir-api-server/commit/8c6b89c82ed7d46ba075855449f1a27a66299c8e))
+* complete phase 1 infrastructure items and fix lint errors ([96a5e19](https://github.com/martijn-on-fhir/fhir-api-server/commit/96a5e192b24af1898832cc83bea3f8c7d8ff7b4c))
+* optimize search performance and improve load testing setup ([5404ba7](https://github.com/martijn-on-fhir/fhir-api-server/commit/5404ba71d749a344d03142f886453b168fedec8b))
+* upgrade NestJS 10 → 11 with Express v5 ([0cf5737](https://github.com/martijn-on-fhir/fhir-api-server/commit/0cf5737aa1dc9634abd0d1da2ef56618d79b543c))
+
+
+### Bug Fixes
+
+* add search outcome warnings and fix compartment search reference paths ([3648959](https://github.com/martijn-on-fhir/fhir-api-server/commit/36489594068f55a3a0810c4f4ece01ecd9714251))
+* add XML body parsing to all mutation endpoints and fix mongo image tag ([617f78f](https://github.com/martijn-on-fhir/fhir-api-server/commit/617f78fb3e57f0a97293344ff574a0198cb52d48))
+* **ci:** audit only production deps, lower threshold to critical ([9c45936](https://github.com/martijn-on-fhir/fhir-api-server/commit/9c459365ec8c4678236bf00a54ad974372013553))
+* Docker build output path and add Jaeger SPM with OTel Collector ([5f1fbc4](https://github.com/martijn-on-fhir/fhir-api-server/commit/5f1fbc4e0942b06b7b4acfce457fac3af065e951))
+* dynamically import AppModule in e2e test for CI compatibility ([2b606e2](https://github.com/martijn-on-fhir/fhir-api-server/commit/2b606e2dd893553573794e51606fd74133d923b7))
+* regenerate package-lock.json without legacy-peer-deps ([b56c20a](https://github.com/martijn-on-fhir/fhir-api-server/commit/b56c20a26d75c530e33d6642613d36f8ebc1fd3d))
+* telemetry config from app-config.json, Jaeger image tag, import ordering ([2dfbec1](https://github.com/martijn-on-fhir/fhir-api-server/commit/2dfbec1cff3da123ef3c9dba2040231b3ee192b2))
+* use env var for MongoDB URI in app e2e test ([42429c0](https://github.com/martijn-on-fhir/fhir-api-server/commit/42429c01485694d09aa5a04a59e83c742dd60403))
+
+
+### Documentation
+
+* add JSDoc documentation to search query builder functions and properties ([91ea7b3](https://github.com/martijn-on-fhir/fhir-api-server/commit/91ea7b3788fcfed6b2ded98edc2ec91215d19c28))
+* add production readiness plan ([27d9b2a](https://github.com/martijn-on-fhir/fhir-api-server/commit/27d9b2acf09736d41f4d311ce6a13c761da5c5b8))
+
 ## [0.8.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.7.0...fhir-api-server-v0.8.0) (2026-03-12)
 
 
