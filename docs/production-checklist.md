@@ -37,8 +37,8 @@ Resterende stappen voordat de disclaimer "niet gevalideerd voor productiegebruik
 
 ## 5. Operationeel
 
-- [ ] Runbook schrijven: startup, shutdown, scaling, troubleshooting
-- [ ] Alerting configureren in Grafana (error rate > 1%, p95 > 500ms, disk > 80%)
-- [ ] Log aggregatie opzetten (ELK/Loki) voor centraal logbeheer
-- [ ] MongoDB monitoring (Atlas of eigen Prometheus exporter)
-- [ ] Disaster recovery plan: wat als MongoDB corrupt raakt, wat als de server crasht
+- [x] Runbook (`docs/runbook.md`): startup, shutdown, scaling, troubleshooting, logs, monitoring
+- [x] Alerting: 3 Grafana alert rules (error rate >1%, p95 >500ms, MongoDB connections >80%)
+- [x] Log aggregatie: Loki + Promtail in docker-compose, Grafana datasource auto-provisioned
+- [x] MongoDB monitoring: percona/mongodb-exporter in docker-compose, Prometheus scrape target
+- [x] Disaster recovery plan (`docs/disaster-recovery.md`): 5 scenario's met recovery procedures

@@ -75,6 +75,39 @@ services:
       - "9090:9090"
     restart: unless-stopped
 
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.43
+    ports:
+      - "9216:9216"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017
+    command: ["--collect-all", "--compatible-mode"]
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/config.yaml
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - ./config/promtail.yaml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -84,16 +117,19 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_UNIFIED_ALERTING_ENABLED=true
     volumes:
       - grafana-data:/var/lib/grafana
       - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./docs/grafana-dashboard.json:/var/lib/grafana/dashboards/fhir-api-server.json:ro
     depends_on:
       - prometheus
+      - loki
     restart: unless-stopped
 
 volumes:
   mongo-data:
   prometheus-data:
   grafana-data:
+  loki-data:
   backups:

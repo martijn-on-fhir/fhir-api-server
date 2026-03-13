@@ -8,6 +8,10 @@ scrape_configs:
     static_configs:
       - targets: [fhir-api:3000]
 
+  - job_name: mongodb
+    static_configs:
+      - targets: [mongodb-exporter:9216]
+
   - job_name: otel-collector-spanmetrics
     static_configs:
       - targets: [otel-collector:8889]

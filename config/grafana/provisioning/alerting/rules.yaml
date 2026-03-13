@@ -1,0 +1,109 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: FHIR API Alerts
+    folder: FHIR API Server
+    interval: 1m
+    rules:
+      - uid: fhir-error-rate
+        title: High Error Rate
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: DS_PROMETHEUS
+            model:
+              expr: sum(rate(fhir_requests_total{status=~"5.."}[5m])) / sum(rate(fhir_requests_total[5m]))
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0.01]
+                  operator:
+                    type: and
+              refId: C
+        for: 5m
+        annotations:
+          summary: "Error rate is above 1%: {{ $values.A.Value }}"
+          description: "More than 1% of FHIR API requests are returning 5xx errors over the last 5 minutes."
+        labels:
+          severity: critical
+
+      - uid: fhir-high-latency
+        title: High p95 Latency
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: DS_PROMETHEUS
+            model:
+              expr: histogram_quantile(0.95, sum(rate(fhir_request_duration_seconds_bucket[5m])) by (le))
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0.5]
+                  operator:
+                    type: and
+              refId: C
+        for: 5m
+        annotations:
+          summary: "p95 latency is above 500ms: {{ $values.A.Value }}s"
+          description: "FHIR API p95 request duration exceeds 500ms over the last 5 minutes."
+        labels:
+          severity: warning
+
+      - uid: mongodb-connections-high
+        title: MongoDB Connections High
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: DS_PROMETHEUS
+            model:
+              expr: mongodb_ss_connections{conn_type="current"} / mongodb_ss_connections{conn_type="available"} * 100
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [80]
+                  operator:
+                    type: and
+              refId: C
+        for: 5m
+        annotations:
+          summary: "MongoDB connections at {{ $values.A.Value }}% capacity"
+          description: "MongoDB is using more than 80% of available connections."
+        labels:
+          severity: warning
