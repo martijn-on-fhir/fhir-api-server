@@ -120,7 +120,7 @@ export class ChainingService {
       searchParams[chainedParam] = value;
     }
 
-    const targetFilter = this.queryBuilder.buildFilter(resolvedTargetType, searchParams);
+    const { filter: targetFilter } = this.queryBuilder.buildFilter(resolvedTargetType, searchParams);
 
     // Find matching target resources
     const targetDocs = await this.resourceModel.find(targetFilter).select('resourceType id').lean().exec();
@@ -156,7 +156,7 @@ export class ChainingService {
 
     // Build filter for the target type with the search param
     const searchParams: Record<string, string> = { [searchParam]: value };
-    const targetFilter = this.queryBuilder.buildFilter(targetType, searchParams);
+    const { filter: targetFilter } = this.queryBuilder.buildFilter(targetType, searchParams);
 
     // Resolve the reference parameter path on the target type
     const refPaths = this.registry.resolvePaths(targetType, referenceParam);

@@ -54,7 +54,7 @@ export class FhirService {
   /**
    * Searches for resources matching the given type and FHIR search parameters.
    */
-  async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number; included: FhirResource[]; warnings: string[] }> {
+  async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number | undefined; included: FhirResource[]; warnings: string[] }> {
 
     const { filter, warnings } = this.queryBuilder.buildFilter(resourceType, params);
 
@@ -99,7 +99,12 @@ export class FhirService {
       query.sort(sortObj);
     }
 
-    const total = await this.resourceModel.countDocuments(filter).exec();
+    // _total parameter: accurate (default), estimate, or none
+    const totalMode = params._total || 'accurate';
+    let total: number | undefined;
+    if (totalMode === 'none') { total = undefined; }
+    else if (totalMode === 'estimate') { total = await this.resourceModel.estimatedDocumentCount().exec(); }
+    else { total = await this.resourceModel.countDocuments(filter).exec(); }
     const count = params._count ? parseInt(params._count, 10) : 10;
     query.limit(count);
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
@@ -535,7 +540,7 @@ return part[valueKeys[0]];
    */
   async conditionalCreate(resourceType: string, body: any, searchParams: Record<string, string>, session?: ClientSession, req?: any): Promise<{ resource: FhirResource; created: boolean }> {
 
-    const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
+    const { filter } = this.queryBuilder.buildFilter(resourceType, searchParams);
     const matches = await this.resourceModel.find(filter).limit(2).exec();
 
     if (matches.length === 1) {
@@ -559,7 +564,7 @@ return part[valueKeys[0]];
    */
   async conditionalUpdate(resourceType: string, body: any, searchParams: Record<string, string>, session?: ClientSession, req?: any): Promise<{ resource: FhirResource; created: boolean }> {
 
-    const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
+    const { filter } = this.queryBuilder.buildFilter(resourceType, searchParams);
     const matches = await this.resourceModel.find(filter).limit(2).exec();
 
     if (matches.length > 1) {
@@ -585,7 +590,7 @@ return part[valueKeys[0]];
    */
   async conditionalDelete(resourceType: string, searchParams: Record<string, string>, session?: ClientSession, req?: any): Promise<number> {
 
-    const filter = this.queryBuilder.buildFilter(resourceType, searchParams);
+    const { filter } = this.queryBuilder.buildFilter(resourceType, searchParams);
     const matches = await this.resourceModel.find(filter).exec();
 
     for (const match of matches) {

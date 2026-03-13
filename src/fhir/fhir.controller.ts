@@ -488,10 +488,9 @@ export class FhirController {
   async vRead(@Param('resourceType') resourceType: string, @Param('id') id: string, @Param('versionId') versionId: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.fhirService.vRead(resourceType, id, versionId);
+    if (this.checkConditionalRead(req, res, { versionId, lastUpdated: resource.meta?.lastUpdated || new Date().toISOString() })) return;
     const baseUrl = this.getBaseUrl(req);
     this.auditService.recordAudit('vread', resourceType, id, req);
-
-    res.set('ETag', `W/"${versionId}"`);
     this.sendFhirResponse(res, req, this.resolveReferences(resource, baseUrl));
   }
 
@@ -546,11 +545,10 @@ export class FhirController {
   async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.fhirService.findById(resourceType, id);
+    if (this.checkConditionalRead(req, res, resource.meta)) return;
     const baseUrl = this.getBaseUrl(req);
     const fhir = this.toFhirJson(resource, baseUrl);
     this.auditService.recordAudit('read', resourceType, id, req);
-
-    res.set('ETag', `W/"${resource.meta.versionId}"`);
     this.sendFhirResponse(res, req, fhir);
   }
 
@@ -590,13 +588,13 @@ export class FhirController {
 
       res.set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`);
 
-      return this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED);
+      return this.sendWriteResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED, `Created ${resourceType}/${resource.id}`);
     }
 
     const resource = await this.fhirService.create(resourceType, body, undefined, req);
 
     res.set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`);
-    this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED);
+    this.sendWriteResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED, `Created ${resourceType}/${resource.id}`);
   }
 
   /**
@@ -621,11 +619,11 @@ export class FhirController {
     if (created) {
       res.set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`);
 
-      return this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED);
+      return this.sendWriteResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.CREATED, `Created ${resourceType}/${resource.id}`);
     }
 
     res.set('ETag', `W/"${resource.meta.versionId}"`);
-    this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl));
+    this.sendWriteResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.OK, `Updated ${resourceType}/${resource.id}`);
   }
 
   /**
@@ -657,7 +655,7 @@ export class FhirController {
     const baseUrl = this.getBaseUrl(req);
 
     res.set('ETag', `W/"${resource.meta.versionId}"`);
-    this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl));
+    this.sendWriteResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.OK, `Updated ${resourceType}/${id}`);
   }
 
   /**
@@ -698,7 +696,7 @@ export class FhirController {
 
     const baseUrl = this.getBaseUrl(req);
     res.set('ETag', `W/"${resource.meta.versionId}"`);
-    this.sendFhirResponse(res, req, this.toFhirJson(resource, baseUrl));
+    this.sendWriteResponse(res, req, this.toFhirJson(resource, baseUrl), HttpStatus.OK, `Patched ${resourceType}/${id}`);
   }
 
   /** FHIR conditional delete: DELETE /ResourceType?search-params */
@@ -729,14 +727,17 @@ export class FhirController {
   @ApiResponse({status: 404, description: 'OperationOutcome (not found)'})
   @ApiResponse({status: 409, description: 'OperationOutcome (referential integrity violation)'})
   async remove(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query('_cascade') cascade: string, @Req() req: Request, @Res() res: Response) {
+    const prefer = this.parsePrefer(req);
     if (cascade === 'delete') {
       const deleted = await this.fhirService.cascadeDelete(resourceType, id, undefined, req);
+      if (prefer.return === 'minimal') { res.status(HttpStatus.NO_CONTENT).end(); return; }
       const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Cascade deleted ${deleted} resource(s) including ${resourceType}/${id}`})]});
 
       return this.sendFhirResponse(res, req, outcome);
     }
 
     await this.fhirService.delete(resourceType, id, undefined, req);
+    if (prefer.return === 'minimal') { res.status(HttpStatus.NO_CONTENT).end(); return; }
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted`})]});
     this.sendFhirResponse(res, req, outcome);
   }
@@ -808,6 +809,14 @@ export class FhirController {
     params = sanitizeSearchParams(params);
 
     const { resources, total, included, warnings } = await this.fhirService.search(resourceType, params);
+
+    // Prefer: handling=strict → reject unknown search parameters with 400
+    const prefer = this.parsePrefer(req);
+    if (prefer.handling === 'strict' && warnings.length > 0) {
+      const issues = warnings.map((w) => new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.NotFound, diagnostics: w }));
+      return this.sendFhirResponse(res, req, new OperationOutcome({ issue: issues }), HttpStatus.BAD_REQUEST);
+    }
+
     const baseUrl = this.getBaseUrl(req);
     const selfUrl = this.buildSelfUrl(baseUrl, resourceType, params);
     const summary = params._summary;
@@ -815,7 +824,7 @@ export class FhirController {
     // _summary=count returns only total, no entries
     if (summary === 'count') {
       const bundle = new Bundle({ type: BundleType.Searchset, total, link: [new BundleLink({ relation: 'self', url: selfUrl })] });
-
+      if (total === undefined) delete (bundle as any).total;
       return this.sendFhirResponse(res, req, bundle);
     }
 
@@ -858,16 +867,20 @@ export class FhirController {
       links.push(new BundleLink({ relation: 'previous', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(prevOffset) }) }));
     }
 
-    if (offset + count < total) {
+    if (total !== undefined && offset + count < total) {
+      links.push(new BundleLink({ relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(offset + count) }) }));
+    } else if (total === undefined && resources.length === count) {
+      // Heuristic: if we got exactly _count results, there are probably more
       links.push(new BundleLink({ relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(offset + count) }) }));
     }
 
-    if (total > 0) {
+    if (total !== undefined && total > 0) {
       const lastOffset = Math.max(0, Math.floor((total - 1) / count) * count);
       links.push(new BundleLink({ relation: 'last', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(lastOffset) }) }));
     }
 
     const bundle = new Bundle({ type: BundleType.Searchset, total, link: links, entry: entries });
+    if (total === undefined) delete (bundle as any).total;
     this.auditService.recordAudit('search', resourceType, null, req);
 
     return this.sendFhirResponse(res, req, bundle);
@@ -1027,6 +1040,56 @@ return 'xml';
     }
 
     return resolved;
+  }
+
+  /**
+   * Parses the Prefer header into key-value pairs (e.g. "handling=strict; return=minimal" → {handling: "strict", return: "minimal"}).
+   */
+  private parsePrefer(req: Request): Record<string, string> {
+    const header = req.headers.prefer as string;
+    if (!header) return {};
+    const result: Record<string, string> = {};
+    for (const part of header.split(/[;,]\s*/)) {
+      const [key, value] = part.split('=');
+      if (key && value) result[key.trim()] = value.trim();
+    }
+    return result;
+  }
+
+  /**
+   * Sends a write response respecting the Prefer: return header.
+   * minimal → status with headers only, no body. representation → full resource. OperationOutcome → informational outcome.
+   */
+  private sendWriteResponse(res: Response, req: Request, resource: any, statusCode: number, diagnostics: string) {
+    const prefer = this.parsePrefer(req);
+    if (prefer.return === 'minimal') { res.status(statusCode === HttpStatus.CREATED ? HttpStatus.CREATED : HttpStatus.NO_CONTENT).end(); return; }
+    if (prefer.return === 'OperationOutcome') {
+      const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics })] });
+      return this.sendFhirResponse(res, req, outcome, statusCode);
+    }
+    this.sendFhirResponse(res, req, resource, statusCode);
+  }
+
+  /**
+   * Checks conditional read headers (If-None-Match, If-Modified-Since). Returns true and sends 304 if the condition matches.
+   */
+  private checkConditionalRead(req: Request, res: Response, meta: { versionId: string; lastUpdated: string }): boolean {
+    res.set('ETag', `W/"${meta.versionId}"`);
+    res.set('Last-Modified', new Date(meta.lastUpdated).toUTCString());
+
+    const ifNoneMatch = req.headers['if-none-match'] as string;
+    if (ifNoneMatch) {
+      const etag = ifNoneMatch.replace(/^W\//, '').replace(/"/g, '');
+      if (etag === meta.versionId) { res.status(304).end(); return true; }
+    }
+
+    const ifModifiedSince = req.headers['if-modified-since'] as string;
+    if (ifModifiedSince) {
+      const sinceDate = new Date(ifModifiedSince);
+      if (!isNaN(sinceDate.getTime()) && new Date(meta.lastUpdated) <= sinceDate) { res.status(304).end(); return true; }
+    }
+
+    return false;
   }
 
   /**
