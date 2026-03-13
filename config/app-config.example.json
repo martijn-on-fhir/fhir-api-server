@@ -21,6 +21,10 @@
     "snapshot": { "enabled": false },
     "restore": { "enabled": false }
   },
+  "telemetry": {
+    "enabled": false,
+    "endpoint": "http://localhost:4318"
+  },
   "smart": {
     "enabled": false,
     "issuer": "",

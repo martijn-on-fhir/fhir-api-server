@@ -44,7 +44,7 @@ services:
       start_period: 15s
 
   jaeger:
-    image: jaegertracing/jaeger:2
+    image: jaegertracing/jaeger:latest
     ports:
       - "16686:16686"
       - "4318:4318"

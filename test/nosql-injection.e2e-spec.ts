@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import * as request from 'supertest';
 import { MongooseModule } from '@nestjs/mongoose';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import * as request from 'supertest';
 import { FhirModule } from '../src/fhir/fhir.module';
 import { FhirExceptionFilter } from '../src/fhir/filters/fhir-exception.filter';
 import { seedSearchParameters } from './helpers/seed-search-params';
