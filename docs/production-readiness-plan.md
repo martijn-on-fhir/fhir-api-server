@@ -129,43 +129,44 @@ Huidige `/health` combineert liveness en readiness. Kubernetes heeft aparte prob
 
 ### 3.1 SMART scope enforcement per resource
 
-SMART auth valideert tokens maar dwingt scopes niet af op resourcetype-niveau.
+SMART auth valideert tokens en dwingt scopes af op resourcetype-niveau.
 
-- [ ] Token scopes parsen (`patient/Patient.read`, `user/Observation.write`, etc.)
-- [ ] Guard die per request checkt of de scope het resourcetype + operatie toestaat
-- [ ] `launch/patient` context scope voor patient-gebonden toegang
+- [x] Token scopes parsen (`patient/Patient.read`, `user/Observation.write`, etc.)
+- [x] Guard checkt per request of de scope het resourcetype + operatie toestaat
+- [x] `launch/patient` context: patient claim wordt als `smartPatientContext` aan request gehangen
+- [ ] Downstream filtering op patient-context in search queries
 - [ ] Testen met restricted tokens
 
-**Bestanden:** `src/fhir/guards/smart-auth.guard.ts`
+**Bestanden:** `src/fhir/guards/smart-auth.guard.ts`, `src/fhir/smart/smart-scopes.ts`
 
 ### 3.2 Audit trail immutability
 
-AuditEvents worden als reguliere FHIR resources opgeslagen en kunnen gewijzigd/verwijderd worden.
+AuditEvent en Provenance resources zijn nu immutable (append-only).
 
-- [ ] AuditEvent en Provenance uitsluiten van update/delete operaties
-- [ ] Of: apart audit log schrijven naar append-only store (bijv. apart MongoDB collection met `validator: { $jsonSchema }` die updates blokkeert)
-- [ ] Audit log retentie beleid configureerbaar
+- [x] AuditEvent en Provenance geblokkeerd voor update en delete operaties
+- [x] `assertMutable()` check in `FhirService.update()` en `FhirService.delete()`
+- [ ] Audit log retentie beleid configureerbaar (TTL index)
 
-**Bestanden:** `src/fhir/audit/audit-event.service.ts`, `src/fhir/fhir.service.ts`
+**Bestanden:** `src/fhir/fhir.service.ts`
 
 ### 3.3 Rate limiting per client
 
-Huidige rate limiting is globaal (per IP). Productie vereist per-client limiting op basis van SMART token.
+Rate limiting op basis van JWT client identity.
 
-- [ ] Rate limit key extraheren uit JWT `client_id` of `sub` claim
+- [x] Rate limit key: JWT `client_id` > JWT `sub` > IP address
+- [x] Health en metrics endpoints uitgesloten van rate limiting
 - [ ] Verschillende limieten per client/tier configureerbaar
-- [ ] Rate limit headers (`X-RateLimit-Remaining`, `Retry-After`)
 
 **Bestanden:** `src/fhir/guards/fhir-throttler.guard.ts`
 
 ### 3.4 GDPR / AVG documentatie
 
-$expunge bestaat maar het volledige proces voor recht op verwijdering is niet gedocumenteerd.
+Volledige procedure voor recht op verwijdering gedocumenteerd.
 
-- [ ] Procedure documenteren: welke resources verwijderen bij een wis-verzoek
-- [ ] $expunge + cascade delete combinatie voor volledige data wissing
-- [ ] AuditEvent bewaren (wettelijke bewaarplicht) maar patiëntdata anonimiseren
-- [ ] Retentiebeleid per resourcetype configureerbaar
+- [x] Stap-voor-stap procedure: $everything → cascade delete → $expunge
+- [x] AuditEvent bewaarplicht (NEN 7513) en WGBO bewaartermijnen
+- [x] Configuratie en verificatie stappen
+- [x] Aanbeveling voor retentiebeleid
 
 **Bestanden:** `docs/gdpr-procedure.md`
 

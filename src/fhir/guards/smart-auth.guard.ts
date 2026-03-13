@@ -68,6 +68,11 @@ export class SmartAuthGuard implements CanActivate {
       throw new ForbiddenException(`Insufficient scope. Required: ${resourceType}.${action}`);
     }
 
+    // launch/patient context: attach patient id so downstream services can filter
+    if (payload.patient && scopes.some((s) => s.startsWith('patient/'))) {
+      (req as any).smartPatientContext = payload.patient;
+    }
+
     return true;
   }
 

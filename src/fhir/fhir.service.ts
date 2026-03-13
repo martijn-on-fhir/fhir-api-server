@@ -252,6 +252,7 @@ export class FhirService {
    * Writes both the pre-update and new version to history.
    */
   async update(resourceType: string, id: string, body: any, session?: ClientSession, req?: any): Promise<FhirResource> {
+    this.assertMutable(resourceType);
 
     const existing = await this.findById(resourceType, id);
     const currentVersion = parseInt(existing.meta.versionId, 10);
@@ -522,6 +523,7 @@ return part[valueKeys[0]];
    * Writes a tombstone entry to history before removing from the main collection.
    */
   async delete(resourceType: string, id: string, session?: ClientSession, req?: any): Promise<void> {
+    this.assertMutable(resourceType);
 
     const existing = await this.resourceModel.findOne({resourceType, id}).exec();
 
@@ -1074,6 +1076,16 @@ codeFilter['code.coding.system'] = codeSystem;
     delete obj.response;
 
     return obj;
+  }
+
+  /** Resource types that are immutable (append-only) — cannot be updated or deleted to preserve audit trail integrity. */
+  private static readonly IMMUTABLE_TYPES = new Set(['AuditEvent', 'Provenance']);
+
+  /** Throws BadRequestException if the resource type is immutable (audit trail protection). */
+  private assertMutable(resourceType: string): void {
+    if (FhirService.IMMUTABLE_TYPES.has(resourceType)) {
+      throw new BadRequestException(this.createOutcome(IssueSeverity.Error, IssueType.BusinessRule, `${resourceType} resources are immutable and cannot be updated or deleted`));
+    }
   }
 
   private createOutcome(severity: IssueSeverity, code: IssueType, diagnostics: string): OperationOutcome {
