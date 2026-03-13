@@ -196,8 +196,6 @@ In-memory TTL cache voor conformance resources, CapabilityStatement en terminolo
 - [x] Terminology lookups gecached ($expand, $lookup, $translate)
 - [x] Cache invalidatie bij conformance resource create/update/delete
 - [x] `CACHE_TTL_MS` configureerbaar (default 300000 = 5 min)
-- [ ] Optioneel: Redis voor shared cache bij horizontaal schalen (pas relevant bij meerdere instances)
-
 **Bestanden:** `src/cache/cache.service.ts`, `src/cache/cache.module.ts`, `src/fhir/fhir.controller.ts`, `src/administration/administration.service.ts`, `src/administration/terminology/terminology.service.ts`
 
 ### 4.3 Request/response size limits
