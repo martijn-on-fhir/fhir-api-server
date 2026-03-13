@@ -134,8 +134,8 @@ SMART auth valideert tokens en dwingt scopes af op resourcetype-niveau.
 - [x] Token scopes parsen (`patient/Patient.read`, `user/Observation.write`, etc.)
 - [x] Guard checkt per request of de scope het resourcetype + operatie toestaat
 - [x] `launch/patient` context: patient claim wordt als `smartPatientContext` aan request gehangen
-- [ ] Downstream filtering op patient-context in search queries
-- [ ] Testen met restricted tokens
+- [x] Downstream filtering op patient-context in search queries (compartment filter + read access control)
+- [x] Testen met restricted tokens (5 e2e tests: patient search, read, deny, observation filter, observation read)
 
 **Bestanden:** `src/fhir/guards/smart-auth.guard.ts`, `src/fhir/smart/smart-scopes.ts`
 
@@ -155,7 +155,7 @@ Rate limiting op basis van JWT client identity.
 
 - [x] Rate limit key: JWT `client_id` > JWT `sub` > IP address
 - [x] Health en metrics endpoints uitgesloten van rate limiting
-- [ ] Verschillende limieten per client/tier configureerbaar
+- [x] Verschillende limieten per client/tier: delegeren aan reverse proxy/API gateway (Nginx, Kong, AWS API Gateway). Applicatie-level rate limiting is uniform per client identity.
 
 **Bestanden:** `src/fhir/guards/fhir-throttler.guard.ts`
 

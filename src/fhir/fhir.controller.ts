@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, Req, Res, HttpStatus, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, Req, Res, HttpStatus, Inject, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
@@ -555,6 +555,9 @@ return;
 
     const resource = await this.fhirService.findById(resourceType, id);
 
+    // SMART patient-context: verify the resource belongs to the authorized patient
+    this.assertPatientContextAccess(resourceType, resource, req);
+
     if (this.checkConditionalRead(req, res, resource.meta)) {
 return;
 }
@@ -834,6 +837,9 @@ return;
     // Sanitize all search params to prevent NoSQL injection via Express bracket notation
     params = sanitizeSearchParams(params);
 
+    // SMART patient-context: restrict search results to resources linked to the authorized patient
+    this.applyPatientContextFilter(resourceType, params, req);
+
     const { resources, total, included, warnings } = await this.fhirService.search(resourceType, params);
 
     // Prefer: handling=strict → reject unknown search parameters with 400
@@ -1081,6 +1087,105 @@ return 'xml';
   /**
    * Parses the Prefer header into key-value pairs (e.g. "handling=strict; return=minimal" → {handling: "strict", return: "minimal"}).
    */
+  /**
+   * Verifies that a resource belongs to the authorized patient context for read operations.
+   * Throws ForbiddenException if the resource is outside the patient compartment.
+   */
+  private assertPatientContextAccess(resourceType: string, resource: any, req: Request): void {
+    const patientId = (req as any).smartPatientContext;
+
+    if (!patientId) {
+      return;
+    }
+
+    const obj = resource.toObject ? resource.toObject() : resource;
+
+    // Patient resource: must be the patient's own record
+    if (resourceType === 'Patient') {
+      if (obj.id !== patientId) {
+        throw new ForbiddenException(`Access denied: resource is outside the authorized patient context`);
+      }
+
+      return;
+    }
+
+    // Other resource types: check if any Patient compartment reference points to the authorized patient
+    const refParams = COMPARTMENT_PARAMS.Patient?.[resourceType];
+
+    if (!refParams || refParams.length === 0) {
+      return;
+    }
+
+    const patientRef = `Patient/${patientId}`;
+    const hasAccess = refParams.some((param) => {
+      const resolved = this.searchRegistry.resolvePaths(resourceType, param);
+      const path = resolved?.paths[0] || param;
+      const value = this.getNestedValue(obj, path);
+
+      if (Array.isArray(value)) {
+        return value.some((v) => v?.reference === patientRef);
+      }
+
+      return value?.reference === patientRef;
+    });
+
+    if (!hasAccess) {
+      throw new ForbiddenException(`Access denied: resource is outside the authorized patient context`);
+    }
+  }
+
+  /** Gets a nested value from an object by dot-notation path. */
+  private getNestedValue(obj: any, path: string): any {
+    let current = obj;
+
+    for (const segment of path.split('.')) {
+      if (current == null) {
+        return undefined;
+      }
+
+      current = Array.isArray(current) ? current.map((item) => item?.[segment]).flat() : current[segment];
+    }
+
+    return current;
+  }
+
+  /**
+   * Injects a compartment filter when the request has a SMART patient-context.
+   * Ensures search results only contain resources linked to the authorized patient.
+   */
+  private applyPatientContextFilter(resourceType: string, params: Record<string, string>, req: Request): void {
+    const patientId = (req as any).smartPatientContext;
+
+    if (!patientId || params._compartmentFilter) {
+      return;
+    }
+
+    // Patient resource: restrict to the patient's own record
+    if (resourceType === 'Patient') {
+      params._compartmentFilter = JSON.stringify({ id: patientId });
+
+      return;
+    }
+
+    // Other resource types: use Patient compartment definition to filter
+    const refParams = COMPARTMENT_PARAMS.Patient?.[resourceType];
+
+    if (!refParams || refParams.length === 0) {
+      return;
+    }
+
+    const patientRef = `Patient/${patientId}`;
+    const refConditions = refParams.map((param) => {
+      const resolved = this.searchRegistry.resolvePaths(resourceType, param);
+      const mongoPath = (resolved?.paths[0] || param) + '.reference';
+
+      return { [mongoPath]: patientRef };
+    });
+
+    const filter = refConditions.length === 1 ? refConditions[0] : { $or: refConditions };
+    params._compartmentFilter = JSON.stringify(filter);
+  }
+
   private parsePrefer(req: Request): Record<string, string> {
     const header = req.headers.prefer as string;
 

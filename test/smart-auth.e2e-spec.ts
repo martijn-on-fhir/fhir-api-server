@@ -204,4 +204,68 @@ describe('SMART on FHIR Auth (e2e)', () => {
     // Should not be 403 — _search is a read operation
     expect(res.status).not.toBe(403);
   });
+
+  // -- Patient-context filtering --
+
+  describe('Patient-context filtering', () => {
+    let patientId: string;
+    let otherPatientId: string;
+    let observationId: string;
+
+    beforeAll(async () => {
+      // Create two patients and an observation using system-level write scope
+      const sysToken = createToken({ scope: 'system/*.write system/*.read' });
+
+      const p1 = await request(app.getHttpServer()).post('/fhir/Patient').set('Authorization', `Bearer ${sysToken}`).set('Content-Type', 'application/fhir+json').send({ resourceType: 'Patient', name: [{ family: 'ContextPatient' }] });
+      patientId = p1.body.id;
+
+      const p2 = await request(app.getHttpServer()).post('/fhir/Patient').set('Authorization', `Bearer ${sysToken}`).set('Content-Type', 'application/fhir+json').send({ resourceType: 'Patient', name: [{ family: 'OtherPatient' }] });
+      otherPatientId = p2.body.id;
+
+      const obs = await request(app.getHttpServer()).post('/fhir/Observation').set('Authorization', `Bearer ${sysToken}`).set('Content-Type', 'application/fhir+json').send({ resourceType: 'Observation', status: 'final', code: { text: 'test' }, subject: { reference: `Patient/${patientId}` } });
+      observationId = obs.body.id;
+    });
+
+    it('should only return the authorized patient in Patient search', async () => {
+      const token = createToken({ scope: 'patient/Patient.read', patient: patientId });
+      const res = await request(app.getHttpServer()).get('/fhir/Patient').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.resourceType).toBe('Bundle');
+
+      const ids = res.body.entry?.map((e: any) => e.resource.id) || [];
+      expect(ids).toContain(patientId);
+      expect(ids).not.toContain(otherPatientId);
+    });
+
+    it('should allow reading the authorized patient by id', async () => {
+      const token = createToken({ scope: 'patient/Patient.read', patient: patientId });
+      const res = await request(app.getHttpServer()).get(`/fhir/Patient/${patientId}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(patientId);
+    });
+
+    it('should deny reading another patient by id', async () => {
+      const token = createToken({ scope: 'patient/Patient.read', patient: patientId });
+      const res = await request(app.getHttpServer()).get(`/fhir/Patient/${otherPatientId}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('should only return observations linked to the authorized patient', async () => {
+      const token = createToken({ scope: 'patient/Observation.read', patient: patientId });
+      const res = await request(app.getHttpServer()).get('/fhir/Observation').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+
+      const entries = res.body.entry || [];
+
+      for (const entry of entries) {
+        expect(entry.resource.subject?.reference).toContain(`Patient/${patientId}`);
+      }
+    });
+
+    it('should allow reading an observation linked to the authorized patient', async () => {
+      const token = createToken({ scope: 'patient/Observation.read', patient: patientId });
+      const res = await request(app.getHttpServer()).get(`/fhir/Observation/${observationId}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+    });
+  });
 });
