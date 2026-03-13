@@ -10,13 +10,15 @@ services:
       - CORS_ORIGIN=${CORS_ORIGIN:?Set CORS_ORIGIN to allowed origins (e.g. https://app.example.com)}
       - BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-5mb}
       - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30000}
-      - OTEL_ENABLED=${OTEL_ENABLED:-false}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_ENABLED=${OTEL_ENABLED:-true}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     volumes:
       - ./file-import:/app/file-import:ro
     depends_on:
       mongo:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health/ready"]
@@ -43,14 +45,35 @@ services:
       retries: 5
       start_period: 15s
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    volumes:
+      - ./config/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4318:4318"
+    depends_on:
+      - jaeger
+      - prometheus
+    restart: unless-stopped
+
   jaeger:
     image: jaegertracing/jaeger:latest
+    volumes:
+      - ./config/jaeger.yaml:/etc/jaeger/config.yaml:ro
+    command: ["--config", "/etc/jaeger/config.yaml"]
     ports:
       - "16686:16686"
-      - "4318:4318"
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
     restart: unless-stopped
 
 volumes:
   mongo-data:
+  prometheus-data:

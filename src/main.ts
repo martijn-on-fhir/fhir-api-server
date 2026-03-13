@@ -1,9 +1,12 @@
+import {readFileSync} from 'fs';
+import {join} from 'path';
 import {NestFactory} from '@nestjs/core';
 import {NestExpressApplication} from '@nestjs/platform-express';
 import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
 import * as express from 'express';
 import helmet from 'helmet';
-import {version} from '../package.json';
+
+const {version} = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 import {AppModule} from './app.module';
 import {FhirExceptionFilter} from './fhir/filters/fhir-exception.filter';
 import {TimeoutInterceptor} from './fhir/interceptors/timeout.interceptor';
