@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { IssueSeverity, IssueType, OperationOutcome, OperationOutcomeIssue } from 'fhir-models-r4';
@@ -34,5 +34,23 @@ export class AdminController {
     const counts = await this.adminService.restore(body.filename);
     const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Restore complete from ${body.filename}: ${counts.resources} resources, ${counts.history} history entries imported` })] });
     res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(outcome);
+  }
+
+  /** Returns index usage statistics for all FHIR collections. */
+  @Get('index-stats')
+  @ApiOperation({ summary: 'Index usage statistics', description: 'Returns MongoDB index usage stats for fhir_resources, fhir_resource_history and conformance_resources collections.' })
+  @ApiResponse({ status: 200, description: 'Index stats per collection' })
+  async indexStats(@Res() res: Response) {
+    const stats = await this.adminService.getIndexStats();
+    res.status(HttpStatus.OK).json(stats);
+  }
+
+  /** Returns database-level statistics (collection sizes, counts, storage). */
+  @Get('db-stats')
+  @ApiOperation({ summary: 'Database statistics', description: 'Returns MongoDB collection sizes, document counts and storage statistics.' })
+  @ApiResponse({ status: 200, description: 'Database statistics' })
+  async dbStats(@Res() res: Response) {
+    const stats = await this.adminService.getDbStats();
+    res.status(HttpStatus.OK).json(stats);
   }
 }

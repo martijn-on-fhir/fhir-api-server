@@ -196,7 +196,7 @@ In-memory TTL cache voor conformance resources, CapabilityStatement en terminolo
 - [x] Terminology lookups gecached ($expand, $lookup, $translate)
 - [x] Cache invalidatie bij conformance resource create/update/delete
 - [x] `CACHE_TTL_MS` configureerbaar (default 300000 = 5 min)
-- [ ] Optioneel: Redis voor shared cache bij horizontaal schalen
+- [ ] Optioneel: Redis voor shared cache bij horizontaal schalen (pas relevant bij meerdere instances)
 
 **Bestanden:** `src/cache/cache.service.ts`, `src/cache/cache.module.ts`, `src/fhir/fhir.controller.ts`, `src/administration/administration.service.ts`, `src/administration/terminology/terminology.service.ts`
 
@@ -213,12 +213,13 @@ Limieten op request body size, Bundle entries en zoekresultaten om misbruik te v
 
 ### 4.4 Database optimalisatie
 
-- [ ] Partial indexes voor soft-deleted resources (`{ _deleted: { $ne: true } }`)
+- [x] Partial indexes: niet nodig — main collectie gebruikt hard delete, `_deleted` alleen op history collectie
 - [x] TTL index op AuditEvent resources (configureerbaar via `AUDIT_RETENTION_DAYS`, default 365)
-- [ ] Index usage analyseren met `db.collection.aggregate([{$indexStats}])`
-- [ ] Overweeg sharding strategie voor > 10M resources
+- [x] Index usage analyseren: `GET /admin/index-stats` endpoint met `$indexStats` per collectie
+- [x] Database statistieken: `GET /admin/db-stats` endpoint met collection sizes, counts, storage
+- [ ] Overweeg sharding strategie voor > 10M resources (operationeel, buiten scope applicatie)
 
-**Bestanden:** `src/fhir/fhir-resource.schema.ts`
+**Bestanden:** `src/fhir/fhir-resource.schema.ts`, `src/admin/admin.controller.ts`, `src/admin/admin.service.ts`
 
 ---
 

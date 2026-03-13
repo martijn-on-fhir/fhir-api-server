@@ -1,8 +1,8 @@
 import { writeFile, readFile } from 'fs/promises';
 import { join } from 'path';
 import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { FhirResourceHistory } from '../fhir/fhir-resource-history.schema';
 import { FhirResource } from '../fhir/fhir-resource.schema';
 
@@ -13,7 +13,7 @@ const FIXTURES_DIR = join(process.cwd(), 'fixtures');
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>, @InjectModel(FhirResourceHistory.name) private readonly historyModel: Model<FhirResourceHistory>) {}
+  constructor(@InjectConnection() private readonly connection: Connection, @InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>, @InjectModel(FhirResourceHistory.name) private readonly historyModel: Model<FhirResourceHistory>) {}
 
   /** Exports all FHIR resources and history, writes to fixtures/ and returns a summary. */
   async snapshot(): Promise<{ filename: string; exportedAt: string; resources: number; history: number; resourceTypes: Record<string, number> }> {
@@ -66,5 +66,41 @@ export class AdminService {
       this.logger.error('Restore failed', error);
       throw new InternalServerErrorException('Database restore failed: ' + (error as Error).message);
     }
+  }
+
+  /** Returns index usage statistics for all FHIR collections. */
+  async getIndexStats(): Promise<Record<string, any[]>> {
+    const db = this.connection.db;
+    const collections = ['fhir_resources', 'fhir_resource_history', 'conformance_resources'];
+    const result: Record<string, any[]> = {};
+
+    for (const name of collections) {
+      try {
+        const stats = await db.collection(name).aggregate([{ $indexStats: {} }]).toArray();
+        result[name] = stats.map((s) => ({ name: s.name, key: s.key, accesses: s.accesses }));
+      } catch {
+        result[name] = [];
+      }
+    }
+
+    return result;
+  }
+
+  /** Returns database-level statistics (collection sizes, counts, storage). */
+  async getDbStats(): Promise<Record<string, any>> {
+    const db = this.connection.db;
+    const collections = ['fhir_resources', 'fhir_resource_history', 'conformance_resources'];
+    const result: Record<string, any> = {};
+
+    for (const name of collections) {
+      try {
+        const stats = await db.command({ collStats: name });
+        result[name] = { count: stats.count, size: stats.size, avgObjSize: stats.avgObjSize, storageSize: stats.storageSize, totalIndexSize: stats.totalIndexSize, nindexes: stats.nindexes };
+      } catch {
+        result[name] = { error: 'Collection not found' };
+      }
+    }
+
+    return result;
   }
 }
