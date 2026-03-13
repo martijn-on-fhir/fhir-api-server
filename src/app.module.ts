@@ -14,6 +14,7 @@ import { SmartModule } from './fhir/smart/smart.module';
 import { HealthModule } from './health/health.module';
 import { AuditMiddleware } from './logging/audit.middleware';
 import { CorrelationMiddleware } from './logging/correlation.middleware';
+import { MetricsModule } from './metrics/metrics.module';
 
 /** Root application module. Configures MongoDB connection, health checks, logging, rate limiting and imports the FHIR module. */
 @Module({
@@ -28,12 +29,16 @@ import { CorrelationMiddleware } from './logging/correlation.middleware';
       ttl: 600_000, // 10 minutes
       limit: parseInt(process.env.RATE_LIMIT_MAX_LONG || '1000', 10),
     }]),
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/fhir'),
+    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/fhir', {
+      maxPoolSize: parseInt(process.env.MONGODB_POOL_SIZE || '10', 10),
+      minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE || '2', 10),
+    }),
     FhirModule,
     AdminModule,
     AdministrationModule,
     SmartModule,
     HealthModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: FhirThrottlerGuard }, { provide: APP_GUARD, useClass: SmartAuthGuard }],

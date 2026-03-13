@@ -34,31 +34,32 @@ Minimaal nodig voordat de server betrouwbaar requests kan afhandelen in een omge
 
 `main.ts` mist `app.enableShutdownHooks()`. Bij een restart/deploy worden lopende requests abrupt afgesloten.
 
-- [ ] `enableShutdownHooks()` aanroepen in bootstrap
-- [ ] `OnModuleDestroy` implementeren in services met open connections (MongoDB, subscription webhooks)
+- [x] `enableShutdownHooks()` aanroepen in bootstrap
+- [x] `OnModuleDestroy` implementeren in services met open connections (SubscriptionNotificationService)
 - [ ] Testen met `kill -SIGTERM` tijdens actieve requests
 
-**Bestanden:** `src/main.ts`
+**Bestanden:** `src/main.ts`, `src/fhir/subscriptions/subscription-notification.service.ts`
 
 ### 1.2 Prometheus metrics
 
 Geen observability buiten logging. Productie vereist metrics voor dashboards en alerting.
 
-- [ ] `prom-client` of `@willsoto/nestjs-prometheus` toevoegen
-- [ ] Default metrics (request count, duration histogram, error rate, active connections)
-- [ ] Custom metrics: search duration, validation duration, bundle size
-- [ ] `/metrics` endpoint (buiten FHIR routes, eventueel apart port)
+- [x] `prom-client` + `@willsoto/nestjs-prometheus` toevoegen
+- [x] Default metrics (request count, duration histogram, error rate via status label)
+- [x] Custom metrics: search duration, validation duration, bundle entries, active subscriptions
+- [x] `/metrics` endpoint (publieke route, geen auth vereist)
 - [ ] Voorbeeld Grafana dashboard JSON meenemen in `docs/`
 
-**Bestanden:** nieuw `src/metrics/` module
+**Bestanden:** `src/metrics/metrics.module.ts`, `src/metrics/metrics.interceptor.ts`
 
 ### 1.3 MongoDB replica set
 
 Transactions in `BundleProcessorService` vereisen een replica set. Zonder replica set is er geen atomiciteit bij transaction Bundles.
 
-- [ ] `docker-compose.yml` updaten naar 3-node replica set (of single-node `--replSet`)
+- [x] `docker-compose.yml` updaten naar single-node replica set (`--replSet rs0`)
 - [ ] Development: `mongodb-memory-server` ondersteunt replica set al (optie `replSet`)
-- [ ] Connection string updaten met `replicaSet` parameter
+- [x] Connection string updaten met `replicaSet` parameter
+- [x] `BundleProcessorService` gebruikt nu `session.withTransaction()` met fallback voor standalone
 - [ ] Transaction rollback testen bij fout halverwege een Bundle
 
 **Bestanden:** `docker-compose.yml`, `src/fhir/bundle-processor.service.ts`
@@ -67,9 +68,9 @@ Transactions in `BundleProcessorService` vereisen een replica set. Zonder replic
 
 Mongoose gebruikt standaard ~10 connecties. Voor productie moet dit configureerbaar zijn.
 
-- [ ] `MONGODB_POOL_SIZE` env var toevoegen (default 10, productie 50-100)
+- [x] `MONGODB_POOL_SIZE` + `MONGODB_MIN_POOL_SIZE` env vars toegevoegd
 - [ ] Connection pool metrics exposen via Prometheus
-- [ ] Documenteren in `.env.example`
+- [x] Gedocumenteerd in `.env.example`
 
 **Bestanden:** `src/app.module.ts`, `.env.example`
 

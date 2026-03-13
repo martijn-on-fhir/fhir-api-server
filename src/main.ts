@@ -1,12 +1,14 @@
-import { NestExpressApplication } from '@nestjs/platform-express';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import helmet from 'helmet';
+import { version } from '../package.json';
 import { AppModule } from './app.module';
 import { FhirExceptionFilter } from './fhir/filters/fhir-exception.filter';
 import { TimeoutInterceptor } from './fhir/interceptors/timeout.interceptor';
 import { JsonLoggerService } from './logging/json-logger.service';
+import { MetricsInterceptor } from './metrics/metrics.interceptor';
 
 /** Bootstraps the NestJS application with FHIR-specific middleware and global filters. */
 const bootstrap = async () => {
@@ -25,7 +27,8 @@ const bootstrap = async () => {
   app.enableCors({
     origin: process.env.CORS_ORIGIN || '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'If-Match', 'If-None-Exist', 'If-None-Match', 'If-Modified-Since', 'Prefer', 'X-Forwarded-Proto', 'X-Forwarded-Host'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'If-Match', 'If-None-Exist', 'If-None-Match', 'If-Modified-Since', 
+      'Prefer', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Tenant'],
     exposedHeaders: ['Content-Location', 'ETag', 'Last-Modified', 'Location'],
     credentials: true,
   });
@@ -36,20 +39,22 @@ const bootstrap = async () => {
   app.use(express.raw({ type: ['application/octet-stream'], limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: jsonLimit }));
   app.useGlobalFilters(new FhirExceptionFilter());
-  app.useGlobalInterceptors(new TimeoutInterceptor());
+  app.useGlobalInterceptors(app.get(MetricsInterceptor), new TimeoutInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('FHIR R4 API Server')
     .setDescription('FHIR R4 REST API met nl-core profiel ondersteuning en validatie via fhir-validator-mx')
-    .setVersion('0.0.1')
+    .setVersion(version || '0.0.0')
     .addServer('http://localhost:3000', 'Local development')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
 
+  app.enableShutdownHooks();
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-};
+}
 
-bootstrap();
+bootstrap()

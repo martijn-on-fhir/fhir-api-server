@@ -1,10 +1,11 @@
 import {randomUUID} from 'crypto';
-import {Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException, BadRequestException} from '@nestjs/common';
+import {Inject, Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException, BadRequestException, Optional} from '@nestjs/common';
 import {EventEmitter2} from '@nestjs/event-emitter';
 import {InjectModel} from '@nestjs/mongoose';
 import * as jsonpatch from 'fast-json-patch';
 import {OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType} from 'fhir-models-r4';
 import {Model, ClientSession} from 'mongoose';
+import {Histogram} from 'prom-client';
 import {FhirResourceHistory} from './fhir-resource-history.schema';
 import {FhirResource} from './fhir-resource.schema';
 import {ChainingService} from './search/chaining.service';
@@ -27,6 +28,7 @@ export class FhirService {
     private readonly queryBuilder: QueryBuilderService, private readonly searchRegistry: SearchParameterRegistry,
     private readonly includeService: IncludeService, private readonly chainingService: ChainingService,
     private readonly eventEmitter: EventEmitter2,
+    @Optional() @Inject('fhir_search_duration_seconds') private readonly searchDuration?: Histogram,
   ) {
   }
 
@@ -55,6 +57,7 @@ export class FhirService {
    * Searches for resources matching the given type and FHIR search parameters.
    */
   async search(resourceType: string, params: Record<string, string>): Promise<{ resources: FhirResource[]; total: number | undefined; included: FhirResource[]; warnings: string[] }> {
+    const searchTimer = this.searchDuration?.startTimer({ resourceType });
 
     const { filter, warnings } = this.queryBuilder.buildFilter(resourceType, params);
 
@@ -117,6 +120,7 @@ export class FhirService {
 
     // Resolve _include and _revinclude
     const included = await this.includeService.resolveIncludes(resources, resourceType, params);
+    searchTimer?.();
 
     return {resources, total, included, warnings};
   }

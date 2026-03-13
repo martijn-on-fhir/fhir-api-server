@@ -67,7 +67,7 @@ export class SmartAuthGuard implements CanActivate {
   private isPublicRoute(req: Request): boolean {
     const path = req.path;
 
-    return path === '/fhir/metadata' || path === '/.well-known/smart-configuration' || path.startsWith('/health');
+    return path === '/fhir/metadata' || path === '/.well-known/smart-configuration' || path.startsWith('/health') || path === '/metrics';
   }
 
   /** Extracts the Bearer token from the Authorization header. */

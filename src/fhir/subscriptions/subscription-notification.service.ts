@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { FhirResource } from '../fhir-resource.schema';
@@ -14,14 +14,33 @@ const BASE_DELAY_MS = 1000;
  * Supports retry with exponential backoff and updates subscription status on failure.
  */
 @Injectable()
-export class SubscriptionNotificationService {
+export class SubscriptionNotificationService implements OnModuleDestroy {
 
   private readonly logger = new Logger(SubscriptionNotificationService.name);
+  /** Tracks in-flight delivery promises so graceful shutdown can await them. */
+  private readonly activeDeliveries = new Set<Promise<void>>();
 
   constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {}
 
-  /** Sends a notification for a matched subscription. Retries on failure. */
+  /** Waits for all in-flight subscription deliveries to complete before shutdown. */
+  async onModuleDestroy(): Promise<void> {
+    if (this.activeDeliveries.size > 0) {
+      this.logger.log(`Waiting for ${this.activeDeliveries.size} active subscription deliveries to complete...`);
+      await Promise.allSettled([...this.activeDeliveries]);
+    }
+  }
+
+  /** Sends a notification for a matched subscription. Retries on failure. Tracked for graceful shutdown. */
   async sendNotification(subscription: any, event: FhirResourceEvent): Promise<void> {
+    const promise = this.doSendNotification(subscription, event);
+    this.activeDeliveries.add(promise);
+    promise.finally(() => this.activeDeliveries.delete(promise));
+
+    return promise;
+  }
+
+  /** Internal delivery logic with retries and exponential backoff. */
+  private async doSendNotification(subscription: any, event: FhirResourceEvent): Promise<void> {
 
     const channel = subscription.channel;
 

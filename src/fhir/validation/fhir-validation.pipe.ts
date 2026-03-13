@@ -1,5 +1,6 @@
-import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
+import { PipeTransform, Injectable, BadRequestException, Inject, Optional } from '@nestjs/common';
 import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
+import { Histogram } from 'prom-client';
 import { FhirValidationService } from './fhir-validation.service';
 
 /**
@@ -10,8 +11,7 @@ import { FhirValidationService } from './fhir-validation.service';
 @Injectable()
 export class FhirValidationPipe implements PipeTransform {
 
-  /** @param validationService - The injected FHIR validation service. */
-  constructor(private readonly validationService: FhirValidationService) {}
+  constructor(private readonly validationService: FhirValidationService, @Optional() @Inject('fhir_validation_duration_seconds') private readonly validationDuration?: Histogram) {}
 
   /**
    * Validates the incoming request body.
@@ -29,7 +29,9 @@ export class FhirValidationPipe implements PipeTransform {
       throw new BadRequestException(new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Missing required field: resourceType' })] }));
     }
 
+    const timer = this.validationDuration?.startTimer({ resourceType: value.resourceType || 'unknown' });
     const result = await this.validationService.validate(value);
+    timer?.();
 
     if (!result.valid) {
       const errors = result.issues.filter((i) => i.severity === 'error');

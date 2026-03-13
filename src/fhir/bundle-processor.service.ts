@@ -1,4 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
 import { FhirService } from './fhir.service';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
@@ -11,7 +13,9 @@ import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 @Injectable()
 export class BundleProcessorService {
 
-  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe) {}
+  private readonly logger = new Logger(BundleProcessorService.name);
+
+  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, @InjectConnection() private readonly connection: Connection) {}
 
   /** Process a Bundle of type batch or transaction. Returns a response Bundle. */
   async process(bundle: any, baseUrl: string): Promise<any> {
@@ -49,12 +53,10 @@ export class BundleProcessorService {
     return { resourceType: 'Bundle', type: 'batch-response', entry: responseEntries };
   }
 
-  /** Transaction: all-or-nothing processing with urn:uuid resolution. */
+  /** Transaction: all-or-nothing processing with urn:uuid resolution. Uses MongoDB transactions when replica set is available. */
   private async processTransaction(bundle: any, baseUrl: string): Promise<any> {
 
     const entries = bundle.entry || [];
-
-    // Resolve urn:uuid references: collect all urn:uuid fullUrls and map them to server-assigned ids after create
     const uuidMap = new Map<string, string>();
 
     // FHIR spec ordering: DELETE → POST → PUT/PATCH → GET
@@ -64,28 +66,59 @@ export class BundleProcessorService {
     const getEntries = entries.filter((e: any) => e.request?.method === 'GET');
     const ordered = [...deleteEntries, ...postEntries, ...putEntries, ...getEntries];
 
-    // Process entries in FHIR spec order (without MongoDB transactions for standalone mode).
-    // True atomicity requires a MongoDB replica set — entries are processed sequentially.
+    // Try to use a MongoDB transaction (requires replica set). Fall back to sequential processing if unavailable.
+    const session = await this.connection.startSession();
+
+    try {
+      let responseEntries: any[] = [];
+
+      await session.withTransaction(async () => {
+        responseEntries = [];
+        uuidMap.clear();
+
+        for (const entry of ordered) {
+          if (entry.resource) { entry.resource = this.resolveUuidReferences(entry.resource, uuidMap); }
+          if (entry.request?.url) { entry.request.url = this.resolveUuidInUrl(entry.request.url, uuidMap); }
+
+          const result = await this.processEntry(entry, baseUrl, session);
+          responseEntries.push(result);
+
+          if (entry.request?.method === 'POST' && entry.fullUrl?.startsWith('urn:uuid:') && result.resource) {
+            uuidMap.set(entry.fullUrl, `${result.resource.resourceType}/${result.resource.id}`);
+          }
+        }
+      });
+
+      return { resourceType: 'Bundle', type: 'transaction-response', entry: responseEntries };
+    } catch (err: any) {
+      // If transactions are not supported (standalone MongoDB), fall back to sequential processing
+      if (err.codeName === 'NotAReplicaSet' || err.code === 263 || err.message?.includes('replica set')) {
+        this.logger.warn('MongoDB transactions unavailable (no replica set), processing transaction entries sequentially without atomicity');
+        await session.endSession();
+
+        return this.processTransactionSequential(ordered, uuidMap, baseUrl);
+      }
+
+      throw err;
+    } finally {
+      if (session.inTransaction()) { await session.abortTransaction(); }
+      await session.endSession();
+    }
+  }
+
+  /** Fallback: process transaction entries sequentially without atomicity (standalone MongoDB). */
+  private async processTransactionSequential(ordered: any[], uuidMap: Map<string, string>, baseUrl: string): Promise<any> {
     const responseEntries: any[] = [];
 
     for (const entry of ordered) {
-      // Replace urn:uuid references in resource body
-      if (entry.resource) {
-        entry.resource = this.resolveUuidReferences(entry.resource, uuidMap);
-      }
-
-      // Replace urn:uuid in request.url
-      if (entry.request?.url) {
-        entry.request.url = this.resolveUuidInUrl(entry.request.url, uuidMap);
-      }
+      if (entry.resource) { entry.resource = this.resolveUuidReferences(entry.resource, uuidMap); }
+      if (entry.request?.url) { entry.request.url = this.resolveUuidInUrl(entry.request.url, uuidMap); }
 
       const result = await this.processEntry(entry, baseUrl);
       responseEntries.push(result);
 
-      // If this was a POST with urn:uuid fullUrl, map it to the new id
       if (entry.request?.method === 'POST' && entry.fullUrl?.startsWith('urn:uuid:') && result.resource) {
-        const ref = `${result.resource.resourceType}/${result.resource.id}`;
-        uuidMap.set(entry.fullUrl, ref);
+        uuidMap.set(entry.fullUrl, `${result.resource.resourceType}/${result.resource.id}`);
       }
     }
 
