@@ -36,7 +36,7 @@ const bootstrap = async () => {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'If-Match', 'If-None-Exist', 'If-None-Match', 'If-Modified-Since',
       'Prefer', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Tenant'],
-    exposedHeaders: ['Content-Location', 'ETag', 'Last-Modified', 'Location'],
+    exposedHeaders: ['Content-Location', 'ETag', 'Last-Modified', 'Location', 'X-Correlation-ID', 'X-Trace-ID'],
     credentials: true,
   });
 

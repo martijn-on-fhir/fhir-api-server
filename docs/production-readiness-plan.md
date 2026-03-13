@@ -85,7 +85,7 @@ Distributed tracing voor het opsporen van bottlenecks in zoekqueries, validatie 
 - [x] `@opentelemetry/sdk-node` + `@opentelemetry/auto-instrumentations-node`
 - [x] Auto-instrumentatie voor HTTP, Express en Mongoose
 - [x] Export naar OTLP collector (Jaeger/Tempo) via `OTEL_EXPORTER_OTLP_ENDPOINT`
-- [ ] Trace ID doorgeven in response headers
+- [x] Trace ID doorgeven in response headers (`X-Trace-ID` via CorrelationMiddleware)
 - [x] `OTEL_ENABLED` env var (default false)
 
 **Bestanden:** `src/telemetry/telemetry.ts`, `src/main.ts`
@@ -94,7 +94,7 @@ Distributed tracing voor het opsporen van bottlenecks in zoekqueries, validatie 
 
 Queries die langer duren dan een drempel loggen met hun filter en execution stats.
 
-- [ ] MongoDB profiler level 1 (slow queries) configureren
+- [x] MongoDB profiler level 1 (slow queries) configureren bij startup (`MONGODB_SLOW_QUERY_MS`, default 100ms)
 - [x] In applicatie: queries > threshold loggen met filter en duration
 - [x] Threshold configureerbaar via `SLOW_QUERY_THRESHOLD_MS` (default 500ms)
 

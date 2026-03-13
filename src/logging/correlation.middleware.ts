@@ -1,5 +1,6 @@
 import {randomUUID} from 'crypto';
 import {Injectable, NestMiddleware, Logger} from '@nestjs/common';
+import {trace, SpanContext} from '@opentelemetry/api';
 import {Request, Response, NextFunction} from 'express';
 
 /**
@@ -19,6 +20,13 @@ export class CorrelationMiddleware implements NestMiddleware {
 
     req['correlationId'] = correlationId;
     res.setHeader('X-Correlation-ID', correlationId);
+
+    // Add OpenTelemetry trace ID to response header when tracing is active
+    const spanContext: SpanContext | undefined = trace.getActiveSpan()?.spanContext();
+
+    if (spanContext?.traceId) {
+      res.setHeader('X-Trace-ID', spanContext.traceId);
+    }
 
     res.on('finish', () => {
 
