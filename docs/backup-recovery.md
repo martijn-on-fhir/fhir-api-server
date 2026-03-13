@@ -94,9 +94,53 @@ docker cp fhir-api-server-fhir-api-1:/app/backups/ ./local-backups/
 
 Om RPO te verkorten, verlaag `BACKUP_INTERVAL_MS` (bijv. `3600000` voor elk uur).
 
+## Off-site backup (S3 / Azure Blob)
+
+Backups worden automatisch geüpload naar cloud storage als `BACKUP_REMOTE_TYPE` is geconfigureerd. SDKs zijn optionele dependencies — installeer alleen wat je nodig hebt.
+
+### AWS S3
+
+```bash
+# Installeer SDK
+npm install @aws-sdk/client-s3
+
+# Configuratie
+BACKUP_REMOTE_TYPE=s3
+BACKUP_S3_BUCKET=my-fhir-backups
+BACKUP_S3_PREFIX=backups/           # optioneel
+BACKUP_S3_REGION=eu-west-1          # optioneel, gebruikt AWS SDK default
+AWS_ACCESS_KEY_ID=AKIA...           # of gebruik IAM role/instance profile
+AWS_SECRET_ACCESS_KEY=...
+```
+
+### Azure Blob Storage
+
+```bash
+# Installeer SDK
+npm install @azure/storage-blob
+
+# Configuratie
+BACKUP_REMOTE_TYPE=azure
+BACKUP_AZURE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...
+BACKUP_AZURE_CONTAINER=fhir-backups
+BACKUP_AZURE_PREFIX=backups/        # optioneel
+```
+
+### Remote backup API
+
+```bash
+# Lijst remote backups
+curl http://localhost:3000/admin/backups/remote
+
+# Restore vanuit remote backup
+curl -X POST http://localhost:3000/admin/backup/restore-remote \
+  -H 'Content-Type: application/json' \
+  -d '{"remoteKey": "backups/fhir-backup-2026-03-14T10-00-00-000Z.gz"}'
+```
+
 ## Aanbevelingen voor productie
 
-1. **Externe opslag** — Kopieer backups naar S3/Azure Blob/GCS via een cron job of sidecar container
+1. **Off-site backup** — Configureer S3 of Azure Blob via `BACKUP_REMOTE_TYPE`
 2. **Test restores regelmatig** — Maandelijks een restore testen op een staging omgeving
-3. **Monitor backup succes** — Check logs voor "Backup complete" of "Backup failed" berichten
+3. **Monitor backup succes** — Check logs voor "Backup complete" of "Remote upload failed" berichten
 4. **MongoDB Atlas** — Overweeg MongoDB Atlas met ingebouwde continuous backups en point-in-time recovery

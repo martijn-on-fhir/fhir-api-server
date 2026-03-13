@@ -312,6 +312,13 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 | `BACKUP_DIR` | `./backups` | Directory for backup files |
 | `BACKUP_INTERVAL_MS` | `86400000` | Automated backup interval (24h). `0` = disabled |
 | `BACKUP_RETENTION_COUNT` | `7` | Max number of backups to retain |
+| `BACKUP_REMOTE_TYPE` | `none` | Off-site backup: `s3` or `azure` (requires SDK, see `docs/backup-recovery.md`) |
+| `BACKUP_S3_BUCKET` | - | S3 bucket name (when `BACKUP_REMOTE_TYPE=s3`) |
+| `BACKUP_S3_REGION` | - | S3 region (optional, uses AWS SDK default) |
+| `BACKUP_S3_PREFIX` | `` | S3 key prefix for backup files |
+| `BACKUP_AZURE_CONNECTION_STRING` | - | Azure Blob connection string (when `BACKUP_REMOTE_TYPE=azure`) |
+| `BACKUP_AZURE_CONTAINER` | - | Azure Blob container name |
+| `BACKUP_AZURE_PREFIX` | `` | Azure Blob prefix for backup files |
 
 SMART and server settings can also be configured in `config/app-config.json` (see `config/app-config.example.json`). Environment variables take precedence.
 

@@ -3,13 +3,14 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { IssueSeverity, IssueType, OperationOutcome, OperationOutcomeIssue } from 'fhir-models-r4';
 import { AdminService } from './admin.service';
+import { BackupRemoteService } from './backup-remote.service';
 import { BackupService } from './backup.service';
 
 /** Controller for administrative database operations (snapshot, restore, backup). */
 @ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService, private readonly backupService: BackupService) {}
+  constructor(private readonly adminService: AdminService, private readonly backupService: BackupService, private readonly backupRemote: BackupRemoteService) {}
 
   /** Creates a JSON snapshot in fixtures/ and returns a summary. */
   @Post('snapshot')
@@ -100,6 +101,45 @@ export class AdminController {
     } catch (err) {
       res.status(HttpStatus.BAD_REQUEST).set('Content-Type', 'application/fhir+json').json(new OperationOutcome({
         issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Exception, diagnostics: `Restore failed: ${(err as Error).message}` })],
+      }));
+    }
+  }
+
+  /** List remote backups (S3 or Azure). */
+  @Get('backups/remote')
+  @ApiOperation({ summary: 'List remote backups', description: 'Returns backup files stored in S3 or Azure Blob Storage.' })
+  @ApiResponse({ status: 200, description: 'List of remote backup files' })
+  async listRemoteBackups(@Res() res: Response) {
+    if (!this.backupRemote.isEnabled()) {
+      return res.status(HttpStatus.OK).json({ enabled: false, message: 'Remote backup not configured. Set BACKUP_REMOTE_TYPE to s3 or azure.', backups: [] });
+    }
+
+    const backups = await this.backupRemote.listRemote();
+    res.status(HttpStatus.OK).json({ enabled: true, provider: process.env.BACKUP_REMOTE_TYPE, backups });
+  }
+
+  /** Download a backup from remote storage and restore it. */
+  @Post('backup/restore-remote')
+  @ApiOperation({ summary: 'Restore from remote backup', description: 'Downloads a backup from S3/Azure and restores it. WARNING: drops existing data.' })
+  @ApiResponse({ status: 200, description: 'OperationOutcome confirming restore' })
+  async restoreFromRemote(@Body() body: { remoteKey: string }, @Res() res: Response) {
+    if (!body?.remoteKey) {
+      return res.status(HttpStatus.BAD_REQUEST).set('Content-Type', 'application/fhir+json').json(new OperationOutcome({
+        issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Request body must contain a "remoteKey" field' })],
+      }));
+    }
+
+    try {
+      const localFilename = body.remoteKey.split('/').pop() || 'remote-backup.gz';
+      const localPath = `${process.env.BACKUP_DIR || './backups'}/${localFilename}`;
+      await this.backupRemote.download(body.remoteKey, localPath);
+      const result = await this.backupService.restoreBackup(localFilename);
+      res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(new OperationOutcome({
+        issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Restore complete from remote ${body.remoteKey} at ${result.restoredAt}` })],
+      }));
+    } catch (err) {
+      res.status(HttpStatus.BAD_REQUEST).set('Content-Type', 'application/fhir+json').json(new OperationOutcome({
+        issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Exception, diagnostics: `Remote restore failed: ${(err as Error).message}` })],
       }));
     }
   }

@@ -24,8 +24,9 @@ Resterende stappen voordat de disclaimer "niet gevalideerd voor productiegebruik
 - [x] Recovery procedure gedocumenteerd (`docs/backup-recovery.md`) met RTO/RPO
 - [x] API endpoints: `POST /admin/backup`, `GET /admin/backups`, `POST /admin/backup/restore`
 - [x] Docker volume voor backups, mongodb-tools in container
+- [x] Off-site backup: S3 en Azure Blob Storage support via optionele SDKs (`BACKUP_REMOTE_TYPE`)
+- [x] Remote restore: download + restore vanuit S3/Azure via `POST /admin/backup/restore-remote`
 - [ ] Snapshot/restore testen met productie-volume data
-- [ ] Externe opslag configureren (S3/Azure Blob) voor off-site backups
 
 ## 4. Compliance & certificering
 

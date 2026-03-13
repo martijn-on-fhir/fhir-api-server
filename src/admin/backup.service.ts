@@ -4,6 +4,7 @@ import { join } from 'path';
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { BackupRemoteService } from './backup-remote.service';
 
 /** Backup directory. Configurable via BACKUP_DIR env var. */
 const BACKUP_DIR = process.env.BACKUP_DIR || join(process.cwd(), 'backups');
@@ -25,7 +26,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BackupService.name);
   private interval: ReturnType<typeof setInterval>;
 
-  constructor(@InjectConnection() private readonly connection: Connection) {}
+  constructor(@InjectConnection() private readonly connection: Connection, private readonly remoteService: BackupRemoteService) {}
 
   onModuleInit() {
     if (!existsSync(BACKUP_DIR)) {
@@ -45,7 +46,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Create a backup using mongodump. Returns the backup filename and metadata. */
-  async createBackup(): Promise<{ filename: string; path: string; sizeBytes: number; createdAt: string; collections: Record<string, number> }> {
+  async createBackup(): Promise<{ filename: string; path: string; sizeBytes: number; createdAt: string; collections: Record<string, number>; remote?: string }> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `fhir-backup-${timestamp}.gz`;
     const outputPath = join(BACKUP_DIR, filename);
@@ -70,10 +71,22 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       const sizeBytes = statSync(outputPath).size;
       this.logger.log(`Backup complete: ${filename} (${(sizeBytes / 1024 / 1024).toFixed(1)} MB)`);
 
+      // Upload to remote storage if configured
+      let remote: string | undefined;
+
+      if (this.remoteService.isEnabled()) {
+        try {
+          const result = await this.remoteService.upload(outputPath);
+          remote = result.remote;
+        } catch (err) {
+          this.logger.error(`Remote upload failed: ${(err as Error).message}`);
+        }
+      }
+
       // Cleanup old backups
       this.cleanupOldBackups();
 
-      return { filename, path: outputPath, sizeBytes, createdAt: new Date().toISOString(), collections };
+      return { filename, path: outputPath, sizeBytes, createdAt: new Date().toISOString(), collections, remote };
     } catch (err) {
       this.logger.error(`Backup failed: ${(err as Error).message}`);
       throw err;
