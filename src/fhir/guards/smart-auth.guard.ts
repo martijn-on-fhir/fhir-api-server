@@ -1,22 +1,30 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, Logger, Optional, UnauthorizedException } from '@nestjs/common';
+import CircuitBreaker from 'opossum';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
+import { CircuitBreakerService } from '../../resilience/circuit-breaker.service';
 import { SmartConfig, SMART_CONFIG } from '../smart/smart-config';
 import { extractScopes, hasRequiredScope, resolveAction } from '../smart/smart-scopes';
 
 /**
  * Guard that validates SMART on FHIR Bearer tokens (JWT) and enforces scopes.
  * When SMART is disabled in config, all requests are allowed through.
+ * JWKS key fetching is protected by a circuit breaker to prevent cascading failures.
  */
 @Injectable()
 export class SmartAuthGuard implements CanActivate {
   private readonly logger = new Logger(SmartAuthGuard.name);
   private jwksClient: JwksClient | null = null;
+  private jwksBreaker: CircuitBreaker | null = null;
 
-  constructor(@Inject(SMART_CONFIG) private readonly config: SmartConfig) {
+  constructor(@Inject(SMART_CONFIG) private readonly config: SmartConfig, @Optional() private readonly cbService?: CircuitBreakerService) {
     if (config.enabled && config.jwksUri) {
       this.jwksClient = new JwksClient({ jwksUri: config.jwksUri, cache: true, cacheMaxAge: 36_000_000, rateLimit: true });
+      if (cbService) {
+        this.jwksBreaker = cbService.create((kid: string) => this.jwksClient!.getSigningKey(kid), { name: 'jwks', timeout: 5000, errorThresholdPercentage: 50, resetTimeout: 30_000 });
+        this.jwksBreaker.fallback(() => { throw new UnauthorizedException('JWKS service temporarily unavailable'); });
+      }
     }
   }
 
@@ -97,7 +105,7 @@ export class SmartAuthGuard implements CanActivate {
         throw new UnauthorizedException('Token missing kid header or JWKS not configured');
       }
 
-      const signingKey = await this.jwksClient.getSigningKey(kid);
+      const signingKey: any = this.jwksBreaker ? await this.jwksBreaker.fire(kid) : await this.jwksClient.getSigningKey(kid);
       const publicKey = signingKey.getPublicKey();
 
       return jwt.verify(token, publicKey, { issuer: this.config.issuer || undefined, audience: this.config.audience || undefined, algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'] });

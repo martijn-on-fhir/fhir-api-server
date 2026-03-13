@@ -79,6 +79,40 @@
       "body": {}
     },
     {
+      "_id": "req_health_live",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Liveness Probe",
+      "method": "GET",
+      "url": "http://localhost:3000/health/live",
+      "headers": [
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_health_ready",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Readiness Probe",
+      "method": "GET",
+      "url": "http://localhost:3000/health/ready",
+      "headers": [
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_metrics",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Prometheus Metrics",
+      "method": "GET",
+      "url": "http://localhost:3000/metrics",
+      "headers": [],
+      "body": {}
+    },
+    {
       "_id": "req_swagger_json",
       "_type": "request",
       "parentId": "fld_health",

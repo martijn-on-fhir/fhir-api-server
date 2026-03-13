@@ -1,52 +1,51 @@
-import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {NestFactory} from '@nestjs/core';
+import {NestExpressApplication} from '@nestjs/platform-express';
+import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
 import * as express from 'express';
 import helmet from 'helmet';
-import { version } from '../package.json';
-import { AppModule } from './app.module';
-import { FhirExceptionFilter } from './fhir/filters/fhir-exception.filter';
-import { TimeoutInterceptor } from './fhir/interceptors/timeout.interceptor';
-import { JsonLoggerService } from './logging/json-logger.service';
-import { MetricsInterceptor } from './metrics/metrics.interceptor';
+import {version} from '../package.json';
+import {AppModule} from './app.module';
+import {FhirExceptionFilter} from './fhir/filters/fhir-exception.filter';
+import {TimeoutInterceptor} from './fhir/interceptors/timeout.interceptor';
+import {JsonLoggerService} from './logging/json-logger.service';
+import {MetricsInterceptor} from './metrics/metrics.interceptor';
+import {initTelemetry} from './telemetry/telemetry';
+
+// Initialize OpenTelemetry before NestJS bootstrap (required for auto-instrumentation)
+const otelSdk = initTelemetry();
 
 /** Bootstraps the NestJS application with FHIR-specific middleware and global filters. */
 const bootstrap = async () => {
 
   const useJsonLogger = process.env.LOG_FORMAT === 'json';
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, useJsonLogger ? { logger: new JsonLoggerService() } : {});
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, useJsonLogger ? {logger: new JsonLoggerService()} : {});
 
   // Express v5 uses 'simple' query parser by default — use 'extended' for nested object/array support (e.g. ?filter[name]=John)
   app.set('query parser', 'extended');
 
   app.use(helmet({
-    contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], scriptSrc: ["'self'", "'unsafe-inline'"], styleSrc: ["'self'", "'unsafe-inline'"] } },
-    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    contentSecurityPolicy: {directives: {defaultSrc: ["'self'"], scriptSrc: ["'self'", "'unsafe-inline'"], styleSrc: ["'self'", "'unsafe-inline'"]}},
+    hsts: {maxAge: 31536000, includeSubDomains: true, preload: true},
   }));
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN || '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'If-Match', 'If-None-Exist', 'If-None-Match', 'If-Modified-Since', 
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'If-Match', 'If-None-Exist', 'If-None-Match', 'If-Modified-Since',
       'Prefer', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Tenant'],
     exposedHeaders: ['Content-Location', 'ETag', 'Last-Modified', 'Location'],
     credentials: true,
   });
 
   const jsonLimit = process.env.BODY_SIZE_LIMIT || '5mb';
-  app.use(express.json({ type: ['application/json', 'application/fhir+json', 'application/json-patch+json'], limit: jsonLimit }));
-  app.use(express.text({ type: ['application/fhir+xml', 'application/xml'], limit: jsonLimit }));
-  app.use(express.raw({ type: ['application/octet-stream'], limit: '50mb' }));
-  app.use(express.urlencoded({ extended: true, limit: jsonLimit }));
+  app.use(express.json({type: ['application/json', 'application/fhir+json', 'application/json-patch+json'], limit: jsonLimit}));
+  app.use(express.text({type: ['application/fhir+xml', 'application/xml'], limit: jsonLimit}));
+  app.use(express.raw({type: ['application/octet-stream'], limit: '50mb'}));
+  app.use(express.urlencoded({extended: true, limit: jsonLimit}));
   app.useGlobalFilters(new FhirExceptionFilter());
   app.useGlobalInterceptors(app.get(MetricsInterceptor), new TimeoutInterceptor());
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('FHIR R4 API Server')
-    .setDescription('FHIR R4 REST API met nl-core profiel ondersteuning en validatie via fhir-validator-mx')
-    .setVersion(version || '0.0.0')
-    .addServer('http://localhost:3000', 'Local development')
-    .build();
+  const swaggerConfig = new DocumentBuilder().setTitle('FHIR R4 API Server').setDescription('FHIR R4 REST API met nl-core profiel ondersteuning en validatie via fhir-validator-mx').setVersion(version || '0.0.0').addServer('http://localhost:3000', 'Local development').build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
@@ -57,4 +56,17 @@ const bootstrap = async () => {
   await app.listen(port);
 }
 
-bootstrap()
+bootstrap();
+
+// Graceful OpenTelemetry shutdown
+process.on('SIGTERM', async () => {
+  if (otelSdk) {
+    await otelSdk.shutdown();
+  }
+});
+
+process.on('SIGINT', async () => {
+  if (otelSdk) {
+    await otelSdk.shutdown();
+  }
+});

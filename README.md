@@ -1,10 +1,10 @@
 # FHIR API Server
 
-> **THIS IS A PROOF OF CONCEPT AND IS NOT SUITABLE FOR PRODUCTION USE.**
+> **Dit is een ontwikkelserver en is niet gevalideerd voor productiegebruik met patiëntdata.**
 >
-> **DIT IS EEN PROOF OF CONCEPT EN IS NIET GESCHIKT VOOR PRODUCTIEGEBRUIK.**
+> **This is a development server and is not validated for production use with patient data.**
 
-A generic FHIR R4 REST API server built with NestJS 10, TypeScript and MongoDB. Supports Dutch nl-core profiles, SMART on FHIR authentication, BgZ (Basisgegevensset Zorg) and a Firely-style administration API for conformance resources.
+A generic FHIR R4 REST API server built with NestJS 11, TypeScript and MongoDB. Supports Dutch nl-core profiles, SMART on FHIR authentication, BgZ (Basisgegevensset Zorg) and a Firely-style administration API for conformance resources.
 
 ## Features
 
@@ -88,9 +88,15 @@ A generic FHIR R4 REST API server built with NestJS 10, TypeScript and MongoDB. 
 
 ### Infrastructure
 - Structured JSON logging with correlation IDs
-- Health check endpoint (`/health`)
+- Health check endpoints: `/health` (full status), `/health/live` (liveness), `/health/ready` (readiness)
+- Prometheus metrics at `/metrics` (request count, duration, search/validation histograms)
+- OpenTelemetry tracing support (opt-in via `OTEL_ENABLED=true`)
+- Slow query logging (configurable threshold via `SLOW_QUERY_THRESHOLD_MS`)
+- Circuit breaker for external service calls (JWKS)
+- MongoDB replica set support with transaction atomicity for Bundle operations
+- Configurable connection pooling (`MONGODB_POOL_SIZE`)
 - MongoDB compound indexes for common search patterns
-- Docker + docker-compose support
+- Docker + docker-compose support (MongoDB with replica set)
 - GitHub Actions CI/CD (lint, test, build, Docker)
 - Automated releases via release-please
 - Swagger/OpenAPI documentation + Insomnia collection
@@ -153,7 +159,7 @@ npm run test:e2e
 npx jest --testPathPattern=<pattern>
 ```
 
-174 automated tests across 12 e2e test suites + unit tests.
+173 automated tests across 12 e2e test suites + unit tests.
 
 ## API Documentation
 
@@ -167,7 +173,12 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
 | `MONGODB_URI` | `mongodb://localhost:27017/fhir` | MongoDB connection string |
+| `MONGODB_POOL_SIZE` | `10` | MongoDB connection pool size |
+| `MONGODB_MIN_POOL_SIZE` | `2` | MongoDB minimum pool connections |
 | `LOG_FORMAT` | - | Set to `json` for structured JSON logging |
+| `SLOW_QUERY_THRESHOLD_MS` | `500` | Log search queries slower than this (ms) |
+| `OTEL_ENABLED` | `false` | Enable OpenTelemetry tracing |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | OTLP collector endpoint |
 | `RATE_LIMIT_TTL` | `60` | Rate limit window in seconds |
 | `RATE_LIMIT_MAX` | `100` | Max requests per short window |
 | `RATE_LIMIT_MAX_LONG` | `1000` | Max requests per 10-minute window |

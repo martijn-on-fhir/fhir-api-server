@@ -1,5 +1,5 @@
 import {randomUUID} from 'crypto';
-import {Inject, Injectable, NotFoundException, GoneException, ConflictException, PreconditionFailedException, BadRequestException, Optional} from '@nestjs/common';
+import {Inject, Injectable, Logger, NotFoundException, GoneException, ConflictException, PreconditionFailedException, BadRequestException, Optional} from '@nestjs/common';
 import {EventEmitter2} from '@nestjs/event-emitter';
 import {InjectModel} from '@nestjs/mongoose';
 import * as jsonpatch from 'fast-json-patch';
@@ -19,8 +19,13 @@ import {FhirResourceEvent} from './subscriptions/subscription.types';
  * Service responsible for all FHIR resource persistence operations.
  * Handles CRUD, search, version history and meta operations against MongoDB.
  */
+/** Threshold in ms above which search queries are logged as slow. Configurable via SLOW_QUERY_THRESHOLD_MS. */
+const SLOW_QUERY_THRESHOLD_MS = parseInt(process.env.SLOW_QUERY_THRESHOLD_MS || '500', 10);
+
 @Injectable()
 export class FhirService {
+
+  private readonly logger = new Logger(FhirService.name);
 
   constructor(
     @InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>,
@@ -120,7 +125,13 @@ export class FhirService {
 
     // Resolve _include and _revinclude
     const included = await this.includeService.resolveIncludes(resources, resourceType, params);
-    searchTimer?.();
+    const elapsed = searchTimer?.();
+
+    // Log slow queries for performance monitoring
+    const durationMs = elapsed !== undefined ? elapsed * 1000 : undefined;
+    if (durationMs !== undefined && durationMs > SLOW_QUERY_THRESHOLD_MS) {
+      this.logger.warn(`Slow search: ${resourceType} took ${Math.round(durationMs)}ms (threshold: ${SLOW_QUERY_THRESHOLD_MS}ms) filter=${JSON.stringify(filter)}`);
+    }
 
     return {resources, total, included, warnings};
   }

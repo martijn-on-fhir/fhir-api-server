@@ -15,6 +15,7 @@ import { HealthModule } from './health/health.module';
 import { AuditMiddleware } from './logging/audit.middleware';
 import { CorrelationMiddleware } from './logging/correlation.middleware';
 import { MetricsModule } from './metrics/metrics.module';
+import { ResilienceModule } from './resilience/resilience.module';
 
 /** Root application module. Configures MongoDB connection, health checks, logging, rate limiting and imports the FHIR module. */
 @Module({
@@ -39,6 +40,7 @@ import { MetricsModule } from './metrics/metrics.module';
     SmartModule,
     HealthModule,
     MetricsModule,
+    ResilienceModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: FhirThrottlerGuard }, { provide: APP_GUARD, useClass: SmartAuthGuard }],

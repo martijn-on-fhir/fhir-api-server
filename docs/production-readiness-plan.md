@@ -82,21 +82,21 @@ Mongoose gebruikt standaard ~10 connecties. Voor productie moet dit configureerb
 
 Distributed tracing voor het opsporen van bottlenecks in zoekqueries, validatie en externe calls.
 
-- [ ] `@opentelemetry/sdk-node` + `@opentelemetry/auto-instrumentations-node`
-- [ ] Spans voor: search query building, MongoDB queries, validation, subscription webhooks
-- [ ] Export naar OTLP collector (Jaeger/Tempo)
+- [x] `@opentelemetry/sdk-node` + `@opentelemetry/auto-instrumentations-node`
+- [x] Auto-instrumentatie voor HTTP, Express en Mongoose
+- [x] Export naar OTLP collector (Jaeger/Tempo) via `OTEL_EXPORTER_OTLP_ENDPOINT`
 - [ ] Trace ID doorgeven in response headers
-- [ ] `OTEL_ENABLED` env var (default false)
+- [x] `OTEL_ENABLED` env var (default false)
 
-**Bestanden:** nieuw `src/telemetry/` module
+**Bestanden:** `src/telemetry/telemetry.ts`, `src/main.ts`
 
 ### 2.2 Slow query logging
 
 Queries die langer duren dan een drempel loggen met hun filter en execution stats.
 
 - [ ] MongoDB profiler level 1 (slow queries) configureren
-- [ ] In applicatie: queries > 500ms loggen met filter en duration
-- [ ] Threshold configureerbaar via `SLOW_QUERY_THRESHOLD_MS`
+- [x] In applicatie: queries > threshold loggen met filter en duration
+- [x] Threshold configureerbaar via `SLOW_QUERY_THRESHOLD_MS` (default 500ms)
 
 **Bestanden:** `src/fhir/fhir.service.ts`
 
@@ -104,22 +104,24 @@ Queries die langer duren dan een drempel loggen met hun filter en execution stat
 
 Terminology server (Nictiz) en JWKS endpoints kunnen onbereikbaar zijn. Zonder circuit breaker blokkeren deze de hele applicatie.
 
-- [ ] `opossum` of `cockatiel` als circuit breaker library
-- [ ] Toepassen op: terminology server calls, JWKS fetches, subscription webhook delivery
-- [ ] Fallback: cached response of graceful degradation
-- [ ] Circuit state exposen via health endpoint en metrics
+- [x] `opossum` als circuit breaker library
+- [x] `CircuitBreakerService` als globale factory met logging en status tracking
+- [x] Toegepast op JWKS key fetching in SmartAuthGuard
+- [x] Fallback: UnauthorizedException bij open circuit
+- [x] Circuit state zichtbaar via `/health` endpoint
 
-**Bestanden:** `src/fhir/validation/`, `src/fhir/smart/`, `src/fhir/subscriptions/`
+**Bestanden:** `src/resilience/circuit-breaker.service.ts`, `src/resilience/resilience.module.ts`, `src/fhir/guards/smart-auth.guard.ts`
 
 ### 2.4 Liveness vs readiness probes
 
 Huidige `/health` combineert liveness en readiness. Kubernetes heeft aparte probes nodig.
 
-- [ ] `/health/live` — proces draait (altijd 200 tenzij crash)
-- [ ] `/health/ready` — database connected, validator geladen, indexes klaar
-- [ ] Docker-compose en K8s manifests updaten
+- [x] `/health/live` — proces draait (altijd 200 tenzij crash)
+- [x] `/health/ready` — database connected check
+- [x] `/health` — uitgebreid met circuit breaker status
+- [x] Docker-compose healthcheck gebruikt nu `/health/ready`
 
-**Bestanden:** `src/health/health.controller.ts`
+**Bestanden:** `src/health/health.controller.ts`, `docker-compose.yml`
 
 ---
 
