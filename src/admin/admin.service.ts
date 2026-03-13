@@ -29,9 +29,8 @@ export class AdminService {
       resourceTypes[r.resourceType] = (resourceTypes[r.resourceType] || 0) + 1;
     }
 
-    // Write to fixtures/
-    const timestamp = exportedAt.replace(/[:.]/g, '-').replace('T', '_').replace('Z', '');
-    const filename = `snapshot-${timestamp}.json`;
+    // Write to fixtures/ (fixed name, overwrites previous snapshot)
+    const filename = 'test-data.json';
     const filePath = join(FIXTURES_DIR, filename);
     await writeFile(filePath, JSON.stringify({ resources, history, exportedAt }, null, 2), 'utf-8');
     this.logger.log(`Snapshot saved to ${filePath} (${resources.length} resources, ${history.length} history)`);

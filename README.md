@@ -153,7 +153,7 @@ npm run test:e2e
 npx jest --testPathPattern=<pattern>
 ```
 
-167 automated tests across 11 e2e test suites + unit tests.
+174 automated tests across 12 e2e test suites + unit tests.
 
 ## API Documentation
 
@@ -179,8 +179,13 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 | `SMART_AUTHORIZE_URL` | - | OAuth2 authorization endpoint |
 | `SMART_TOKEN_URL` | - | OAuth2 token endpoint |
 | `CORS_ORIGIN` | `*` | Allowed CORS origins (comma-separated) |
+| `SERVER_REINDEX_ENABLED` | `false` | Enable `$reindex` operation |
+| `SERVER_EXPUNGE_ENABLED` | `false` | Enable `$expunge` operation (permanent data deletion) |
+| `SERVER_CASCADE_DELETE_ENABLED` | `false` | Enable `_cascade=delete` (recursive delete) |
+| `SERVER_SNAPSHOT_ENABLED` | `false` | Enable `POST /admin/snapshot` |
+| `SERVER_RESTORE_ENABLED` | `false` | Enable `POST /admin/restore` |
 
-SMART settings can also be configured in `config/app-config.json` (see `config/app-config.example.json`). Environment variables take precedence.
+SMART and server settings can also be configured in `config/app-config.json` (see `config/app-config.example.json`). Environment variables take precedence.
 
 ## STU3 → R4 Migration
 

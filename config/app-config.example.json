@@ -14,6 +14,13 @@
     "clientId": "cli_client",
     "grantType": "password"
   },
+  "server": {
+    "reindex": { "enabled": false },
+    "expunge": { "enabled": false },
+    "cascadeDelete": { "enabled": false },
+    "snapshot": { "enabled": false },
+    "restore": { "enabled": false }
+  },
   "smart": {
     "enabled": false,
     "issuer": "",
