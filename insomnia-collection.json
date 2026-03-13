@@ -1989,6 +1989,41 @@
         "mimeType": "application/json",
         "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    {\n      \"name\": \"left\",\n      \"resource\": {\n        \"resourceType\": \"Patient\",\n        \"id\": \"example-1\",\n        \"name\": [{ \"family\": \"Jansen\", \"given\": [\"Piet\"] }],\n        \"birthDate\": \"1990-01-01\"\n      }\n    },\n    {\n      \"name\": \"right\",\n      \"resource\": {\n        \"resourceType\": \"Patient\",\n        \"id\": \"example-1\",\n        \"name\": [{ \"family\": \"Jansen\", \"given\": [\"Pieter\"] }],\n        \"birthDate\": \"1990-01-01\",\n        \"gender\": \"male\"\n      }\n    }\n  ]\n}"
       }
+    },
+    {
+      "_id": "fld_admin",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Admin (Database Management)"
+    },
+    {
+      "_id": "req_admin_snapshot",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Create snapshot",
+      "description": "Exports all FHIR resources and history as a JSON snapshot",
+      "method": "POST",
+      "url": "http://localhost:3000/admin/snapshot",
+      "headers": [
+        { "name": "Accept", "value": "application/json" }
+      ]
+    },
+    {
+      "_id": "req_admin_restore",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Restore from snapshot",
+      "description": "Reads a snapshot file from fixtures/, wipes all FHIR health data and imports it. Conformance resources are not affected.",
+      "method": "POST",
+      "url": "http://localhost:3000/admin/restore",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"filename\": \"snapshot-2026-01-01_00-00-00-000.json\"\n}"
+      }
     }
   ]
 }

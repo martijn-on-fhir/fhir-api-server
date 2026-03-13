@@ -81,6 +81,11 @@ A generic FHIR R4 REST API server built with NestJS 10, TypeScript and MongoDB. 
 - Automatic AuditEvent generation for read, vread, search, create, update and delete interactions
 - Stored as FHIR AuditEvent resources, queryable via search
 
+### Admin (Database Management)
+- `POST /admin/snapshot` — export all FHIR health data (resources + history) as JSON
+- `POST /admin/restore` — wipe FHIR health data and import a snapshot (conformance resources are not affected)
+- Useful for creating and restoring uniform test datasets
+
 ### Infrastructure
 - Structured JSON logging with correlation IDs
 - Health check endpoint (`/health`)
@@ -95,6 +100,9 @@ A generic FHIR R4 REST API server built with NestJS 10, TypeScript and MongoDB. 
 ```
 /fhir/*                  Clinical data (Patient, Observation, etc.)
                          Collection: fhir_resources
+
+/admin/*                 Database management (snapshot, restore)
+                         Uses: fhir_resources, fhir_resource_history
 
 /administration/*        Conformance resources (StructureDefinition, ValueSet, etc.)
                          Collection: conformance_resources
@@ -145,7 +153,7 @@ npm run test:e2e
 npx jest --testPathPattern=<pattern>
 ```
 
-161 automated tests across 10 e2e test suites + unit tests.
+167 automated tests across 11 e2e test suites + unit tests.
 
 ## API Documentation
 
