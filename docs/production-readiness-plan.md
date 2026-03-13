@@ -241,7 +241,13 @@ Consent resources opslaan en afdwingen bij data access op basis van purpose-of-u
 
 ### 5.4 Async job queue
 
-Bulk export en $reindex draaien nu in-process. Voor grote datasets is een job queue nodig (Bull/BullMQ met Redis).
+- [x] MongoDB-backed persistent job queue (`src/job-queue/`) — geen Redis dependency
+- [x] Bulk export gerefactored: jobs overleven server restarts, startup recovery
+- [x] Concurrent job limiting (MAX_CONCURRENT_EXPORTS, default 3)
+- [x] Job timeout detection (BULK_EXPORT_TIMEOUT_MS, default 10 min)
+- [x] Automatic cleanup van oude jobs (JOB_RETENTION_DAYS, default 7)
+- [x] Cancellation check tijdens processing
+- [x] Alle 7 bestaande e2e tests slagen ongewijzigd
 
 ---
 

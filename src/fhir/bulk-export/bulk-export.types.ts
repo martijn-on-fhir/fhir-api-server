@@ -21,7 +21,7 @@ export interface BulkExportJob {
   /** For group-level export. */
   groupId?: string;
   /** Completed NDJSON data keyed by resourceType. */
-  output: Map<string, string>;
+  output: Record<string, string>;
   /** Error entries. */
   errors: { type: string; url: string }[];
   /** Percentage 0-100. */

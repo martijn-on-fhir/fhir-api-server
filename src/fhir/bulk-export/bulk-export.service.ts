@@ -1,146 +1,161 @@
-import { randomUUID } from 'crypto';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit, HttpException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { JobQueueService } from '../../job-queue/job-queue.service';
 import { FhirResource } from '../fhir-resource.schema';
 import { BulkExportJob } from './bulk-export.types';
 
+/** Maximum concurrent bulk export jobs. Configurable via MAX_CONCURRENT_EXPORTS env var. */
+const MAX_CONCURRENT_EXPORTS = parseInt(process.env.MAX_CONCURRENT_EXPORTS || '3', 10);
+
+/** Bulk export job timeout in ms. Configurable via BULK_EXPORT_TIMEOUT_MS env var. Default 10 minutes. */
+const EXPORT_TIMEOUT_MS = parseInt(process.env.BULK_EXPORT_TIMEOUT_MS || '600000', 10);
+
 /**
  * Service for FHIR Bulk Data Export ($export).
- * Stores jobs in-memory (POC) and processes them asynchronously via setTimeout.
- * Generates NDJSON (newline-delimited JSON) per resource type.
+ * Uses the persistent JobQueueService for job storage and lifecycle management.
+ * Jobs survive server restarts and are automatically recovered.
  */
 @Injectable()
-export class BulkExportService {
+export class BulkExportService implements OnModuleInit {
   private readonly logger = new Logger(BulkExportService.name);
-  private readonly jobs = new Map<string, BulkExportJob>();
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {}
+  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>, private readonly jobQueue: JobQueueService) {}
+
+  /** On startup, recover any accepted jobs that were not yet processed. */
+  async onModuleInit(): Promise<void> {
+    const pendingJobs = await this.jobQueue.findAcceptedJobs('bulk-export');
+
+    for (const job of pendingJobs) {
+      this.logger.log(`Recovering bulk export job ${job.jobId}`);
+      setImmediate(() => this.processJob(job.jobId));
+    }
+  }
 
   /** Create a new bulk export job and start async processing. */
-  kickOff(baseUrl: string, types?: string[], since?: string, groupId?: string): BulkExportJob {
-    const id = randomUUID();
-    const job: BulkExportJob = {
-      id, status: 'accepted', transactionTime: new Date().toISOString(),
-      request: `${baseUrl}/fhir/$export`, requiresAccessToken: false,
-      types, since, groupId, output: new Map(), errors: [], progress: 0, createdAt: new Date(),
-    };
-    this.jobs.set(id, job);
-    // Fire and forget — async processing
-    setTimeout(() => this.processJob(id), 0);
+  async kickOff(baseUrl: string, types?: string[], since?: string, groupId?: string): Promise<BulkExportJob> {
+    const active = await this.jobQueue.countActiveJobs('bulk-export');
 
-    return job;
+    if (active >= MAX_CONCURRENT_EXPORTS) {
+      throw new HttpException('Too many concurrent export jobs. Please try again later.', 429);
+    }
+
+    const params = { transactionTime: new Date().toISOString(), request: `${baseUrl}/fhir/$export`, requiresAccessToken: false, types, since, groupId };
+    const job = await this.jobQueue.createJob('bulk-export', params, EXPORT_TIMEOUT_MS);
+
+    setImmediate(() => this.processJob(job.jobId));
+
+    return this.toExportJob(job);
   }
 
-  getJob(id: string): BulkExportJob | undefined {
-    return this.jobs.get(id);
+  /** Get a bulk export job by id. */
+  async getJob(id: string): Promise<BulkExportJob | undefined> {
+    const job = await this.jobQueue.getJob(id);
+
+    return job ? this.toExportJob(job) : undefined;
   }
 
-  /** Cancel a running or pending job. */
-  cancelJob(id: string): void {
-    const job = this.jobs.get(id);
+  /** Cancel a running or pending bulk export job. */
+  async cancelJob(id: string): Promise<void> {
+    const cancelled = await this.jobQueue.cancelJob(id);
 
-    if (!job) {
-throw new NotFoundException(`Bulk export job ${id} not found`);
-}
-
-    job.status = 'cancelled';
+    if (!cancelled) {
+      throw new NotFoundException(`Bulk export job ${id} not found or already completed`);
+    }
   }
 
   /** Get NDJSON data for a specific job and resource type. */
-  getNdjson(jobId: string, resourceType: string): string | undefined {
-    const job = this.jobs.get(jobId);
+  async getNdjson(jobId: string, resourceType: string): Promise<string | undefined> {
+    const job = await this.jobQueue.getJob(jobId);
 
     if (!job || job.status !== 'complete') {
-return undefined;
-}
+      return undefined;
+    }
 
-    return job.output.get(resourceType);
+    return job.result?.output?.[resourceType];
   }
 
   /** Main processing: query MongoDB, generate NDJSON per type. */
   private async processJob(jobId: string): Promise<void> {
-    const job = this.jobs.get(jobId);
+    const claimed = await this.jobQueue.claimJob(jobId);
 
-    if (!job || job.status === 'cancelled') {
-return;
-}
+    if (!claimed) {
+      return;
+    }
 
-    job.status = 'in-progress';
+    const job = await this.jobQueue.getJob(jobId);
+
+    if (!job) {
+      return;
+    }
 
     try {
-      // Determine which resource types to export
+      const { types, since, groupId } = job.params;
+
       let resourceTypes: string[];
 
-      if (job.types?.length) {
-        resourceTypes = job.types;
+      if (types?.length) {
+        resourceTypes = types;
       } else {
         resourceTypes = await this.resourceModel.distinct('resourceType').exec();
       }
 
-      // For group-level export, only include resources linked to the group's members
       let patientIds: string[] | undefined;
 
-      if (job.groupId) {
-        patientIds = await this.resolveGroupMembers(job.groupId);
+      if (groupId) {
+        patientIds = await this.resolveGroupMembers(groupId);
 
         if (!patientIds) {
-          job.status = 'error';
-          job.errors.push({ type: 'OperationOutcome', url: '' });
+          await this.jobQueue.failJob(jobId, [{ type: 'OperationOutcome', diagnostics: `Group ${groupId} not found` }]);
 
           return;
         }
       }
 
       const totalTypes = resourceTypes.length;
+      const output: Record<string, string> = {};
       let processed = 0;
 
       for (const type of resourceTypes) {
-        if ((job as BulkExportJob).status === 'cancelled') {
-return;
-}
+        // Check for cancellation periodically
+        if (await this.jobQueue.isCancelled(jobId)) {
+          return;
+        }
 
-        const filter: Record<string, any> = { resourceType: type };
-        // Exclude deleted resources (soft deletes have meta.deleted = true)
-        filter['meta.deleted'] = { $ne: true };
+        const filter: Record<string, any> = { resourceType: type, 'meta.deleted': { $ne: true } };
 
-        if (job.since) {
-filter['meta.lastUpdated'] = { $gte: job.since };
-}
+        if (since) {
+          filter['meta.lastUpdated'] = { $gte: since };
+        }
 
-        // For group-level: filter patient-linked resources
         if (patientIds) {
           if (type === 'Patient') {
             filter.id = { $in: patientIds };
           } else {
-            // Filter by subject.reference matching any of the group's patients
-            const refs = patientIds.map((pid) => `Patient/${pid}`);
-            filter['subject.reference'] = { $in: refs };
+            filter['subject.reference'] = { $in: patientIds.map((pid) => `Patient/${pid}`) };
           }
         }
 
         const docs = await this.resourceModel.find(filter).lean().exec();
 
         if (docs.length > 0) {
-          const ndjson = docs.map((doc) => {
-            const { _id, __v, ...resource } = doc as any;
+          output[type] = docs.map((doc) => {
+ const { _id, __v, ...resource } = doc as any;
 
-            return JSON.stringify(resource);
-          }).join('\n');
-          job.output.set(type, ndjson);
+ return JSON.stringify(resource); 
+}).join('\n');
         }
 
         processed++;
-        job.progress = Math.round((processed / totalTypes) * 100);
+        await this.jobQueue.updateProgress(jobId, Math.round((processed / totalTypes) * 100));
       }
 
-      job.status = 'complete';
-      job.completedAt = new Date();
-      this.logger.log(`Bulk export ${jobId} complete: ${job.output.size} types, ${[...job.output.values()].reduce((sum, v) => sum + v.split('\n').length, 0)} resources`);
+      await this.jobQueue.completeJob(jobId, { output });
+      const totalResources = Object.values(output).reduce((sum, v) => sum + v.split('\n').length, 0);
+      this.logger.log(`Bulk export ${jobId} complete: ${Object.keys(output).length} types, ${totalResources} resources`);
     } catch (err) {
-      this.logger.error(`Bulk export ${jobId} failed: ${err.message}`, err.stack);
-      job.status = 'error';
-      job.errors.push({ type: 'OperationOutcome', url: '' });
+      this.logger.error(`Bulk export ${jobId} failed: ${(err as Error).message}`, (err as Error).stack);
+      await this.jobQueue.failJob(jobId, [{ type: 'OperationOutcome', diagnostics: (err as Error).message }]);
     }
   }
 
@@ -149,9 +164,20 @@ filter['meta.lastUpdated'] = { $gte: job.since };
     const group = await this.resourceModel.findOne({ resourceType: 'Group', id: groupId, 'meta.deleted': { $ne: true } }).lean().exec() as any;
 
     if (!group) {
-return undefined;
-}
+      return undefined;
+    }
 
     return (group.member || []).map((m: any) => m.entity?.reference?.replace('Patient/', '')).filter(Boolean);
+  }
+
+  /** Map a Job document to the BulkExportJob interface. */
+  private toExportJob(job: any): BulkExportJob {
+    return {
+      id: job.jobId, status: job.status, progress: job.progress, errors: job.jobErrors || [],
+      transactionTime: job.params?.transactionTime || '', request: job.params?.request || '',
+      requiresAccessToken: job.params?.requiresAccessToken || false,
+      types: job.params?.types, since: job.params?.since, groupId: job.params?.groupId,
+      output: job.result?.output || {}, createdAt: job.createdAt, completedAt: job.completedAt,
+    };
   }
 }
