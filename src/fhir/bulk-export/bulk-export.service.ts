@@ -1,8 +1,8 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit, HttpException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { Inject, Injectable, Logger, NotFoundException, OnModuleInit, HttpException } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { JobQueueService } from '../../job-queue/job-queue.service';
 import { FhirResource } from '../fhir-resource.schema';
+import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { BulkExportJob } from './bulk-export.types';
 
 /** Maximum concurrent bulk export jobs. Configurable via MAX_CONCURRENT_EXPORTS env var. */
@@ -20,7 +20,7 @@ const EXPORT_TIMEOUT_MS = parseInt(process.env.BULK_EXPORT_TIMEOUT_MS || '600000
 export class BulkExportService implements OnModuleInit {
   private readonly logger = new Logger(BulkExportService.name);
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>, private readonly jobQueue: JobQueueService) {}
+  constructor(@Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>, private readonly jobQueue: JobQueueService) {}
 
   /** On startup, recover any accepted jobs that were not yet processed. */
   async onModuleInit(): Promise<void> {

@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CacheService } from '../../cache/cache.service';
 import { FhirResource } from '../fhir-resource.schema';
+import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { FhirResourceEvent } from '../subscriptions/subscription.types';
 
 /** Consent policy cache TTL in ms. Configurable via CONSENT_CACHE_TTL_MS env var. Default 60 seconds. */
@@ -38,7 +38,7 @@ export class ConsentEnforcementService {
 
   private readonly logger = new Logger(ConsentEnforcementService.name);
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>, private readonly cache: CacheService) {}
+  constructor(@Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>, private readonly cache: CacheService) {}
 
   /** Get the consent policy for a patient (cached). */
   async getPolicy(patientId: string): Promise<ConsentPolicy> {

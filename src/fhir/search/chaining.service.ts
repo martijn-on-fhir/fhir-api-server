@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { FhirResource } from '../fhir-resource.schema';
+import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { QueryBuilderService } from './query-builder.service';
 import { SearchParameterRegistry } from './search-parameter-registry.service';
 
@@ -16,7 +16,7 @@ export class ChainingService {
 
   private readonly logger = new Logger(ChainingService.name);
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>, private readonly registry: SearchParameterRegistry, private readonly queryBuilder: QueryBuilderService) {}
+  constructor(@Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>, private readonly registry: SearchParameterRegistry, private readonly queryBuilder: QueryBuilderService) {}
 
   /**
    * Processes chained search parameters and returns MongoDB filter conditions.

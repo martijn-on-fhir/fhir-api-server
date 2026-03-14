@@ -34,6 +34,7 @@ export class CorrelationMiddleware implements NestMiddleware {
 
       this.logger.log(JSON.stringify({
         correlationId,
+        tenantId: req['tenantId'] || '-',
         method: req.method,
         url: req.originalUrl,
         status: res.statusCode,

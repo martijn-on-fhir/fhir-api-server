@@ -1,13 +1,13 @@
 import {randomUUID} from 'crypto';
 import {Inject, Injectable, Logger, NotFoundException, GoneException, ConflictException, PreconditionFailedException, BadRequestException, Optional} from '@nestjs/common';
 import {EventEmitter2} from '@nestjs/event-emitter';
-import {InjectModel} from '@nestjs/mongoose';
 import * as jsonpatch from 'fast-json-patch';
 import {OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType} from 'fhir-models-r4';
 import {Model, ClientSession} from 'mongoose';
 import {Histogram} from 'prom-client';
 import {FhirResourceHistory} from './fhir-resource-history.schema';
 import {FhirResource} from './fhir-resource.schema';
+import {FHIR_RESOURCE_MODEL, FHIR_HISTORY_MODEL} from './fhir.constants';
 import {ChainingService} from './search/chaining.service';
 import {IncludeService} from './search/include.service';
 import {QueryBuilderService} from './search/query-builder.service';
@@ -42,8 +42,8 @@ export class FhirService {
   private readonly logger = new Logger(FhirService.name);
 
   constructor(
-    @InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>,
-    @InjectModel(FhirResourceHistory.name) private readonly historyModel: Model<FhirResourceHistory>,
+    @Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>,
+    @Inject(FHIR_HISTORY_MODEL) private readonly historyModel: Model<FhirResourceHistory>,
     private readonly queryBuilder: QueryBuilderService, private readonly searchRegistry: SearchParameterRegistry,
     private readonly includeService: IncludeService, private readonly chainingService: ChainingService,
     private readonly eventEmitter: EventEmitter2,

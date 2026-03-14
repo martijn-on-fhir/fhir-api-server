@@ -11,6 +11,7 @@ import {TimeoutInterceptor} from './fhir/interceptors/timeout.interceptor';
 import {JsonLoggerService} from './logging/json-logger.service';
 import {MetricsInterceptor} from './metrics/metrics.interceptor';
 import {initTelemetry} from './telemetry/telemetry';
+import {TenantMiddleware} from './tenant/tenant.middleware';
 
 // Initialize OpenTelemetry before NestJS bootstrap (required for auto-instrumentation)
 const otelSdk = initTelemetry();
@@ -45,6 +46,13 @@ const bootstrap = async () => {
   app.use(express.text({type: ['application/fhir+xml', 'application/xml'], limit: jsonLimit}));
   app.use(express.raw({type: ['application/octet-stream'], limit: '50mb'}));
   app.use(express.urlencoded({extended: true, limit: jsonLimit}));
+
+  // Tenant URL rewriting must run before NestJS route matching
+  if (process.env.MULTI_TENANT_ENABLED === 'true') {
+    const tenantMiddleware = new TenantMiddleware();
+    app.use(tenantMiddleware.use.bind(tenantMiddleware));
+  }
+
   app.useGlobalFilters(new FhirExceptionFilter());
   app.useGlobalInterceptors(app.get(MetricsInterceptor), new TimeoutInterceptor());
 

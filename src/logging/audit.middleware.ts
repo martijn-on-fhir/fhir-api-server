@@ -31,6 +31,7 @@ export class AuditMiddleware implements NestMiddleware {
       this.logger.log(JSON.stringify({
         event: 'fhir.mutation',
         correlationId: req['correlationId'] || '-',
+        tenantId: req['tenantId'] || '-',
         method: req.method,
         url: req.originalUrl,
         resourceType: resourceType || '-',

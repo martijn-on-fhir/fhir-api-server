@@ -17,6 +17,19 @@ import { AuditMiddleware } from './logging/audit.middleware';
 import { CorrelationMiddleware } from './logging/correlation.middleware';
 import { MetricsModule } from './metrics/metrics.module';
 import { ResilienceModule } from './resilience/resilience.module';
+import { TenantGuard } from './tenant/tenant.guard';
+import { TenantModule } from './tenant/tenant.module';
+
+/** Whether multi-tenancy is enabled via environment variable. */
+const MULTI_TENANT_ENABLED = process.env.MULTI_TENANT_ENABLED === 'true';
+
+/** Conditionally include TenantModule only when multi-tenancy is enabled. */
+const conditionalImports = MULTI_TENANT_ENABLED ? [TenantModule] : [];
+
+/** Conditionally register TenantGuard only when multi-tenancy is enabled. */
+const conditionalProviders = MULTI_TENANT_ENABLED
+  ? [{ provide: APP_GUARD, useClass: TenantGuard }]
+  : [];
 
 /** Root application module. Configures MongoDB connection, health checks, logging, rate limiting and imports the FHIR module. */
 @Module({
@@ -43,9 +56,10 @@ import { ResilienceModule } from './resilience/resilience.module';
     HealthModule,
     MetricsModule,
     ResilienceModule,
+    ...conditionalImports,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: FhirThrottlerGuard }, { provide: APP_GUARD, useClass: SmartAuthGuard }],
+  providers: [AppService, { provide: APP_GUARD, useClass: FhirThrottlerGuard }, { provide: APP_GUARD, useClass: SmartAuthGuard }, ...conditionalProviders],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

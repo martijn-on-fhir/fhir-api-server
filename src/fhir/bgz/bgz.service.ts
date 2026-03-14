@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { FhirResource } from '../fhir-resource.schema';
+import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { BGZ_QUERIES, BGZ_INCLUDE_PATHS } from './bgz.constants';
 
 /**
@@ -12,7 +12,7 @@ import { BGZ_QUERIES, BGZ_INCLUDE_PATHS } from './bgz.constants';
 @Injectable()
 export class BgzService {
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {}
+  constructor(@Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>) {}
 
   /** Retrieve the complete BgZ for a patient. Returns match resources and included references. */
   async getBgz(patientId: string): Promise<{ matches: any[]; includes: any[] }> {

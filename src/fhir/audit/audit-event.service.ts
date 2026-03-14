@@ -1,9 +1,9 @@
 import {randomUUID} from 'crypto';
-import {Injectable, Logger} from '@nestjs/common';
+import {Inject, Injectable, Logger} from '@nestjs/common';
 import {OnEvent} from '@nestjs/event-emitter';
-import {InjectModel} from '@nestjs/mongoose';
 import {Model} from 'mongoose';
 import {FhirResource} from '../fhir-resource.schema';
+import {FHIR_RESOURCE_MODEL} from '../fhir.constants';
 import {FhirResourceEvent} from '../subscriptions/subscription.types';
 
 const ACTION_TO_SUBTYPE: Record<string, { code: string; display: string }> = {
@@ -26,7 +26,7 @@ export class AuditEventService {
 
   private readonly logger = new Logger(AuditEventService.name);
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {
+  constructor(@Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>) {
   }
 
   @OnEvent('fhir.resource.changed')

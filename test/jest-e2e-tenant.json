@@ -1,0 +1,14 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": "tenant-isolation.e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest",
+    "^.+\\.mjs$": "<rootDir>/esm-transformer.js"
+  },
+  "transformIgnorePatterns": [
+    "node_modules/(?!fhir-models-r4|fhir-validator-mx|jose)"
+  ],
+  "setupFiles": ["./tenant-setup.ts"]
+}

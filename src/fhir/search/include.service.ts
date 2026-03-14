@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { FhirResource } from '../fhir-resource.schema';
+import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { SearchParameterRegistry } from './search-parameter-registry.service';
 
 /** Maximum number of included resources returned per search. Configurable via MAX_INCLUDE_RESULTS env var. */
@@ -24,7 +24,7 @@ export class IncludeService {
 
   private readonly logger = new Logger(IncludeService.name);
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>, private readonly registry: SearchParameterRegistry) {}
+  constructor(@Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>, private readonly registry: SearchParameterRegistry) {}
 
   /**
    * Resolves _include and _revinclude directives for a set of primary search results.

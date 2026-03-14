@@ -1,7 +1,7 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { FhirResource } from '../fhir-resource.schema';
+import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { FhirResourceEvent } from './subscription.types';
 
 /** Maximum number of delivery attempts before marking the subscription as error. */
@@ -20,7 +20,7 @@ export class SubscriptionNotificationService implements OnModuleDestroy {
   /** Tracks in-flight delivery promises so graceful shutdown can await them. */
   private readonly activeDeliveries = new Set<Promise<void>>();
 
-  constructor(@InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>) {}
+  constructor(@Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>) {}
 
   /** Waits for all in-flight subscription deliveries to complete before shutdown. */
   async onModuleDestroy(): Promise<void> {

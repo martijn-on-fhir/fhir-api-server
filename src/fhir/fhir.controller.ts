@@ -70,8 +70,9 @@ export class FhirController {
 
     const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     const host = req.headers['x-forwarded-host'] || req.get('host');
+    const tenantPrefix = req['tenantId'] ? `/t/${req['tenantId']}` : '';
 
-    return `${proto}://${host}/fhir`;
+    return `${proto}://${host}${tenantPrefix}/fhir`;
   }
 
   /**

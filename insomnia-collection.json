@@ -2218,6 +2218,124 @@
       "method": "GET",
       "url": "http://localhost:3000/health/ready",
       "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+
+    {
+      "_id": "fld_tenants",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Tenant Administration"
+    },
+    {
+      "_id": "req_tenant_list",
+      "_type": "request",
+      "parentId": "fld_tenants",
+      "name": "List tenants",
+      "description": "Lists all registered tenants. Optionally filter by status query param (?status=active|suspended|decommissioned).",
+      "method": "GET",
+      "url": "http://localhost:3000/admin/tenants",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_tenant_get",
+      "_type": "request",
+      "parentId": "fld_tenants",
+      "name": "Get tenant",
+      "description": "Returns details for a specific tenant by ID.",
+      "method": "GET",
+      "url": "http://localhost:3000/admin/tenants/6edb-752-09a51b-4",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_tenant_create",
+      "_type": "request",
+      "parentId": "fld_tenants",
+      "name": "Register tenant",
+      "description": "Registers a new tenant and provisions its database. Tenant ID must be hex segments separated by dashes (e.g. 6edb-752-09a51b-4).",
+      "method": "POST",
+      "url": "http://localhost:3000/admin/tenants",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id\": \"6edb-752-09a51b-4\",\n  \"name\": \"Ziekenhuis A\",\n  \"contactEmail\": \"admin@ziekenhuisa.nl\"\n}"
+      }
+    },
+    {
+      "_id": "req_tenant_suspend",
+      "_type": "request",
+      "parentId": "fld_tenants",
+      "name": "Suspend tenant",
+      "description": "Suspends an active tenant. FHIR requests to suspended tenants return 403.",
+      "method": "POST",
+      "url": "http://localhost:3000/admin/tenants/6edb-752-09a51b-4/suspend",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_tenant_activate",
+      "_type": "request",
+      "parentId": "fld_tenants",
+      "name": "Activate tenant",
+      "description": "Reactivates a suspended tenant.",
+      "method": "POST",
+      "url": "http://localhost:3000/admin/tenants/6edb-752-09a51b-4/activate",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_tenant_decommission",
+      "_type": "request",
+      "parentId": "fld_tenants",
+      "name": "Decommission tenant",
+      "description": "Decommissions a tenant and drops its database. This action is irreversible.",
+      "method": "DELETE",
+      "url": "http://localhost:3000/admin/tenants/6edb-752-09a51b-4",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+
+    {
+      "_id": "fld_tenant_fhir",
+      "_type": "request_group",
+      "parentId": "fld_tenants",
+      "name": "Tenant FHIR requests"
+    },
+    {
+      "_id": "req_tenant_search",
+      "_type": "request",
+      "parentId": "fld_tenant_fhir",
+      "name": "Search Patient (tenant)",
+      "description": "Search Patients in a specific tenant database via /t/:tenantId/fhir/...",
+      "method": "GET",
+      "url": "http://localhost:3000/t/6edb-752-09a51b-4/fhir/Patient",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }]
+    },
+    {
+      "_id": "req_tenant_create_patient",
+      "_type": "request",
+      "parentId": "fld_tenant_fhir",
+      "name": "Create Patient (tenant)",
+      "description": "Create a Patient in a specific tenant database.",
+      "method": "POST",
+      "url": "http://localhost:3000/t/6edb-752-09a51b-4/fhir/Patient",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Patient\",\n  \"name\": [{ \"family\": \"De Vries\", \"given\": [\"Pieter\"] }],\n  \"gender\": \"male\",\n  \"birthDate\": \"1985-03-14\"\n}"
+      }
+    },
+    {
+      "_id": "req_tenant_metadata",
+      "_type": "request",
+      "parentId": "fld_tenant_fhir",
+      "name": "CapabilityStatement (tenant)",
+      "description": "Get the CapabilityStatement for a specific tenant.",
+      "method": "GET",
+      "url": "http://localhost:3000/t/6edb-752-09a51b-4/fhir/metadata",
+      "headers": [{ "name": "Accept", "value": "application/fhir+json" }]
     }
   ]
 }

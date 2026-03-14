@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { FhirResource } from '../fhir-resource.schema';
+import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { QueryBuilderService } from '../search/query-builder.service';
 import { SubscriptionNotificationService } from './subscription-notification.service';
 import { FhirResourceEvent, parseCriteria } from './subscription.types';
@@ -18,7 +18,7 @@ export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
 
   constructor(
-    @InjectModel(FhirResource.name) private readonly resourceModel: Model<FhirResource>,
+    @Inject(FHIR_RESOURCE_MODEL) private readonly resourceModel: Model<FhirResource>,
     private readonly queryBuilder: QueryBuilderService,
     private readonly notificationService: SubscriptionNotificationService,
   ) {}
