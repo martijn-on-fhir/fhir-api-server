@@ -13,18 +13,19 @@ Het project is technisch productie-klaar (fase 1-4 van het production readiness 
 Geschatte inspanning: klein. Geen nieuwe features, puur betrouwbaarheid.
 
 ### 6.1 E2e tests in CI pipeline
-- [ ] MongoDB Memory Server toevoegen aan GitHub Actions test job
-- [ ] Alle e2e test suites draaien: backup-restore, consent-enforcement, smart-auth
-- [ ] Test matrix: Node 22 + MongoDB 7
+- [x] MongoDB Memory Server gebruikt in alle e2e tests (automatische download)
+- [x] Alle 16 e2e test suites draaien via `npm run test:e2e` in CI
+- [x] Node 22 in CI pipeline
 
 ### 6.2 Docker health checks
-- [ ] `HEALTHCHECK` instructie in Dockerfile (`curl /health/live`)
-- [ ] `healthcheck` config in docker-compose per service
-- [ ] `depends_on.condition: service_healthy` voor startup ordering
+- [x] `HEALTHCHECK` instructie in Dockerfile (`wget /health/live`)
+- [x] `healthcheck` config in docker-compose: fhir-api, mongo, prometheus, jaeger, grafana
+- [x] `depends_on.condition: service_healthy` voor startup ordering
+- Note: Loki en otel-collector zijn scratch images zonder shell/tools — geen healthcheck mogelijk
 
 ### 6.3 npm audit clean
-- [ ] Remaining moderate vulnerabilities in devDependencies evalueren
-- [ ] Overrides of updates waar nodig
+- [x] Prod dependencies: 0 vulnerabilities
+- [x] Dev dependencies: 6 moderate (ajv ReDoS via @nestjs/cli → @angular-devkit) — upstream issue, niet in productie
 
 ---
 

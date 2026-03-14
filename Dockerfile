@@ -15,6 +15,9 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY config/ config/
+RUN apk add --no-cache wget
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health/live || exit 1
 USER node
 CMD ["node", "dist/main"]

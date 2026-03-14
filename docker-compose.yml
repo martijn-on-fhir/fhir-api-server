@@ -54,8 +54,10 @@ services:
     ports:
       - "4318:4318"
     depends_on:
-      - jaeger
-      - prometheus
+      jaeger:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
     restart: unless-stopped
 
   jaeger:
@@ -66,6 +68,11 @@ services:
     ports:
       - "16686:16686"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:16686/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   prometheus:
     image: prom/prometheus:latest
@@ -75,6 +82,11 @@ services:
     ports:
       - "9090:9090"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   mongodb-exporter:
     image: percona/mongodb_exporter:0.43
@@ -124,9 +136,16 @@ services:
       - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./docs/grafana-dashboard.json:/var/lib/grafana/dashboards/fhir-api-server.json:ro
     depends_on:
-      - prometheus
-      - loki
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_started
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   mongo-data:
