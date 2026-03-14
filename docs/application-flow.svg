@@ -1,13 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1900" font-family="Segoe UI, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 2100" font-family="Segoe UI, Arial, sans-serif">
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
     </marker>
     <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
-    </marker>
-    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/>
     </marker>
     <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#1e3a5f"/>
@@ -18,8 +15,7 @@
     </filter>
   </defs>
 
-  <!-- Background -->
-  <rect width="1400" height="1900" fill="#f8fafc" rx="8"/>
+  <rect width="1400" height="2100" fill="#f8fafc" rx="8"/>
 
   <!-- Title -->
   <rect x="0" y="0" width="1400" height="60" fill="url(#headerGrad)" rx="8"/>
@@ -30,431 +26,382 @@
   <rect x="540" y="80" width="320" height="44" rx="22" fill="#1e3a5f" filter="url(#shadow)"/>
   <text x="700" y="107" text-anchor="middle" fill="white" font-size="14" font-weight="600">HTTP Client (EHR / App / Browser)</text>
 
-  <!-- Arrow: Client → Express -->
   <line x1="700" y1="124" x2="700" y2="155" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
 
+  <!-- ==================== NGINX TLS ==================== -->
+  <rect x="400" y="155" width="600" height="36" rx="8" fill="#fdf4ff" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="700" y="178" text-anchor="middle" fill="#7e22ce" font-size="12" font-weight="700">Nginx Reverse Proxy — TLS 1.2+ termination, HSTS, OCSP stapling</text>
+
+  <line x1="700" y1="191" x2="700" y2="210" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
   <!-- ==================== EXPRESS LAYER ==================== -->
-  <rect x="100" y="155" width="1200" height="90" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="120" y="175" fill="#4338ca" font-size="12" font-weight="700">EXPRESS MIDDLEWARE (main.ts)</text>
+  <rect x="100" y="210" width="1200" height="90" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="120" y="230" fill="#4338ca" font-size="12" font-weight="700">EXPRESS MIDDLEWARE (main.ts)</text>
 
-  <!-- Express boxes -->
-  <rect x="120" y="185" width="155" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
-  <text x="197" y="205" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">Body Parsers</text>
-  <text x="197" y="220" text-anchor="middle" fill="#666" font-size="9">JSON / XML / Raw / URL</text>
+  <rect x="120" y="240" width="140" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
+  <text x="190" y="260" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">Body Parsers</text>
+  <text x="190" y="275" text-anchor="middle" fill="#666" font-size="9">JSON / XML / Raw</text>
 
-  <rect x="290" y="185" width="155" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
-  <text x="367" y="205" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">CORS</text>
-  <text x="367" y="220" text-anchor="middle" fill="#666" font-size="9">All origins, FHIR headers</text>
+  <rect x="270" y="240" width="130" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
+  <text x="335" y="260" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">Helmet</text>
+  <text x="335" y="275" text-anchor="middle" fill="#666" font-size="9">CSP, HSTS, XFO</text>
 
-  <rect x="460" y="185" width="185" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
-  <text x="552" y="205" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">CorrelationMiddleware</text>
-  <text x="552" y="220" text-anchor="middle" fill="#666" font-size="9">X-Correlation-ID, HTTP log</text>
+  <rect x="410" y="240" width="130" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
+  <text x="475" y="260" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">CORS</text>
+  <text x="475" y="275" text-anchor="middle" fill="#666" font-size="9">Configurable origins</text>
 
-  <rect x="660" y="185" width="155" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
-  <text x="737" y="205" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">AuditMiddleware</text>
-  <text x="737" y="220" text-anchor="middle" fill="#666" font-size="9">POST/PUT/PATCH/DELETE</text>
+  <rect x="550" y="240" width="175" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
+  <text x="637" y="260" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">CorrelationMiddleware</text>
+  <text x="637" y="275" text-anchor="middle" fill="#666" font-size="9">X-Correlation-ID, X-Trace-ID</text>
 
-  <rect x="830" y="185" width="175" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
-  <text x="917" y="205" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">BundleMiddleware</text>
-  <text x="917" y="220" text-anchor="middle" fill="#666" font-size="9">POST /fhir → batch/txn</text>
+  <rect x="735" y="240" width="155" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
+  <text x="812" y="260" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">AuditMiddleware</text>
+  <text x="812" y="275" text-anchor="middle" fill="#666" font-size="9">Mutation logging</text>
 
-  <rect x="1020" y="185" width="175" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
-  <text x="1107" y="205" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">FhirExceptionFilter</text>
-  <text x="1107" y="220" text-anchor="middle" fill="#666" font-size="9">All errors → OperationOutcome</text>
+  <rect x="900" y="240" width="160" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
+  <text x="980" y="260" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">MetricsInterceptor</text>
+  <text x="980" y="275" text-anchor="middle" fill="#666" font-size="9">Prometheus counters</text>
 
-  <!-- Arrow: Express → Guards -->
-  <line x1="700" y1="245" x2="700" y2="270" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="1070" y="240" width="170" height="48" rx="6" fill="white" stroke="#818cf8" stroke-width="1"/>
+  <text x="1155" y="260" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="600">FhirExceptionFilter</text>
+  <text x="1155" y="275" text-anchor="middle" fill="#666" font-size="9">→ OperationOutcome</text>
+
+  <line x1="700" y1="300" x2="700" y2="325" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
 
   <!-- ==================== GUARDS ==================== -->
-  <rect x="300" y="270" width="800" height="65" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="320" y="290" fill="#92400e" font-size="12" font-weight="700">GUARDS (Global)</text>
+  <rect x="100" y="325" width="1200" height="65" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="120" y="345" fill="#92400e" font-size="12" font-weight="700">GUARDS (Global)</text>
 
-  <rect x="320" y="298" width="350" height="28" rx="6" fill="white" stroke="#fbbf24" stroke-width="1"/>
-  <text x="495" y="317" text-anchor="middle" fill="#92400e" font-size="11" font-weight="600">SmartAuthGuard — JWT / SMART on FHIR scopes</text>
+  <rect x="120" y="353" width="330" height="28" rx="6" fill="white" stroke="#fbbf24" stroke-width="1"/>
+  <text x="285" y="372" text-anchor="middle" fill="#92400e" font-size="11" font-weight="600">SmartAuthGuard — JWT/JWKS, scopes, patient-context</text>
 
-  <rect x="690" y="298" width="390" height="28" rx="6" fill="white" stroke="#fbbf24" stroke-width="1"/>
-  <text x="885" y="317" text-anchor="middle" fill="#92400e" font-size="11" font-weight="600">FhirThrottlerGuard — Rate limiting (100/min, 1000/10min)</text>
+  <rect x="465" y="353" width="330" height="28" rx="6" fill="white" stroke="#fbbf24" stroke-width="1"/>
+  <text x="630" y="372" text-anchor="middle" fill="#92400e" font-size="11" font-weight="600">FhirThrottlerGuard — Rate limit (5000/min, 50K/10min)</text>
 
-  <!-- Arrow: Guards → Controllers -->
-  <line x1="700" y1="335" x2="700" y2="365" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="810" y="353" width="240" height="28" rx="6" fill="white" stroke="#fbbf24" stroke-width="1"/>
+  <text x="930" y="372" text-anchor="middle" fill="#92400e" font-size="11" font-weight="600">DangerousOperationGuard</text>
+
+  <rect x="1065" y="353" width="220" height="28" rx="6" fill="white" stroke="#fbbf24" stroke-width="1"/>
+  <text x="1175" y="372" text-anchor="middle" fill="#92400e" font-size="11" font-weight="600">TimeoutInterceptor (30s)</text>
+
+  <line x1="700" y1="390" x2="700" y2="415" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
 
   <!-- ==================== CONTROLLERS ==================== -->
-  <rect x="60" y="365" width="1280" height="290" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="80" y="385" fill="#166534" font-size="12" font-weight="700">CONTROLLERS</text>
+  <rect x="60" y="415" width="1280" height="250" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="80" y="435" fill="#166534" font-size="12" font-weight="700">CONTROLLERS</text>
 
   <!-- FhirController -->
-  <rect x="80" y="395" width="600" height="245" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="80" y="395" width="600" height="26" rx="6" fill="#166534"/>
-  <rect x="80" y="410" width="600" height="11" fill="#166534"/>
-  <text x="380" y="414" text-anchor="middle" fill="white" font-size="12" font-weight="700">FhirController (fhir.controller.ts)</text>
+  <rect x="80" y="445" width="580" height="205" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="80" y="445" width="580" height="26" rx="6" fill="#166534"/>
+  <rect x="80" y="460" width="580" height="11" fill="#166534"/>
+  <text x="370" y="464" text-anchor="middle" fill="white" font-size="12" font-weight="700">FhirController — CRUD, Search, Operations</text>
 
-  <!-- System-level -->
-  <text x="100" y="440" fill="#166534" font-size="10" font-weight="700">System-level</text>
-  <rect x="100" y="446" width="130" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="165" y="461" text-anchor="middle" fill="#333" font-size="9">GET /metadata</text>
-  <rect x="240" y="446" width="130" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="305" y="461" text-anchor="middle" fill="#333" font-size="9">GET /_history</text>
-  <rect x="380" y="446" width="130" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="445" y="461" text-anchor="middle" fill="#333" font-size="9">POST /$reindex</text>
-  <rect x="520" y="446" width="145" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="592" y="461" text-anchor="middle" fill="#333" font-size="9">POST /$expunge</text>
+  <text x="100" y="490" fill="#166534" font-size="10" font-weight="700">CRUD</text>
+  <rect x="100" y="496" width="75" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="137" y="510" text-anchor="middle" fill="#333" font-size="9">Read</text>
+  <rect x="180" y="496" width="75" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="217" y="510" text-anchor="middle" fill="#333" font-size="9">Create</text>
+  <rect x="260" y="496" width="75" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="297" y="510" text-anchor="middle" fill="#333" font-size="9">Update</text>
+  <rect x="340" y="496" width="75" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="377" y="510" text-anchor="middle" fill="#333" font-size="9">Patch</text>
+  <rect x="420" y="496" width="75" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="457" y="510" text-anchor="middle" fill="#333" font-size="9">Delete</text>
+  <rect x="500" y="496" width="75" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="537" y="510" text-anchor="middle" fill="#333" font-size="9">vRead</text>
+  <rect x="580" y="496" width="70" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="615" y="510" text-anchor="middle" fill="#333" font-size="9">History</text>
 
-  <!-- Type-level -->
-  <text x="100" y="484" fill="#166534" font-size="10" font-weight="700">Type-level (:resourceType)</text>
-  <rect x="100" y="490" width="110" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="155" y="505" text-anchor="middle" fill="#333" font-size="9">GET → Search</text>
-  <rect x="220" y="490" width="110" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="275" y="505" text-anchor="middle" fill="#333" font-size="9">POST → Create</text>
-  <rect x="340" y="490" width="130" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="405" y="505" text-anchor="middle" fill="#333" font-size="9">POST /$validate</text>
-  <rect x="480" y="490" width="185" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="572" y="505" text-anchor="middle" fill="#333" font-size="9">GET /Observation/$lastn</text>
+  <text x="100" y="534" fill="#166534" font-size="10" font-weight="700">Search</text>
+  <rect x="100" y="540" width="120" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="160" y="554" text-anchor="middle" fill="#333" font-size="9">8 param types</text>
+  <rect x="225" y="540" width="95" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="272" y="554" text-anchor="middle" fill="#333" font-size="9">Chaining</text>
+  <rect x="325" y="540" width="95" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="372" y="554" text-anchor="middle" fill="#333" font-size="9">_include</text>
+  <rect x="425" y="540" width="110" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="480" y="554" text-anchor="middle" fill="#333" font-size="9">Compartment</text>
+  <rect x="540" y="540" width="110" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="595" y="554" text-anchor="middle" fill="#333" font-size="9">POST _search</text>
 
-  <!-- Instance-level -->
-  <text x="100" y="528" fill="#166534" font-size="10" font-weight="700">Instance-level (:resourceType/:id)</text>
-  <rect x="100" y="534" width="85" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="142" y="549" text-anchor="middle" fill="#333" font-size="9">GET Read</text>
-  <rect x="195" y="534" width="95" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="242" y="549" text-anchor="middle" fill="#333" font-size="9">PUT Update</text>
-  <rect x="300" y="534" width="95" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="347" y="549" text-anchor="middle" fill="#333" font-size="9">PATCH Patch</text>
-  <rect x="405" y="534" width="95" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="452" y="549" text-anchor="middle" fill="#333" font-size="9">DELETE Del</text>
-  <rect x="510" y="534" width="155" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="587" y="549" text-anchor="middle" fill="#333" font-size="9">GET /$everything</text>
+  <text x="100" y="578" fill="#166534" font-size="10" font-weight="700">Operations</text>
+  <rect x="100" y="584" width="80" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="140" y="598" text-anchor="middle" fill="#333" font-size="9">$validate</text>
+  <rect x="185" y="584" width="95" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="232" y="598" text-anchor="middle" fill="#333" font-size="9">$everything</text>
+  <rect x="285" y="584" width="65" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="317" y="598" text-anchor="middle" fill="#333" font-size="9">$bgz</text>
+  <rect x="355" y="584" width="65" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="387" y="598" text-anchor="middle" fill="#333" font-size="9">$lastn</text>
+  <rect x="425" y="584" width="70" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="460" y="598" text-anchor="middle" fill="#333" font-size="9">$diff</text>
+  <rect x="500" y="584" width="80" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="540" y="598" text-anchor="middle" fill="#333" font-size="9">$expunge</text>
+  <rect x="585" y="584" width="65" height="20" rx="4" fill="#f0fdf4" stroke="#86efac"/><text x="617" y="598" text-anchor="middle" fill="#333" font-size="9">$meta</text>
 
-  <!-- More instance routes -->
-  <rect x="100" y="562" width="120" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="160" y="577" text-anchor="middle" fill="#333" font-size="9">GET /_history</text>
-  <rect x="230" y="562" width="110" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="285" y="577" text-anchor="middle" fill="#333" font-size="9">GET /$diff</text>
-  <rect x="350" y="562" width="140" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="420" y="577" text-anchor="middle" fill="#333" font-size="9">POST /$meta-add/del</text>
-  <rect x="500" y="562" width="165" height="22" rx="4" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="582" y="577" text-anchor="middle" fill="#333" font-size="9">GET /Patient/:id/Obs</text>
-
-  <!-- Helpers -->
-  <text x="100" y="605" fill="#166534" font-size="10" font-weight="700">Helpers</text>
-  <rect x="100" y="610" width="130" height="22" rx="4" fill="#ecfdf5" stroke="#a7f3d0"/>
-  <text x="165" y="625" text-anchor="middle" fill="#555" font-size="9">parseRequestBody()</text>
-  <rect x="240" y="610" width="140" height="22" rx="4" fill="#ecfdf5" stroke="#a7f3d0"/>
-  <text x="310" y="625" text-anchor="middle" fill="#555" font-size="9">resolveReferences()</text>
-  <rect x="390" y="610" width="140" height="22" rx="4" fill="#ecfdf5" stroke="#a7f3d0"/>
-  <text x="460" y="625" text-anchor="middle" fill="#555" font-size="9">sendFhirResponse()</text>
-  <rect x="540" y="610" width="125" height="22" rx="4" fill="#ecfdf5" stroke="#a7f3d0"/>
-  <text x="602" y="625" text-anchor="middle" fill="#555" font-size="9">toFhirJson()</text>
+  <text x="100" y="630" fill="#166534" font-size="9" font-style="italic">+ ConsentEnforcement (deny provisions, actor/purpose filtering) + PatientContext filtering</text>
 
   <!-- Other Controllers -->
-  <rect x="700" y="395" width="290" height="100" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="700" y="395" width="290" height="26" rx="6" fill="#166534"/>
-  <rect x="700" y="410" width="290" height="11" fill="#166534"/>
-  <text x="845" y="414" text-anchor="middle" fill="white" font-size="11" font-weight="700">BulkExportController</text>
-  <text x="720" y="440" fill="#333" font-size="9">POST /fhir/$export (system)</text>
-  <text x="720" y="455" fill="#333" font-size="9">POST /fhir/:type/$export (type)</text>
-  <text x="720" y="470" fill="#333" font-size="9">POST /Group/:id/$export (group)</text>
-  <text x="720" y="485" fill="#333" font-size="9">GET /$export/:jobId (status/download)</text>
+  <rect x="680" y="445" width="310" height="65" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="680" y="445" width="310" height="24" rx="6" fill="#166534"/><rect x="680" y="458" width="310" height="11" fill="#166534"/>
+  <text x="835" y="462" text-anchor="middle" fill="white" font-size="11" font-weight="700">BulkExportController</text>
+  <text x="700" y="485" fill="#333" font-size="9">$export (system/group), poll, download NDJSON, cancel</text>
+  <text x="700" y="500" fill="#333" font-size="9">Persistent via JobQueueService (MongoDB-backed)</text>
 
-  <rect x="1010" y="395" width="310" height="100" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="1010" y="395" width="310" height="26" rx="6" fill="#166534"/>
-  <rect x="1010" y="410" width="310" height="11" fill="#166534"/>
-  <text x="1165" y="414" text-anchor="middle" fill="white" font-size="11" font-weight="700">AdministrationController</text>
-  <text x="1030" y="440" fill="#333" font-size="9">StructureDefinition, ValueSet, CodeSystem</text>
-  <text x="1030" y="455" fill="#333" font-size="9">SearchParameter, CompartmentDefinition</text>
-  <text x="1030" y="470" fill="#333" font-size="9">OperationDefinition, NamingSystem</text>
-  <text x="1030" y="485" fill="#333" font-size="9">TerminologyController ($lookup, $validate-code)</text>
+  <rect x="1000" y="445" width="310" height="65" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="1000" y="445" width="310" height="24" rx="6" fill="#166534"/><rect x="1000" y="458" width="310" height="11" fill="#166534"/>
+  <text x="1155" y="462" text-anchor="middle" fill="white" font-size="11" font-weight="700">AdministrationController</text>
+  <text x="1020" y="485" fill="#333" font-size="9">StructureDefinition, ValueSet, CodeSystem, SearchParameter</text>
+  <text x="1020" y="500" fill="#333" font-size="9">$expand, $lookup, $translate (cached)</text>
 
-  <rect x="700" y="510" width="290" height="65" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="700" y="510" width="290" height="26" rx="6" fill="#166534"/>
-  <rect x="700" y="525" width="290" height="11" fill="#166534"/>
-  <text x="845" y="529" text-anchor="middle" fill="white" font-size="11" font-weight="700">BgzController</text>
-  <text x="720" y="555" fill="#333" font-size="9">GET /fhir/BgZ/Patient/:patientId</text>
-  <text x="720" y="568" fill="#333" font-size="9">26 Dutch clinical zibs (nl-core)</text>
+  <rect x="680" y="520" width="310" height="55" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="680" y="520" width="310" height="24" rx="6" fill="#166534"/><rect x="680" y="533" width="310" height="11" fill="#166534"/>
+  <text x="835" y="537" text-anchor="middle" fill="white" font-size="11" font-weight="700">AdminController</text>
+  <text x="700" y="558" fill="#333" font-size="9">snapshot, restore, backup (mongodump), db-stats, index-stats</text>
+  <text x="700" y="571" fill="#333" font-size="9">Off-site backup (S3 / Azure Blob)</text>
 
-  <rect x="1010" y="510" width="310" height="65" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="1010" y="510" width="310" height="26" rx="6" fill="#166534"/>
-  <rect x="1010" y="525" width="310" height="11" fill="#166534"/>
-  <text x="1165" y="529" text-anchor="middle" fill="white" font-size="11" font-weight="700">SmartConfigurationController</text>
-  <text x="1030" y="555" fill="#333" font-size="9">GET /.well-known/smart-configuration</text>
-  <text x="1030" y="568" fill="#333" font-size="9">OAuth2 / FHIR capability discovery</text>
+  <rect x="1000" y="520" width="310" height="55" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="1000" y="520" width="310" height="24" rx="6" fill="#166534"/><rect x="1000" y="533" width="310" height="11" fill="#166534"/>
+  <text x="1155" y="537" text-anchor="middle" fill="white" font-size="11" font-weight="700">HealthController</text>
+  <text x="1020" y="558" fill="#333" font-size="9">/health (full), /health/live, /health/ready</text>
+  <text x="1020" y="571" fill="#333" font-size="9">Circuit breaker status, memory, DB connectivity</text>
 
-  <!-- Arrow: Controllers → Validation + Services -->
-  <line x1="380" y1="655" x2="380" y2="685" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="680" y="585" width="630" height="55" rx="6" fill="white" stroke="#4ade80" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="680" y="585" width="630" height="24" rx="6" fill="#166534"/><rect x="680" y="598" width="630" height="11" fill="#166534"/>
+  <text x="995" y="602" text-anchor="middle" fill="white" font-size="11" font-weight="700">BgzController + SmartConfigurationController</text>
+  <text x="700" y="625" fill="#333" font-size="9">BgZ: 26 Dutch clinical zibs (nl-core) | SMART: /.well-known/smart-configuration</text>
 
-  <!-- ==================== VALIDATION LAYER ==================== -->
-  <rect x="100" y="685" width="560" height="75" rx="8" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="120" y="705" fill="#9d174d" font-size="12" font-weight="700">VALIDATION (POST / PUT)</text>
+  <!-- Arrow: Controllers → Services -->
+  <line x1="380" y1="665" x2="380" y2="695" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <rect x="120" y="715" width="250" height="35" rx="6" fill="white" stroke="#f9a8d4" stroke-width="1"/>
-  <text x="245" y="733" text-anchor="middle" fill="#9d174d" font-size="11" font-weight="600">FhirValidationPipe</text>
-  <text x="245" y="744" text-anchor="middle" fill="#666" font-size="9">resourceType check, validate body</text>
+  <!-- ==================== VALIDATION + FORMAT ==================== -->
+  <rect x="100" y="695" width="440" height="60" rx="8" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="120" y="715" fill="#9d174d" font-size="12" font-weight="700">VALIDATION</text>
+  <rect x="120" y="722" width="190" height="25" rx="6" fill="white" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="215" y="739" text-anchor="middle" fill="#9d174d" font-size="10" font-weight="600">FhirValidationPipe</text>
+  <rect x="320" y="722" width="200" height="25" rx="6" fill="white" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="420" y="739" text-anchor="middle" fill="#9d174d" font-size="10" font-weight="600">fhir-validator-mx (nl-core)</text>
 
-  <line x1="370" y1="732" x2="390" y2="732" stroke="#ec4899" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="560" y="695" width="220" height="60" rx="8" fill="#f3e8ff" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="580" y="715" fill="#7e22ce" font-size="12" font-weight="700">FORMAT</text>
+  <rect x="580" y="722" width="180" height="25" rx="6" fill="white" stroke="#c084fc" stroke-width="1"/>
+  <text x="670" y="739" text-anchor="middle" fill="#7e22ce" font-size="10" font-weight="600">XML ↔ JSON (fhir-xml.utils)</text>
 
-  <rect x="390" y="715" width="250" height="35" rx="6" fill="white" stroke="#f9a8d4" stroke-width="1"/>
-  <text x="515" y="733" text-anchor="middle" fill="#9d174d" font-size="11" font-weight="600">FhirValidationService</text>
-  <text x="515" y="744" text-anchor="middle" fill="#666" font-size="9">fhir-validator-mx, nl-core profiles</text>
+  <rect x="800" y="695" width="260" height="60" rx="8" fill="#fef9c3" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="820" y="715" fill="#854d0e" font-size="12" font-weight="700">BUNDLE PROCESSING</text>
+  <rect x="820" y="722" width="220" height="25" rx="6" fill="white" stroke="#fde047" stroke-width="1"/>
+  <text x="930" y="739" text-anchor="middle" fill="#854d0e" font-size="10" font-weight="600">Batch / Transaction + urn:uuid</text>
 
-  <!-- XML/JSON conversion -->
-  <rect x="700" y="685" width="260" height="75" rx="8" fill="#f3e8ff" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="720" y="705" fill="#7e22ce" font-size="12" font-weight="700">FORMAT CONVERSION</text>
-  <rect x="720" y="715" width="220" height="35" rx="6" fill="white" stroke="#c084fc" stroke-width="1"/>
-  <text x="830" y="733" text-anchor="middle" fill="#7e22ce" font-size="11" font-weight="600">fhir-xml.utils.ts</text>
-  <text x="830" y="744" text-anchor="middle" fill="#666" font-size="9">fhirXmlToJson / fhirJsonToXml</text>
+  <rect x="1080" y="695" width="200" height="60" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1100" y="715" fill="#065f46" font-size="12" font-weight="700">CONSENT</text>
+  <rect x="1100" y="722" width="160" height="25" rx="6" fill="white" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="1180" y="739" text-anchor="middle" fill="#065f46" font-size="10" font-weight="600">Deny / Actor / Purpose</text>
 
-  <!-- Bundle Processor -->
-  <rect x="1000" y="685" width="260" height="75" rx="8" fill="#fef9c3" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="1020" y="705" fill="#854d0e" font-size="12" font-weight="700">BUNDLE PROCESSING</text>
-  <rect x="1020" y="715" width="220" height="35" rx="6" fill="white" stroke="#fde047" stroke-width="1"/>
-  <text x="1130" y="733" text-anchor="middle" fill="#854d0e" font-size="11" font-weight="600">BundleProcessorService</text>
-  <text x="1130" y="744" text-anchor="middle" fill="#666" font-size="9">batch / transaction, urn:uuid</text>
-
-  <!-- Arrow: Validation → Services -->
-  <line x1="380" y1="760" x2="380" y2="795" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="380" y1="755" x2="380" y2="785" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
 
   <!-- ==================== SERVICE LAYER ==================== -->
-  <rect x="60" y="795" width="1280" height="200" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="80" y="815" fill="#1e40af" font-size="12" font-weight="700">SERVICE LAYER</text>
+  <rect x="60" y="785" width="1280" height="200" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="80" y="805" fill="#1e40af" font-size="12" font-weight="700">SERVICE LAYER</text>
 
   <!-- FhirService -->
-  <rect x="80" y="825" width="480" height="155" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="80" y="825" width="480" height="26" rx="6" fill="#1e40af"/>
-  <rect x="80" y="840" width="480" height="11" fill="#1e40af"/>
-  <text x="320" y="844" text-anchor="middle" fill="white" font-size="12" font-weight="700">FhirService (fhir.service.ts)</text>
+  <rect x="80" y="815" width="480" height="155" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="80" y="815" width="480" height="26" rx="6" fill="#1e40af"/><rect x="80" y="830" width="480" height="11" fill="#1e40af"/>
+  <text x="320" y="834" text-anchor="middle" fill="white" font-size="12" font-weight="700">FhirService</text>
 
-  <rect x="100" y="860" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="150" y="876" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">create()</text>
-  <rect x="210" y="860" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="260" y="876" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">search()</text>
-  <rect x="320" y="860" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="370" y="876" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">update()</text>
-  <rect x="430" y="860" width="110" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="485" y="876" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">findById()</text>
+  <rect x="100" y="850" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="145" y="865" text-anchor="middle" fill="#1e40af" font-size="10">create()</text>
+  <rect x="195" y="850" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="240" y="865" text-anchor="middle" fill="#1e40af" font-size="10">search()</text>
+  <rect x="290" y="850" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="335" y="865" text-anchor="middle" fill="#1e40af" font-size="10">update()</text>
+  <rect x="385" y="850" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="430" y="865" text-anchor="middle" fill="#1e40af" font-size="10">delete()</text>
+  <rect x="100" y="878" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="145" y="893" text-anchor="middle" fill="#1e40af" font-size="10">patch()</text>
+  <rect x="195" y="878" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="240" y="893" text-anchor="middle" fill="#1e40af" font-size="10">vRead()</text>
+  <rect x="290" y="878" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="335" y="893" text-anchor="middle" fill="#1e40af" font-size="10">history()</text>
+  <rect x="385" y="878" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="430" y="893" text-anchor="middle" fill="#1e40af" font-size="10">expunge()</text>
+  <rect x="100" y="906" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="145" y="921" text-anchor="middle" fill="#1e40af" font-size="10">lastn()</text>
+  <rect x="195" y="906" width="90" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="240" y="921" text-anchor="middle" fill="#1e40af" font-size="10">diff()</text>
+  <rect x="290" y="906" width="185" height="22" rx="4" fill="#eff6ff" stroke="#93c5fd"/><text x="382" y="921" text-anchor="middle" fill="#1e40af" font-size="10">everything() / condOps()</text>
 
-  <rect x="100" y="892" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="150" y="908" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">patch()</text>
-  <rect x="210" y="892" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="260" y="908" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">delete()</text>
-  <rect x="320" y="892" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="370" y="908" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">vRead()</text>
-  <rect x="430" y="892" width="110" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="485" y="908" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">everything()</text>
-
-  <rect x="100" y="924" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="150" y="940" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">lastn()</text>
-  <rect x="210" y="924" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="260" y="940" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">diff()</text>
-  <rect x="320" y="924" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="370" y="940" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">expunge()</text>
-  <rect x="430" y="924" width="110" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd"/>
-  <text x="485" y="940" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">history()</text>
-
-  <text x="100" y="968" fill="#1e40af" font-size="9" font-style="italic">Emits 'fhir.resource.changed' on create/update/delete</text>
+  <text x="100" y="955" fill="#1e40af" font-size="9" font-style="italic">Emits 'fhir.resource.changed' → Subscriptions, AuditEvents, Consent cache</text>
 
   <!-- Other Services -->
-  <rect x="580" y="825" width="240" height="80" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="580" y="825" width="240" height="26" rx="6" fill="#1e40af"/>
-  <rect x="580" y="840" width="240" height="11" fill="#1e40af"/>
-  <text x="700" y="844" text-anchor="middle" fill="white" font-size="11" font-weight="700">BulkExportService</text>
-  <text x="600" y="870" fill="#333" font-size="9">NDJSON generation per type</text>
-  <text x="600" y="885" fill="#333" font-size="9">_since, _type, groupId filters</text>
-  <text x="600" y="900" fill="#333" font-size="9">In-memory job tracking</text>
+  <rect x="580" y="815" width="240" height="70" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="580" y="815" width="240" height="24" rx="6" fill="#1e40af"/><rect x="580" y="828" width="240" height="11" fill="#1e40af"/>
+  <text x="700" y="832" text-anchor="middle" fill="white" font-size="11" font-weight="700">BulkExportService</text>
+  <text x="600" y="858" fill="#333" font-size="9">NDJSON per type, persistent jobs</text>
+  <text x="600" y="873" fill="#333" font-size="9">→ JobQueueService (MongoDB)</text>
 
-  <rect x="580" y="915" width="240" height="65" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="580" y="915" width="240" height="26" rx="6" fill="#1e40af"/>
-  <rect x="580" y="930" width="240" height="11" fill="#1e40af"/>
-  <text x="700" y="934" text-anchor="middle" fill="white" font-size="11" font-weight="700">BgzService</text>
-  <text x="600" y="958" fill="#333" font-size="9">26 zibs parallel queries</text>
-  <text x="600" y="973" fill="#333" font-size="9">Reference resolution + includes</text>
+  <rect x="840" y="815" width="240" height="70" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="840" y="815" width="240" height="24" rx="6" fill="#1e40af"/><rect x="840" y="828" width="240" height="11" fill="#1e40af"/>
+  <text x="960" y="832" text-anchor="middle" fill="white" font-size="11" font-weight="700">BackupService</text>
+  <text x="860" y="858" fill="#333" font-size="9">Scheduled mongodump (24h, 7 retention)</text>
+  <text x="860" y="873" fill="#333" font-size="9">→ BackupRemoteService (S3/Azure)</text>
 
-  <rect x="840" y="825" width="240" height="80" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="840" y="825" width="240" height="26" rx="6" fill="#1e40af"/>
-  <rect x="840" y="840" width="240" height="11" fill="#1e40af"/>
-  <text x="960" y="844" text-anchor="middle" fill="white" font-size="11" font-weight="700">AdministrationService</text>
-  <text x="860" y="870" fill="#333" font-size="9">Conformance resource CRUD</text>
-  <text x="860" y="885" fill="#333" font-size="9">ConformanceSeederService</text>
-  <text x="860" y="900" fill="#333" font-size="9">TerminologyService ($lookup)</text>
+  <rect x="1100" y="815" width="220" height="70" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="1100" y="815" width="220" height="24" rx="6" fill="#1e40af"/><rect x="1100" y="828" width="220" height="11" fill="#1e40af"/>
+  <text x="1210" y="832" text-anchor="middle" fill="white" font-size="11" font-weight="700">CacheService</text>
+  <text x="1120" y="858" fill="#333" font-size="9">In-memory TTL cache (5 min)</text>
+  <text x="1120" y="873" fill="#333" font-size="9">CapabilityStatement, terminology</text>
 
-  <rect x="1100" y="825" width="220" height="80" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="1100" y="825" width="220" height="26" rx="6" fill="#1e40af"/>
-  <rect x="1100" y="840" width="220" height="11" fill="#1e40af"/>
-  <text x="1210" y="844" text-anchor="middle" fill="white" font-size="11" font-weight="700">AuditEventService</text>
-  <text x="1120" y="870" fill="#333" font-size="9">Listens 'fhir.resource.changed'</text>
-  <text x="1120" y="885" fill="#333" font-size="9">Creates AuditEvent resources</text>
-  <text x="1120" y="900" fill="#333" font-size="9">DICOM action codes (C/R/U/D/E)</text>
+  <rect x="580" y="895" width="370" height="70" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="580" y="895" width="370" height="24" rx="6" fill="#1e40af"/><rect x="580" y="908" width="370" height="11" fill="#1e40af"/>
+  <text x="765" y="912" text-anchor="middle" fill="white" font-size="11" font-weight="700">AdministrationService + TerminologyService</text>
+  <text x="600" y="938" fill="#333" font-size="9">Conformance CRUD, ConformanceSeeder (file-import/)</text>
+  <text x="600" y="953" fill="#333" font-size="9">$expand, $lookup, $translate (cached)</text>
 
-  <!-- Arrow: FhirService → Search Subsystem -->
-  <line x1="320" y1="995" x2="320" y2="1025" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <rect x="970" y="895" width="350" height="70" rx="6" fill="white" stroke="#60a5fa" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="970" y="895" width="350" height="24" rx="6" fill="#1e40af"/><rect x="970" y="908" width="350" height="11" fill="#1e40af"/>
+  <text x="1145" y="912" text-anchor="middle" fill="white" font-size="11" font-weight="700">CircuitBreakerService (opossum)</text>
+  <text x="990" y="938" fill="#333" font-size="9">Wraps JWKS key fetching</text>
+  <text x="990" y="953" fill="#333" font-size="9">Fallback: UnauthorizedException on open circuit</text>
+
+  <line x1="320" y1="985" x2="320" y2="1015" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
 
   <!-- ==================== SEARCH SUBSYSTEM ==================== -->
-  <rect x="60" y="1025" width="1280" height="200" rx="8" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="80" y="1045" fill="#0369a1" font-size="12" font-weight="700">SEARCH SUBSYSTEM</text>
+  <rect x="60" y="1015" width="1280" height="170" rx="8" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="80" y="1035" fill="#0369a1" font-size="12" font-weight="700">SEARCH SUBSYSTEM</text>
 
-  <!-- SearchParameterRegistry -->
-  <rect x="80" y="1055" width="280" height="80" rx="6" fill="white" stroke="#38bdf8" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="80" y="1055" width="280" height="24" rx="6" fill="#0369a1"/>
-  <rect x="80" y="1068" width="280" height="11" fill="#0369a1"/>
-  <text x="220" y="1072" text-anchor="middle" fill="white" font-size="11" font-weight="700">SearchParameterRegistry</text>
-  <text x="100" y="1098" fill="#333" font-size="9">Loads SearchParameter from conformance DB</text>
-  <text x="100" y="1113" fill="#333" font-size="9">FHIRPath → MongoDB path resolution</text>
-  <text x="100" y="1128" fill="#333" font-size="9">getParam(), resolvePaths(), reload()</text>
+  <rect x="80" y="1045" width="280" height="65" rx="6" fill="white" stroke="#38bdf8" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="80" y="1045" width="280" height="22" rx="6" fill="#0369a1"/><rect x="80" y="1056" width="280" height="11" fill="#0369a1"/>
+  <text x="220" y="1060" text-anchor="middle" fill="white" font-size="11" font-weight="700">SearchParameterRegistry</text>
+  <text x="100" y="1082" fill="#333" font-size="9">FHIRPath → MongoDB path resolution</text>
+  <text x="100" y="1097" fill="#333" font-size="9">Loaded from conformance_resources</text>
 
-  <!-- QueryBuilderService -->
-  <rect x="380" y="1055" width="280" height="80" rx="6" fill="white" stroke="#38bdf8" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="380" y="1055" width="280" height="24" rx="6" fill="#0369a1"/>
-  <rect x="380" y="1068" width="280" height="11" fill="#0369a1"/>
-  <text x="520" y="1072" text-anchor="middle" fill="white" font-size="11" font-weight="700">QueryBuilderService</text>
-  <text x="400" y="1098" fill="#333" font-size="9">FHIR params → MongoDB filter</text>
-  <text x="400" y="1113" fill="#333" font-size="9">Dispatches to type-specific builders</text>
-  <text x="400" y="1128" fill="#333" font-size="9">Common: _id, _lastUpdated, _tag, _profile</text>
+  <rect x="380" y="1045" width="280" height="65" rx="6" fill="white" stroke="#38bdf8" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="380" y="1045" width="280" height="22" rx="6" fill="#0369a1"/><rect x="380" y="1056" width="280" height="11" fill="#0369a1"/>
+  <text x="520" y="1060" text-anchor="middle" fill="white" font-size="11" font-weight="700">QueryBuilderService</text>
+  <text x="400" y="1082" fill="#333" font-size="9">FHIR params → MongoDB filter</text>
+  <text x="400" y="1097" fill="#333" font-size="9">8 type-specific builders + modifiers</text>
 
-  <!-- Arrow: Registry → QueryBuilder -->
-  <line x1="360" y1="1095" x2="380" y2="1095" stroke="#0ea5e9" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+  <rect x="680" y="1045" width="280" height="65" rx="6" fill="white" stroke="#38bdf8" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="680" y="1045" width="280" height="22" rx="6" fill="#0369a1"/><rect x="680" y="1056" width="280" height="11" fill="#0369a1"/>
+  <text x="820" y="1060" text-anchor="middle" fill="white" font-size="11" font-weight="700">ChainingService</text>
+  <text x="700" y="1082" fill="#333" font-size="9">subject:Patient.name=John</text>
+  <text x="700" y="1097" fill="#333" font-size="9">_has:Observation:subject:code=X</text>
 
-  <!-- Type Builders -->
-  <rect x="380" y="1145" width="280" height="70" rx="6" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1"/>
-  <text x="400" y="1162" fill="#0369a1" font-size="10" font-weight="600">Query Builders:</text>
-  <text x="400" y="1177" fill="#555" font-size="9">String | Token | Date | Reference</text>
-  <text x="400" y="1192" fill="#555" font-size="9">Number | Quantity | URI | Composite</text>
-  <text x="400" y="1207" fill="#555" font-size="9">Modifiers: :exact, :contains, :missing, :not, :above, :below</text>
+  <rect x="980" y="1045" width="280" height="65" rx="6" fill="white" stroke="#38bdf8" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="980" y="1045" width="280" height="22" rx="6" fill="#0369a1"/><rect x="980" y="1056" width="280" height="11" fill="#0369a1"/>
+  <text x="1120" y="1060" text-anchor="middle" fill="white" font-size="11" font-weight="700">IncludeService</text>
+  <text x="1000" y="1082" fill="#333" font-size="9">_include / _revinclude / :iterate</text>
+  <text x="1000" y="1097" fill="#333" font-size="9">$in batching, parallel find+count</text>
 
-  <!-- ChainingService -->
-  <rect x="680" y="1055" width="280" height="80" rx="6" fill="white" stroke="#38bdf8" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="680" y="1055" width="280" height="24" rx="6" fill="#0369a1"/>
-  <rect x="680" y="1068" width="280" height="11" fill="#0369a1"/>
-  <text x="820" y="1072" text-anchor="middle" fill="white" font-size="11" font-weight="700">ChainingService</text>
-  <text x="700" y="1098" fill="#333" font-size="9">subject:Patient.name=John</text>
-  <text x="700" y="1113" fill="#333" font-size="9">_has:Observation:subject:code=1234</text>
-  <text x="700" y="1128" fill="#333" font-size="9">Resolves to $in / $and conditions</text>
+  <rect x="80" y="1120" width="560" height="50" rx="6" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1"/>
+  <text x="100" y="1140" fill="#0369a1" font-size="10" font-weight="600">Query Builders:</text>
+  <text x="100" y="1155" fill="#555" font-size="9">String | Token | Date | Reference | Number | Quantity | URI | Composite — Modifiers: :exact, :contains, :missing, :not, :text, :above, :below</text>
 
-  <!-- IncludeService -->
-  <rect x="980" y="1055" width="280" height="80" rx="6" fill="white" stroke="#38bdf8" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="980" y="1055" width="280" height="24" rx="6" fill="#0369a1"/>
-  <rect x="980" y="1068" width="280" height="11" fill="#0369a1"/>
-  <text x="1120" y="1072" text-anchor="middle" fill="white" font-size="11" font-weight="700">IncludeService</text>
-  <text x="1000" y="1098" fill="#333" font-size="9">_include (forward references)</text>
-  <text x="1000" y="1113" fill="#333" font-size="9">_revinclude (reverse references)</text>
-  <text x="1000" y="1128" fill="#333" font-size="9">_include:iterate (transitive)</text>
-
-  <!-- Summary/Elements -->
-  <rect x="80" y="1145" width="280" height="70" rx="6" fill="white" stroke="#38bdf8" stroke-width="1"/>
-  <rect x="80" y="1145" width="280" height="24" rx="6" fill="#0369a1"/>
-  <rect x="80" y="1158" width="280" height="11" fill="#0369a1"/>
-  <text x="220" y="1162" text-anchor="middle" fill="white" font-size="11" font-weight="700">summary.utils.ts</text>
-  <text x="100" y="1188" fill="#333" font-size="9">_summary: true | text | data | count | false</text>
-  <text x="100" y="1203" fill="#333" font-size="9">_elements: field1,field2,field3</text>
-
-  <!-- Arrow: Search → DB -->
-  <line x1="700" y1="1225" x2="700" y2="1260" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="700" y1="1185" x2="700" y2="1215" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
 
   <!-- ==================== EVENT SYSTEM ==================== -->
-  <rect x="60" y="1260" width="620" height="85" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="80" y="1280" fill="#c2410c" font-size="12" font-weight="700">EVENT SYSTEM (EventEmitter2)</text>
+  <rect x="60" y="1215" width="620" height="75" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="80" y="1235" fill="#c2410c" font-size="12" font-weight="700">EVENT SYSTEM (EventEmitter2)</text>
+  <text x="85" y="1210" fill="#f97316" font-size="9" font-weight="600">'fhir.resource.changed'</text>
 
-  <rect x="80" y="1290" width="280" height="45" rx="6" fill="white" stroke="#fdba74" stroke-width="1"/>
-  <text x="220" y="1310" text-anchor="middle" fill="#c2410c" font-size="11" font-weight="600">SubscriptionService</text>
-  <text x="220" y="1325" text-anchor="middle" fill="#666" font-size="9">Evaluates criteria, triggers rest-hook/email</text>
+  <rect x="80" y="1245" width="175" height="35" rx="6" fill="white" stroke="#fdba74" stroke-width="1"/>
+  <text x="167" y="1262" text-anchor="middle" fill="#c2410c" font-size="10" font-weight="600">SubscriptionService</text>
+  <text x="167" y="1275" text-anchor="middle" fill="#666" font-size="8">REST-hook notifications</text>
 
-  <rect x="380" y="1290" width="280" height="45" rx="6" fill="white" stroke="#fdba74" stroke-width="1"/>
-  <text x="520" y="1310" text-anchor="middle" fill="#c2410c" font-size="11" font-weight="600">AuditEventService</text>
-  <text x="520" y="1325" text-anchor="middle" fill="#666" font-size="9">Creates AuditEvent on mutations</text>
+  <rect x="265" y="1245" width="175" height="35" rx="6" fill="white" stroke="#fdba74" stroke-width="1"/>
+  <text x="352" y="1262" text-anchor="middle" fill="#c2410c" font-size="10" font-weight="600">AuditEventService</text>
+  <text x="352" y="1275" text-anchor="middle" fill="#666" font-size="8">Immutable audit trail</text>
 
-  <!-- Event arrow from FhirService -->
-  <text x="85" y="1255" fill="#f97316" font-size="9" font-weight="600">'fhir.resource.changed'</text>
+  <rect x="450" y="1245" width="210" height="35" rx="6" fill="white" stroke="#fdba74" stroke-width="1"/>
+  <text x="555" y="1262" text-anchor="middle" fill="#c2410c" font-size="10" font-weight="600">ConsentCacheInvalidation</text>
+  <text x="555" y="1275" text-anchor="middle" fill="#666" font-size="8">Clears policy cache on change</text>
 
   <!-- ==================== DATABASE LAYER ==================== -->
-  <rect x="60" y="1370" width="1280" height="200" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="80" y="1390" fill="#991b1b" font-size="12" font-weight="700">DATABASE LAYER (MongoDB / Mongoose)</text>
+  <rect x="60" y="1315" width="1280" height="180" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="80" y="1335" fill="#991b1b" font-size="12" font-weight="700">DATABASE (MongoDB 7, Replica Set)</text>
 
-  <!-- fhir_resources -->
-  <rect x="80" y="1400" width="380" height="155" rx="6" fill="white" stroke="#fca5a5" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="80" y="1400" width="380" height="24" rx="6" fill="#991b1b"/>
-  <rect x="80" y="1413" width="380" height="11" fill="#991b1b"/>
-  <text x="270" y="1417" text-anchor="middle" fill="white" font-size="11" font-weight="700">fhir_resources (FhirResource)</text>
-  <text x="100" y="1440" fill="#333" font-size="9" font-weight="600">Schema: strict: false (any FHIR fields)</text>
-  <text x="100" y="1455" fill="#555" font-size="9">Unique: (resourceType, id)</text>
-  <text x="100" y="1470" fill="#555" font-size="9">Indexes: identifier, code.coding, subject.reference</text>
-  <text x="100" y="1485" fill="#555" font-size="9">patient.reference, performer.reference, status</text>
-  <text x="100" y="1500" fill="#555" font-size="9">name.family/given, category.coding, dates</text>
-  <text x="100" y="1515" fill="#555" font-size="9">meta.profile, meta.tag, meta.security</text>
-  <text x="100" y="1530" fill="#555" font-size="9">Auto: meta.versionId, meta.lastUpdated</text>
-  <text x="100" y="1545" fill="#555" font-size="9">Soft delete (tombstone in history)</text>
+  <rect x="80" y="1345" width="290" height="135" rx="6" fill="white" stroke="#fca5a5" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="80" y="1345" width="290" height="22" rx="6" fill="#991b1b"/><rect x="80" y="1356" width="290" height="11" fill="#991b1b"/>
+  <text x="225" y="1360" text-anchor="middle" fill="white" font-size="11" font-weight="700">fhir_resources</text>
+  <text x="100" y="1382" fill="#555" font-size="9">strict: false (any FHIR fields)</text>
+  <text x="100" y="1397" fill="#555" font-size="9">Unique: (resourceType, id)</text>
+  <text x="100" y="1412" fill="#555" font-size="9">18+ compound indexes</text>
+  <text x="100" y="1427" fill="#555" font-size="9">TTL index: AuditEvent retention</text>
+  <text x="100" y="1442" fill="#555" font-size="9">Auto: versionId, lastUpdated</text>
+  <text x="100" y="1457" fill="#555" font-size="9">MongoDB profiler level 1</text>
+  <text x="100" y="1472" fill="#555" font-size="9">Slow query threshold: 100ms</text>
 
-  <!-- fhir_resource_history -->
-  <rect x="480" y="1400" width="380" height="155" rx="6" fill="white" stroke="#fca5a5" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="480" y="1400" width="380" height="24" rx="6" fill="#991b1b"/>
-  <rect x="480" y="1413" width="380" height="11" fill="#991b1b"/>
-  <text x="670" y="1417" text-anchor="middle" fill="white" font-size="11" font-weight="700">fhir_resource_history</text>
-  <text x="500" y="1440" fill="#333" font-size="9" font-weight="600">Versioned snapshots of every change</text>
-  <text x="500" y="1455" fill="#555" font-size="9">Unique: (resourceType, id, meta.versionId)</text>
-  <text x="500" y="1470" fill="#555" font-size="9">request: { method, url }</text>
-  <text x="500" y="1485" fill="#555" font-size="9">response: { status, etag, lastModified }</text>
-  <text x="500" y="1500" fill="#555" font-size="9">_deleted: boolean (tombstone marker)</text>
-  <text x="500" y="1515" fill="#555" font-size="9">Index: (resourceType, meta.lastUpdated) desc</text>
-  <text x="500" y="1530" fill="#555" font-size="9">Used by: vRead, _history, $diff, $expunge</text>
+  <rect x="390" y="1345" width="290" height="135" rx="6" fill="white" stroke="#fca5a5" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="390" y="1345" width="290" height="22" rx="6" fill="#991b1b"/><rect x="390" y="1356" width="290" height="11" fill="#991b1b"/>
+  <text x="535" y="1360" text-anchor="middle" fill="white" font-size="11" font-weight="700">fhir_resource_history</text>
+  <text x="410" y="1382" fill="#555" font-size="9">Versioned snapshots of every change</text>
+  <text x="410" y="1397" fill="#555" font-size="9">_deleted: boolean (tombstone)</text>
+  <text x="410" y="1412" fill="#555" font-size="9">request/response metadata</text>
+  <text x="410" y="1427" fill="#555" font-size="9">Used by: vRead, _history, $diff</text>
 
-  <!-- conformance_resources -->
-  <rect x="880" y="1400" width="380" height="155" rx="6" fill="white" stroke="#fca5a5" stroke-width="1" filter="url(#shadow)"/>
-  <rect x="880" y="1400" width="380" height="24" rx="6" fill="#991b1b"/>
-  <rect x="880" y="1413" width="380" height="11" fill="#991b1b"/>
-  <text x="1070" y="1417" text-anchor="middle" fill="white" font-size="11" font-weight="700">conformance_resources</text>
-  <text x="900" y="1440" fill="#333" font-size="9" font-weight="600">FHIR conformance / terminology</text>
-  <text x="900" y="1455" fill="#555" font-size="9">StructureDefinition (R4 core + nl-core)</text>
-  <text x="900" y="1470" fill="#555" font-size="9">ValueSet, CodeSystem (terminology)</text>
-  <text x="900" y="1485" fill="#555" font-size="9">SearchParameter (custom search params)</text>
-  <text x="900" y="1500" fill="#555" font-size="9">CompartmentDefinition, OperationDefinition</text>
-  <text x="900" y="1515" fill="#555" font-size="9">Seeded on startup (ConformanceSeederService)</text>
-  <text x="900" y="1530" fill="#555" font-size="9">Used by: Validator, SearchParameterRegistry</text>
-  <text x="900" y="1545" fill="#555" font-size="9">Managed by: AdministrationController</text>
+  <rect x="700" y="1345" width="290" height="135" rx="6" fill="white" stroke="#fca5a5" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="700" y="1345" width="290" height="22" rx="6" fill="#991b1b"/><rect x="700" y="1356" width="290" height="11" fill="#991b1b"/>
+  <text x="845" y="1360" text-anchor="middle" fill="white" font-size="11" font-weight="700">conformance_resources</text>
+  <text x="720" y="1382" fill="#555" font-size="9">StructureDefinition, ValueSet, CodeSystem</text>
+  <text x="720" y="1397" fill="#555" font-size="9">SearchParameter, CompartmentDef</text>
+  <text x="720" y="1412" fill="#555" font-size="9">Seeded from file-import/ at startup</text>
+  <text x="720" y="1427" fill="#555" font-size="9">Used by: Validator, Registry, Terminology</text>
+
+  <rect x="1010" y="1345" width="290" height="135" rx="6" fill="white" stroke="#fca5a5" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="1010" y="1345" width="290" height="22" rx="6" fill="#991b1b"/><rect x="1010" y="1356" width="290" height="11" fill="#991b1b"/>
+  <text x="1155" y="1360" text-anchor="middle" fill="white" font-size="11" font-weight="700">jobs</text>
+  <text x="1030" y="1382" fill="#555" font-size="9">Persistent async job queue</text>
+  <text x="1030" y="1397" fill="#555" font-size="9">Status: accepted → in-progress → complete</text>
+  <text x="1030" y="1412" fill="#555" font-size="9">Timeout detection, retention cleanup</text>
+  <text x="1030" y="1427" fill="#555" font-size="9">Used by: BulkExportService</text>
+
+  <!-- ==================== MONITORING STACK ==================== -->
+  <rect x="60" y="1520" width="1280" height="80" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="80" y="1540" fill="#166534" font-size="12" font-weight="700">MONITORING &amp; OBSERVABILITY (Docker Compose)</text>
+
+  <rect x="80" y="1552" width="200" height="35" rx="6" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="180" y="1570" text-anchor="middle" fill="#166534" font-size="11" font-weight="600">Prometheus :9090</text>
+  <text x="180" y="1582" text-anchor="middle" fill="#666" font-size="8">fhir-api + mongodb-exporter</text>
+
+  <rect x="300" y="1552" width="200" height="35" rx="6" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="400" y="1570" text-anchor="middle" fill="#166534" font-size="11" font-weight="600">Grafana :3001</text>
+  <text x="400" y="1582" text-anchor="middle" fill="#666" font-size="8">18 panels, 3 alert rules</text>
+
+  <rect x="520" y="1552" width="200" height="35" rx="6" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="620" y="1570" text-anchor="middle" fill="#166534" font-size="11" font-weight="600">Jaeger :16686</text>
+  <text x="620" y="1582" text-anchor="middle" fill="#666" font-size="8">OpenTelemetry tracing</text>
+
+  <rect x="740" y="1552" width="200" height="35" rx="6" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="840" y="1570" text-anchor="middle" fill="#166534" font-size="11" font-weight="600">Loki + Promtail</text>
+  <text x="840" y="1582" text-anchor="middle" fill="#666" font-size="8">Centralized log aggregation</text>
+
+  <rect x="960" y="1552" width="200" height="35" rx="6" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="1060" y="1570" text-anchor="middle" fill="#166534" font-size="11" font-weight="600">MongoDB Exporter</text>
+  <text x="1060" y="1582" text-anchor="middle" fill="#666" font-size="8">Server-side DB metrics</text>
+
+  <rect x="1180" y="1552" width="140" height="35" rx="6" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="1250" y="1570" text-anchor="middle" fill="#166534" font-size="11" font-weight="600">OTel Collector</text>
+  <text x="1250" y="1582" text-anchor="middle" fill="#666" font-size="8">Trace pipeline</text>
 
   <!-- ==================== EXTERNAL SYSTEMS ==================== -->
-  <rect x="60" y="1600" width="1280" height="80" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="80" y="1620" fill="#5b21b6" font-size="12" font-weight="700">EXTERNAL SYSTEMS</text>
+  <rect x="60" y="1625" width="1280" height="65" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="80" y="1645" fill="#5b21b6" font-size="12" font-weight="700">EXTERNAL SYSTEMS</text>
 
-  <rect x="80" y="1632" width="250" height="35" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
-  <text x="205" y="1650" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="600">Nictiz Terminology Server</text>
-  <text x="205" y="1662" text-anchor="middle" fill="#666" font-size="9">ValueSet / CodeSystem validation</text>
+  <rect x="80" y="1655" width="220" height="25" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
+  <text x="190" y="1672" text-anchor="middle" fill="#5b21b6" font-size="10" font-weight="600">Nictiz Terminology Server</text>
 
-  <rect x="350" y="1632" width="250" height="35" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
-  <text x="475" y="1650" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="600">SMART / OAuth2 IdP</text>
-  <text x="475" y="1662" text-anchor="middle" fill="#666" font-size="9">JWKS, token verification</text>
+  <rect x="320" y="1655" width="220" height="25" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
+  <text x="430" y="1672" text-anchor="middle" fill="#5b21b6" font-size="10" font-weight="600">SMART / OAuth2 IdP (JWKS)</text>
 
-  <rect x="620" y="1632" width="250" height="35" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
-  <text x="745" y="1650" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="600">Subscription Endpoints</text>
-  <text x="745" y="1662" text-anchor="middle" fill="#666" font-size="9">rest-hook / email / websocket</text>
+  <rect x="560" y="1655" width="220" height="25" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
+  <text x="670" y="1672" text-anchor="middle" fill="#5b21b6" font-size="10" font-weight="600">Subscription Endpoints</text>
 
-  <rect x="890" y="1632" width="250" height="35" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
-  <text x="1015" y="1650" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="600">Art-Decor Cache</text>
-  <text x="1015" y="1662" text-anchor="middle" fill="#666" font-size="9">Terminology caching</text>
+  <rect x="800" y="1655" width="220" height="25" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
+  <text x="910" y="1672" text-anchor="middle" fill="#5b21b6" font-size="10" font-weight="600">AWS S3 / Azure Blob (backups)</text>
+
+  <rect x="1040" y="1655" width="180" height="25" rx="6" fill="white" stroke="#a78bfa" stroke-width="1"/>
+  <text x="1130" y="1672" text-anchor="middle" fill="#5b21b6" font-size="10" font-weight="600">Art-Decor Cache</text>
 
   <!-- ==================== LEGEND ==================== -->
-  <rect x="60" y="1710" width="1280" height="170" rx="8" fill="white" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
-  <text x="80" y="1735" fill="#334155" font-size="13" font-weight="700">Request Flow</text>
+  <rect x="60" y="1715" width="1280" height="155" rx="8" fill="white" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+  <text x="80" y="1740" fill="#334155" font-size="13" font-weight="700">Request Flow</text>
 
-  <!-- Flow arrows -->
-  <text x="80" y="1760" fill="#555" font-size="11">1.</text>
-  <rect x="100" y="1747" width="14" height="14" rx="3" fill="#e0e7ff" stroke="#6366f1"/>
-  <text x="122" y="1760" fill="#555" font-size="11">HTTP Request → Express body parsing, CORS, correlation ID, audit logging</text>
+  <text x="80" y="1762" fill="#555" font-size="11">1.</text>
+  <rect x="100" y="1749" width="14" height="14" rx="3" fill="#fdf4ff" stroke="#a855f7"/>
+  <text x="122" y="1762" fill="#555" font-size="11">TLS termination at Nginx reverse proxy (HSTS, OCSP stapling)</text>
 
   <text x="80" y="1782" fill="#555" font-size="11">2.</text>
-  <rect x="100" y="1769" width="14" height="14" rx="3" fill="#fef3c7" stroke="#f59e0b"/>
-  <text x="122" y="1782" fill="#555" font-size="11">Guards → SMART JWT auth + scope check, rate limiting</text>
+  <rect x="100" y="1769" width="14" height="14" rx="3" fill="#e0e7ff" stroke="#6366f1"/>
+  <text x="122" y="1782" fill="#555" font-size="11">Express middleware: body parsing, Helmet security headers, CORS, correlation ID, audit logging, metrics</text>
 
-  <text x="80" y="1804" fill="#555" font-size="11">3.</text>
-  <rect x="100" y="1791" width="14" height="14" rx="3" fill="#dcfce7" stroke="#16a34a"/>
-  <text x="122" y="1804" fill="#555" font-size="11">Controller → Route matching, XML→JSON parsing, validation pipe, response formatting (JSON/XML)</text>
+  <text x="80" y="1802" fill="#555" font-size="11">3.</text>
+  <rect x="100" y="1789" width="14" height="14" rx="3" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="122" y="1802" fill="#555" font-size="11">Guards: SMART JWT auth + scope check, rate limiting, dangerous operation guard, request timeout</text>
 
-  <text x="80" y="1826" fill="#555" font-size="11">4.</text>
-  <rect x="100" y="1813" width="14" height="14" rx="3" fill="#dbeafe" stroke="#2563eb"/>
-  <text x="122" y="1826" fill="#555" font-size="11">Service → Business logic, CRUD, search with chaining/includes, event emission</text>
+  <text x="80" y="1822" fill="#555" font-size="11">4.</text>
+  <rect x="100" y="1809" width="14" height="14" rx="3" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="122" y="1822" fill="#555" font-size="11">Controller: route matching, consent enforcement, patient-context filtering, validation, XML/JSON</text>
 
-  <text x="80" y="1848" fill="#555" font-size="11">5.</text>
-  <rect x="100" y="1835" width="14" height="14" rx="3" fill="#fef2f2" stroke="#ef4444"/>
-  <text x="122" y="1848" fill="#555" font-size="11">Database → MongoDB (fhir_resources + history + conformance), soft delete, versioning</text>
+  <text x="80" y="1842" fill="#555" font-size="11">5.</text>
+  <rect x="100" y="1829" width="14" height="14" rx="3" fill="#dbeafe" stroke="#2563eb"/>
+  <text x="122" y="1842" fill="#555" font-size="11">Service: business logic, CRUD, search (chaining, includes, $in batching), event emission</text>
 
-  <text x="80" y="1870" fill="#555" font-size="11">6.</text>
-  <rect x="100" y="1857" width="14" height="14" rx="3" fill="#fff7ed" stroke="#f97316"/>
-  <text x="122" y="1870" fill="#555" font-size="11">Events → Subscription evaluation + notification, AuditEvent creation (async, on mutations)</text>
+  <text x="80" y="1862" fill="#555" font-size="11">6.</text>
+  <rect x="100" y="1849" width="14" height="14" rx="3" fill="#fef2f2" stroke="#ef4444"/>
+  <text x="122" y="1862" fill="#555" font-size="11">Database: MongoDB replica set (4 collections), versioning, indexes, TTL, profiler</text>
 
   <!-- Version -->
-  <text x="1280" y="1890" text-anchor="end" fill="#94a3b8" font-size="10">FHIR R4 API Server v0.8.0 — NestJS + MongoDB + fhir-validator-mx</text>
+  <text x="1280" y="1885" text-anchor="end" fill="#94a3b8" font-size="10">FHIR R4 API Server v0.12.0 — NestJS + MongoDB + Docker</text>
 </svg>
