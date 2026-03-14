@@ -2058,6 +2058,90 @@
         "mimeType": "application/json",
         "text": "{\n  \"filename\": \"test-data.json\"\n}"
       }
+    },
+    {
+      "_id": "req_admin_db_stats",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Database statistics",
+      "description": "Returns MongoDB collection sizes, document counts, storage and index statistics.",
+      "method": "GET",
+      "url": "http://localhost:3000/admin/db-stats",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_admin_index_stats",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Index usage statistics",
+      "description": "Returns MongoDB $indexStats per collection for identifying unused indexes.",
+      "method": "GET",
+      "url": "http://localhost:3000/admin/index-stats",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_admin_backup_create",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Create backup (mongodump)",
+      "description": "Creates a compressed mongodump backup. Requires SERVER_BACKUP_ENABLED=true.",
+      "method": "POST",
+      "url": "http://localhost:3000/admin/backup",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_admin_backup_list",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "List backups",
+      "description": "Returns available backup files with size and creation date.",
+      "method": "GET",
+      "url": "http://localhost:3000/admin/backups",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_admin_backup_restore",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Restore from backup (mongorestore)",
+      "description": "Restores all collections from a mongodump backup. WARNING: drops existing data. Requires SERVER_BACKUP_RESTORE_ENABLED=true.",
+      "method": "POST",
+      "url": "http://localhost:3000/admin/backup/restore",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"filename\": \"fhir-backup-2026-03-14T10-00-00-000Z.gz\"\n}"
+      }
+    },
+    {
+      "_id": "req_admin_backup_remote_list",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "List remote backups (S3/Azure)",
+      "description": "Returns backup files stored in S3 or Azure Blob Storage. Requires BACKUP_REMOTE_TYPE=s3 or azure.",
+      "method": "GET",
+      "url": "http://localhost:3000/admin/backups/remote",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_admin_backup_remote_restore",
+      "_type": "request",
+      "parentId": "fld_admin",
+      "name": "Restore from remote backup (S3/Azure)",
+      "description": "Downloads a backup from S3/Azure and restores it. WARNING: drops existing data.",
+      "method": "POST",
+      "url": "http://localhost:3000/admin/backup/restore-remote",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"remoteKey\": \"backups/fhir-backup-2026-03-14T10-00-00-000Z.gz\"\n}"
+      }
     }
   ]
 }
