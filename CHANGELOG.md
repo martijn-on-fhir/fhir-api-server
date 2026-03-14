@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.15.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.14.1...fhir-api-server-v0.15.0) (2026-03-14)
+
+
+### Features
+
+* require tenant identifier on /fhir routes when multi-tenancy enabled ([d4e31ff](https://github.com/martijn-on-fhir/fhir-api-server/commit/d4e31ff4e6bbe67abac235697be2ecd01086d97a))
+
+
+### Refactoring
+
+* centralize all configuration into config/app-config.json ([28f85ae](https://github.com/martijn-on-fhir/fhir-api-server/commit/28f85aef3491aff870fb2ffd2f59861c18027327))
+* move COMPARTMENT_PARAMS to fhir.constants.ts ([b9f16b0](https://github.com/martijn-on-fhir/fhir-api-server/commit/b9f16b0b4623a505ba84e9c87a8cc4943dde009a))
+
 ## [0.14.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.14.0...fhir-api-server-v0.14.1) (2026-03-14)
 
 
