@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.12.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.11.0...fhir-api-server-v0.12.0) (2026-03-14)
+
+
+### Features
+
+* add security policy, enable Dependabot alerts and updates ([d94cbcc](https://github.com/martijn-on-fhir/fhir-api-server/commit/d94cbccccdfbb479900b6cd10f1d154ced5e765e))
+
+
+### Bug Fixes
+
+* make backup-restore e2e test more robust for CI ([20baa89](https://github.com/martijn-on-fhir/fhir-api-server/commit/20baa89c68b98c4954fe4392f5a386c2343c799d))
+
+
+### CI/CD
+
+* upgrade actions/checkout to v6 ([08a595c](https://github.com/martijn-on-fhir/fhir-api-server/commit/08a595ca76ec5c8f5b69ebfe98cbbe4a3b8e6952))
+
 ## [0.11.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.10.0...fhir-api-server-v0.11.0) (2026-03-14)
 
 
