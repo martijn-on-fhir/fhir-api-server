@@ -1,0 +1,109 @@
+{
+  "port": 3000,
+  "corsOrigin": "*",
+  "logFormat": "json",
+  "bodySizeLimit": "5mb",
+  "requestTimeout": 30000,
+  "mongodb": {
+    "uri": "mongodb://localhost:27017/fhir",
+    "poolSize": 10,
+    "minPoolSize": 2,
+    "slowQueryMs": 100
+  },
+  "rateLimit": {
+    "disabled": false,
+    "ttl": 60,
+    "max": 5000,
+    "maxLong": 50000
+  },
+  "fhir": {
+    "maxCount": 1000,
+    "maxBundleEntries": 1000,
+    "maxIncludeResults": 1000,
+    "slowQueryThresholdMs": 500,
+    "auditRetentionDays": 365,
+    "consentCacheTtlMs": 60000
+  },
+  "cache": {
+    "ttlMs": 300000,
+    "store": "memory"
+  },
+  "redis": {
+    "url": "redis://localhost:6379",
+    "keyPrefix": "fhir:"
+  },
+  "smart": {
+    "enabled": false,
+    "issuer": "",
+    "audience": "fhir-api",
+    "jwksUri": "",
+    "scopeClaim": "scope",
+    "authorizeUrl": "",
+    "tokenUrl": ""
+  },
+  "telemetry": {
+    "enabled": true,
+    "endpoint": "http://localhost:4318"
+  },
+  "tenant": {
+    "enabled": false,
+    "maxPoolSize": 5
+  },
+  "bulkExport": {
+    "maxConcurrent": 3,
+    "timeoutMs": 600000
+  },
+  "backup": {
+    "dir": "backups",
+    "intervalMs": 86400000,
+    "retentionCount": 7,
+    "remoteType": "none",
+    "s3": {
+      "bucket": "",
+      "prefix": "",
+      "region": ""
+    },
+    "azure": {
+      "connectionString": "",
+      "container": "",
+      "prefix": ""
+    }
+  },
+  "jobs": {
+    "retentionDays": 7
+  },
+  "server": {
+    "reindex": {
+      "enabled": true
+    },
+    "expunge": {
+      "enabled": true
+    },
+    "cascadeDelete": {
+      "enabled": true
+    },
+    "snapshot": {
+      "enabled": true
+    },
+    "restore": {
+      "enabled": true
+    },
+    "backup": {
+      "enabled": false
+    },
+    "backupRestore": {
+      "enabled": false
+    }
+  },
+  "terminology": {
+    "baseUrl": "https://terminologieserver.nl",
+    "authUrl": "https://terminologieserver.nl/authorisation/auth/realms/nictiz/protocol/openid-connect/token",
+    "user": "m.schimmel@adapcare.nl",
+    "password": "JoopEnKaas2016",
+    "clientId": "cli_client",
+    "grantType": "password"
+  },
+  "logging": {
+    "level": "info"
+  }
+}

@@ -22,6 +22,7 @@ describe('Admin endpoints (e2e)', () => {
     process.env.SERVER_REINDEX_ENABLED = 'true';
     process.env.SERVER_EXPUNGE_ENABLED = 'true';
     process.env.SERVER_CASCADE_DELETE_ENABLED = 'true';
+
     const { AppModule } = await import('./../src/app.module');
     const { FhirExceptionFilter } = await import('./../src/fhir/filters/fhir-exception.filter');
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile();

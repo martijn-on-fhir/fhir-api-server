@@ -14,6 +14,7 @@ describe('AppController (e2e)', () => {
 
     // Must set env var before importing AppModule so MongooseModule.forRoot() picks it up
     process.env.MONGODB_URI = mongod.getUri();
+
     const { AppModule } = await import('./../src/app.module');
 
     const moduleFixture: TestingModule = await Test.createTestingModule({

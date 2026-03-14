@@ -310,5 +310,13 @@ const loadConfig = (): AppConfig => {
   return Object.freeze(cfg) as AppConfig;
 };
 
-/** Frozen application configuration. Loaded synchronously at startup from config/app-config.json with env var overrides. */
-export const config: AppConfig = loadConfig();
+/** Application configuration. Loaded synchronously at startup from config/app-config.json with env var overrides. */
+// eslint-disable-next-line import/no-mutable-exports
+export let config: AppConfig = loadConfig();
+
+/** Reloads the configuration from config/app-config.json and environment variables. Used by tests that set env vars after initial module load. */
+export const reloadConfig = (): AppConfig => {
+  config = loadConfig();
+
+  return config;
+};
