@@ -95,5 +95,8 @@
     "transformIgnorePatterns": [
       "node_modules/(?!fhir-models-r4|fhir-validator-mx)"
     ]
+  },
+  "overrides": {
+    "file-type": "21.3.2"
   }
 }
