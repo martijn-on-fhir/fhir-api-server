@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.10.0...fhir-api-server-v0.11.0) (2026-03-14)
+
+
+### Features
+
+* 30 min soak test passed — no memory leak detected ([4cbb043](https://github.com/martijn-on-fhir/fhir-api-server/commit/4cbb0431169f361cbd8b287fa4d6cc33f6c8fb30))
+
 ## [0.10.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.9.0...fhir-api-server-v0.10.0) (2026-03-14)
 
 
