@@ -2142,6 +2142,82 @@
         "mimeType": "application/json",
         "text": "{\n  \"remoteKey\": \"backups/fhir-backup-2026-03-14T10-00-00-000Z.gz\"\n}"
       }
+    },
+    {
+      "_id": "fld_member_match",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "$member-match (Da Vinci)"
+    },
+    {
+      "_id": "req_member_match_bsn",
+      "_type": "request",
+      "parentId": "fld_member_match",
+      "name": "Match by BSN identifier",
+      "description": "Da Vinci $member-match: find a patient using BSN identifier and coverage information.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/$member-match",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    {\n      \"name\": \"MemberPatient\",\n      \"resource\": {\n        \"resourceType\": \"Patient\",\n        \"identifier\": [{ \"system\": \"http://fhir.nl/fhir/NamingSystem/bsn\", \"value\": \"123456789\" }]\n      }\n    },\n    {\n      \"name\": \"OldCoverage\",\n      \"resource\": {\n        \"resourceType\": \"Coverage\",\n        \"status\": \"active\",\n        \"payor\": [{ \"reference\": \"Organization/old-insurer\" }]\n      }\n    },\n    {\n      \"name\": \"NewCoverage\",\n      \"resource\": {\n        \"resourceType\": \"Coverage\",\n        \"status\": \"active\",\n        \"payor\": [{ \"reference\": \"Organization/new-insurer\" }]\n      }\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_member_match_demographics",
+      "_type": "request",
+      "parentId": "fld_member_match",
+      "name": "Match by demographics",
+      "description": "Da Vinci $member-match: find a patient using name, birthDate, gender and coverage.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/Patient/$member-match",
+      "headers": [
+        { "name": "Content-Type", "value": "application/fhir+json" },
+        { "name": "Accept", "value": "application/fhir+json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"resourceType\": \"Parameters\",\n  \"parameter\": [\n    {\n      \"name\": \"MemberPatient\",\n      \"resource\": {\n        \"resourceType\": \"Patient\",\n        \"name\": [{ \"family\": \"Jansen\", \"given\": [\"Jan\"] }],\n        \"birthDate\": \"1980-01-15\",\n        \"gender\": \"male\"\n      }\n    },\n    {\n      \"name\": \"NewCoverage\",\n      \"resource\": {\n        \"resourceType\": \"Coverage\",\n        \"status\": \"active\",\n        \"payor\": [{ \"reference\": \"Organization/new-insurer\" }]\n      }\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "fld_server_info",
+      "_type": "request_group",
+      "parentId": "wrk_fhir",
+      "name": "Server"
+    },
+    {
+      "_id": "req_server_info",
+      "_type": "request",
+      "parentId": "fld_server_info",
+      "name": "Server info",
+      "description": "Returns server name, version, FHIR version, status and key endpoints.",
+      "method": "GET",
+      "url": "http://localhost:3000/",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_server_health",
+      "_type": "request",
+      "parentId": "fld_server_info",
+      "name": "Health (liveness)",
+      "description": "Liveness probe — returns alive if the server process is running.",
+      "method": "GET",
+      "url": "http://localhost:3000/health/live",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
+    },
+    {
+      "_id": "req_server_ready",
+      "_type": "request",
+      "parentId": "fld_server_info",
+      "name": "Health (readiness)",
+      "description": "Readiness probe — returns ready if the server and database are operational.",
+      "method": "GET",
+      "url": "http://localhost:3000/health/ready",
+      "headers": [{ "name": "Accept", "value": "application/json" }]
     }
   ]
 }
