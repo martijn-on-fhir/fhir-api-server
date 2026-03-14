@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.13.0...fhir-api-server-v0.14.0) (2026-03-14)
+
+
+### Features
+
+* add configurable multi-tenant isolation (phase 8.1) ([2f54bac](https://github.com/martijn-on-fhir/fhir-api-server/commit/2f54bac488df54f384912a0dd04442a9fc633887))
+
+
+### Bug Fixes
+
+* exclude tenant e2e tests from default config, run separately in CI ([74925a3](https://github.com/martijn-on-fhir/fhir-api-server/commit/74925a379e84e2836bf80cc44d69df0785483ca0))
+
 ## [0.13.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.7...fhir-api-server-v0.13.0) (2026-03-14)
 
 
