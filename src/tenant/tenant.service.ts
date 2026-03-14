@@ -70,9 +70,10 @@ export class TenantService {
       config: data.config,
     });
 
-    // Provision the tenant database by creating the connection and indexes
+    // Provision the tenant database: create connection, indexes, and seed conformance resources
     await this.connectionService.getModels(data.id);
-    this.logger.log(`Tenant ${data.id} (${data.name}) created and provisioned`);
+    const seeded = await this.connectionService.seedConformanceResources(data.id);
+    this.logger.log(`Tenant ${data.id} (${data.name}) created and provisioned (${seeded} conformance resources seeded)`);
 
     return tenant.toObject();
   }

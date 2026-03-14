@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
+import { ConformanceResource, ConformanceResourceSchema } from '../administration/conformance-resource.schema';
 import { config } from '../config/app-config';
 import { FhirResourceHistory, FhirResourceHistorySchema } from '../fhir/fhir-resource-history.schema';
 import { FhirResource, FhirResourceSchema } from '../fhir/fhir-resource.schema';
@@ -65,11 +66,13 @@ export class TenantConnectionService implements OnModuleDestroy {
 
     const resourceModel = connection.model<FhirResource>(FhirResource.name, FhirResourceSchema);
     const historyModel = connection.model<FhirResourceHistory>(FhirResourceHistory.name, FhirResourceHistorySchema);
+    const conformanceModel = connection.model<ConformanceResource>(ConformanceResource.name, ConformanceResourceSchema);
 
     // Ensure indexes are created on first connect
     await Promise.all([
       resourceModel.ensureIndexes(),
       historyModel.ensureIndexes(),
+      conformanceModel.ensureIndexes(),
     ]);
 
     const entry: TenantConnectionEntry = {
@@ -96,6 +99,45 @@ export class TenantConnectionService implements OnModuleDestroy {
         this.connections.delete(tenantId);
       }
     }
+  }
+
+  /**
+   * Seeds conformance resources from the master database into a tenant's database.
+   * Copies all StructureDefinition, ValueSet, CodeSystem, SearchParameter, etc.
+   * Skips resources that already exist in the tenant database.
+   * @param tenantId - The tenant identifier.
+   * @returns Number of conformance resources seeded.
+   */
+  async seedConformanceResources(tenantId: string): Promise<number> {
+    const entry = this.connections.get(tenantId);
+
+    if (!entry) {
+      await this.getModels(tenantId);
+    }
+
+    const tenantEntry = this.connections.get(tenantId);
+    const tenantConformance = tenantEntry.connection.model<ConformanceResource>(ConformanceResource.name);
+    const masterConformance = this.defaultConnection.model<ConformanceResource>(ConformanceResource.name, ConformanceResourceSchema);
+
+    const existing = await tenantConformance.countDocuments();
+
+    if (existing > 0) {
+      this.logger.log(`Tenant ${tenantId} already has ${existing} conformance resources, skipping seed`);
+
+      return 0;
+    }
+
+    const docs = await masterConformance.find().lean().exec();
+
+    if (docs.length === 0) {
+      return 0;
+    }
+
+    const toInsert = docs.map(({ _id, __v, ...rest }) => rest);
+    await tenantConformance.insertMany(toInsert, { ordered: false });
+    this.logger.log(`Seeded ${toInsert.length} conformance resources into tenant ${tenantId}`);
+
+    return toInsert.length;
   }
 
   /** Drops the database for a decommissioned tenant. Does not close the connection to avoid cache invalidation issues with useDb. */
