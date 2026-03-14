@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.4](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.3...fhir-api-server-v0.12.4) (2026-03-14)
+
+
+### Bug Fixes
+
+* resolve remaining CodeQL alerts (command injection, regex injection) ([c31848b](https://github.com/martijn-on-fhir/fhir-api-server/commit/c31848bdd1a79070e2c6b9ab724cc28540ac6810))
+
 ## [0.12.3](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.2...fhir-api-server-v0.12.3) (2026-03-14)
 
 
