@@ -34,22 +34,27 @@ Geschatte inspanning: klein. Geen nieuwe features, puur betrouwbaarheid.
 Geschatte inspanning: middel. Verrijkt de FHIR-conformiteit.
 
 ### 7.1 $validate operation
-- [ ] POST `[type]/$validate` — valideer resource tegen StructureDefinition
-- [ ] Gebruik bestaande conformance_resources collectie voor StructureDefinitions
-- [ ] OperationOutcome response met issues per veld
-- [ ] Integratie in create/update flows (optioneel, via config)
+- [x] POST `[type]/$validate` en `[type]/[id]/$validate` endpoints
+- [x] FhirValidationService met fhir-validator-mx library
+- [x] Conformance resources uit MongoDB (823 profiles, 1393 value sets, 1064 code systems)
+- [x] FhirValidationPipe voor automatische validatie bij create/update
+- [x] OperationOutcome response met issues per veld
 
 ### 7.2 Subscriptions (R4)
-- [ ] Subscription resource CRUD
-- [ ] Channel types: `rest-hook` (webhook)
-- [ ] Trigger op resource create/update/delete via bestaande EventEmitter
-- [ ] Retry met exponential backoff bij delivery failure
-- [ ] Status tracking (requested → active → error → off)
+- [x] Subscription resource CRUD via generieke FHIR endpoints
+- [x] Channel type: `rest-hook` (webhook) met custom headers
+- [x] Trigger op create/update/delete via EventEmitter (`fhir.resource.changed`)
+- [x] Retry met exponential backoff (3 retries, 1s base delay)
+- [x] Status tracking (requested → active → error)
+- [x] Graceful shutdown (in-flight delivery tracking)
+- [x] E2e tests (`test/subscription.e2e-spec.ts`)
 
 ### 7.3 $member-match (Da Vinci)
-- [ ] Patient matching operation voor zorgverzekeraar-overgang
-- [ ] Input: oude coverage + nieuwe coverage + patient demographics
-- [ ] Match op BSN/identifier, naam, geboortedatum
+- [x] POST `Patient/$member-match` endpoint
+- [x] Input: Parameters met MemberPatient, OldCoverage, NewCoverage
+- [x] Match op BSN/identifier, naam, geboortedatum, geslacht
+- [x] 422 bij geen match of meerdere matches
+- [x] E2e tests (5 tests: BSN match, demographics match, no match, missing params)
 
 ---
 
@@ -101,8 +106,8 @@ Geschatte inspanning: afhankelijk van budget en beschikbaarheid derden.
 | Fase | Prioriteit | Reden |
 |------|-----------|-------|
 | 6 — Hardening & CI | Hoog | Laag risico, direct waardevol, geen externe afhankelijkheden |
-| 7.1 — $validate | Hoog | Core FHIR conformiteit, voorkomt corrupte data |
-| 7.2 — Subscriptions | Middel | Event-driven integratie, architectuur staat er klaar voor |
-| 7.3 — $member-match | Laag | Alleen relevant voor verzekeraar use case |
+| 7.1 — $validate | ~~Hoog~~ Voltooid | Volledig geïmplementeerd met FhirValidationService |
+| 7.2 — Subscriptions | ~~Middel~~ Voltooid | rest-hook, retry, status tracking, e2e tests |
+| 7.3 — $member-match | ~~Laag~~ Voltooid | BSN/demographics matching met e2e tests |
 | 8 — Multi-tenancy | Laag | Pas bij meerdere afnemers |
 | 9 — Extern | Laag | Budget-afhankelijk |

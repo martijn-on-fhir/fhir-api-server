@@ -160,6 +160,13 @@ export class FhirService {
     return {resources, total, included, warnings};
   }
 
+  /** Executes a direct MongoDB query against the resources collection. Used for operations that need raw filter access (e.g. $member-match). */
+  async directFind(filter: Record<string, any>, limit: number): Promise<{resources: FhirResource[]; total: number}> {
+    const [resources, total] = await Promise.all([this.resourceModel.find(filter).limit(limit).lean().exec(), this.resourceModel.countDocuments(filter).exec()]);
+
+    return {resources: resources as FhirResource[], total};
+  }
+
   /**
    * Retrieves a single resource by type and logical id.
    * @throws NotFoundException if the resource does not exist.

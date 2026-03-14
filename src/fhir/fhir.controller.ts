@@ -177,6 +177,109 @@ export class FhirController {
   }
 
   /**
+   * FHIR $member-match operation (Da Vinci). Matches a patient across payers using demographics and coverage.
+   * Input: Parameters resource with MemberPatient, OldCoverage, NewCoverage.
+   * Output: Parameters resource with MemberIdentifier (matched Patient).
+   */
+  @Post('Patient/\\$member-match')
+  @ApiOperation({summary: '$member-match', description: 'Da Vinci $member-match: find a patient using demographics and coverage information.'})
+  @ApiResponse({status: 200, description: 'Parameters resource with matched MemberIdentifier'})
+  @ApiResponse({status: 422, description: 'No match or multiple matches found'})
+  async memberMatch(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+    body = this.parseRequestBody(req);
+    const params = this.extractMemberMatchParams(body);
+
+    if (!params.memberPatient) {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'MemberPatient parameter is required'})]});
+
+      return this.sendFhirResponse(res, req, outcome, 400);
+    }
+
+    if (!params.oldCoverage && !params.newCoverage) {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'At least one of OldCoverage or NewCoverage is required'})]});
+
+      return this.sendFhirResponse(res, req, outcome, 400);
+    }
+
+    const filter: Record<string, any> = {resourceType: 'Patient'};
+    const patient = params.memberPatient;
+
+    // Match on identifier (e.g. BSN)
+    if (patient.identifier?.length) {
+      const id = patient.identifier[0];
+      filter['identifier.system'] = id.system;
+      filter['identifier.value'] = id.value;
+    }
+
+    // Match on name
+    if (patient.name?.length) {
+      const name = patient.name[0];
+
+      if (name.family) {
+        filter['name.family'] = name.family;
+      }
+
+      if (name.given?.length) {
+        filter['name.given'] = name.given[0];
+      }
+    }
+
+    // Match on birthDate
+    if (patient.birthDate) {
+      filter.birthDate = patient.birthDate;
+    }
+
+    // Match on gender
+    if (patient.gender) {
+      filter.gender = patient.gender;
+    }
+
+    const matches = await this.fhirService.directFind(filter, 2);
+
+    if (matches.total === 0) {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.NotFound, diagnostics: 'No matching Patient found'})]});
+
+      return this.sendFhirResponse(res, req, outcome, 422);
+    }
+
+    if (matches.total > 1) {
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.MultipleMatches, diagnostics: `Multiple matches found (${matches.total}). Provide more specific demographics.`})]});
+
+      return this.sendFhirResponse(res, req, outcome, 422);
+    }
+
+    const matched = matches.resources[0] as any;
+    const memberId = matched.identifier?.length ? matched.identifier[0] : {system: 'urn:oid:local', value: matched.id};
+    const result = {
+      resourceType: 'Parameters',
+      parameter: [{name: 'MemberIdentifier', valueIdentifier: memberId}],
+    };
+
+    this.sendFhirResponse(res, req, result);
+  }
+
+  /** Extracts MemberPatient, OldCoverage, and NewCoverage from a Parameters resource body. */
+  private extractMemberMatchParams(body: any): {memberPatient?: any; oldCoverage?: any; newCoverage?: any} {
+    if (body?.resourceType !== 'Parameters' || !Array.isArray(body.parameter)) {
+      return {};
+    }
+
+    const result: Record<string, any> = {};
+
+    for (const param of body.parameter) {
+      if (param.name === 'MemberPatient' && param.resource) {
+        result.memberPatient = param.resource;
+      } else if (param.name === 'OldCoverage' && param.resource) {
+        result.oldCoverage = param.resource;
+      } else if (param.name === 'NewCoverage' && param.resource) {
+        result.newCoverage = param.resource;
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * FHIR $validate operation (type-level). Validates a resource against the R4 spec and optionally a specific profile.
    * Always returns HTTP 200 with an OperationOutcome — validation errors are reported as issues, not HTTP errors.
    */
