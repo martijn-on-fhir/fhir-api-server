@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.13.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.7...fhir-api-server-v0.13.0) (2026-03-14)
+
+
+### Features
+
+* add Da Vinci $member-match operation for patient matching ([fc6b17f](https://github.com/martijn-on-fhir/fhir-api-server/commit/fc6b17f8e4eb61a69ea0963aea8366e7957467c5))
+* add Docker health checks and complete phase 6 hardening ([124bde4](https://github.com/martijn-on-fhir/fhir-api-server/commit/124bde43d5aef299d62cd53fbde4003af3e209ce))
+* replace Hello World with server info endpoint ([6825183](https://github.com/martijn-on-fhir/fhir-api-server/commit/68251831f5bfd7ff9bad4496d146f9e226ba6300))
+
+
+### Bug Fixes
+
+* update app e2e test for new server info endpoint ([368191d](https://github.com/martijn-on-fhir/fhir-api-server/commit/368191da78a06d9023f4b02632225d786d77b7e7))
+
+
+### Documentation
+
+* add $member-match and server info to Insomnia collection ([32ddaa5](https://github.com/martijn-on-fhir/fhir-api-server/commit/32ddaa52990c9d42947909e815911069da25c285))
+
 ## [0.12.7](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.6...fhir-api-server-v0.12.7) (2026-03-14)
 
 
