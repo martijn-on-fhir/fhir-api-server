@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { basename, join } from 'path';
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
@@ -66,7 +66,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       }
 
       this.logger.log(`Starting backup to ${filename}...`);
-      execSync(`mongodump --uri="${uri}" --archive="${outputPath}" --gzip`, { timeout: 300_000, stdio: 'pipe' });
+      execFileSync('mongodump', ['--uri', uri, '--archive', outputPath, '--gzip'], { timeout: 300_000, stdio: 'pipe' });
 
       const sizeBytes = statSync(outputPath).size;
       this.logger.log(`Backup complete: ${filename} (${(sizeBytes / 1024 / 1024).toFixed(1)} MB)`);
@@ -110,7 +110,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
 
     try {
       this.logger.warn(`Starting restore from ${sanitized}...`);
-      execSync(`mongorestore --uri="${uri}" --archive="${filePath}" --gzip --drop`, { timeout: 600_000, stdio: 'pipe' });
+      execFileSync('mongorestore', ['--uri', uri, '--archive', filePath, '--gzip', '--drop'], { timeout: 600_000, stdio: 'pipe' });
       this.logger.log(`Restore complete from ${filename}`);
 
       return { restoredFrom: filename, restoredAt: new Date().toISOString() };
