@@ -5,10 +5,10 @@ Resterende stappen voordat de disclaimer "niet gevalideerd voor productiegebruik
 ## 1. Security validatie
 
 - [ ] Penetration test (extern) — OWASP Top 10, FHIR-specifieke aanvallen
-- [ ] Dependency audit: `npm audit` clean op productie dependencies
-- [ ] TLS termination configureren op reverse proxy (Nginx/Traefik)
+- [x] Dependency audit: `npm audit --omit=dev` — 2 moderate (file-type in @nestjs/common, upstream issue, fix vereist breaking NestJS update)
+- [x] TLS termination: Nginx reverse proxy config in `config/nginx/nginx.conf` (TLS 1.2+, Mozilla Intermediate, OCSP stapling)
 - [ ] SMART on FHIR configureren met echte authorization server (Keycloak/Auth0)
-- [ ] Review van alle env vars: geen secrets in defaults of docker-compose
+- [x] Review env vars: geen secrets in defaults of docker-compose. Alle credentials via env vars, geen hardcoded waarden
 
 ## 2. Load test op productie-hardware
 
