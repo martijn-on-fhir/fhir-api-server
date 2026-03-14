@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.0...fhir-api-server-v0.12.1) (2026-03-14)
+
+
+### Documentation
+
+* move documentation to GitHub Wiki, clean up docs/ ([6abbbc5](https://github.com/martijn-on-fhir/fhir-api-server/commit/6abbbc5d99d39fd4658dec2b3780f6375c43d88c))
+
 ## [0.12.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.11.0...fhir-api-server-v0.12.0) (2026-03-14)
 
 
