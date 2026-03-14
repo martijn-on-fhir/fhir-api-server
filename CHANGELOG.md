@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.14.0...fhir-api-server-v0.14.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* sanitize user input in tenant queries to prevent NoSQL injection ([50eba83](https://github.com/martijn-on-fhir/fhir-api-server/commit/50eba834beecc2b622e202f361db2160fb201192))
+
 ## [0.14.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.13.0...fhir-api-server-v0.14.0) (2026-03-14)
 
 
