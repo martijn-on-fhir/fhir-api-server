@@ -261,6 +261,18 @@ k6 run -e BASE_URL=http://staging:3000 test/load/scenarios/read.js
 
 Zie [test/load/README.md](test/load/README.md) voor meer details.
 
+## Documentation
+
+Uitgebreide documentatie staat op de [GitHub Wiki](https://github.com/martijn-on-fhir/fhir-api-server/wiki):
+
+- [Runbook](https://github.com/martijn-on-fhir/fhir-api-server/wiki/Runbook) — startup, shutdown, scaling, troubleshooting
+- [Backup & Recovery](https://github.com/martijn-on-fhir/fhir-api-server/wiki/Backup-&-Recovery) — mongodump, S3/Azure, RTO/RPO
+- [Disaster Recovery](https://github.com/martijn-on-fhir/fhir-api-server/wiki/Disaster-Recovery) — 5 recovery scenario's
+- [NEN 7510](https://github.com/martijn-on-fhir/fhir-api-server/wiki/NEN-7510-Self-Assessment) — security self-assessment
+- [DPIA](https://github.com/martijn-on-fhir/fhir-api-server/wiki/DPIA) — data protection impact assessment
+- [GDPR Procedure](https://github.com/martijn-on-fhir/fhir-api-server/wiki/GDPR-Procedure) — recht op verwijdering
+- [Verwerkersovereenkomst](https://github.com/martijn-on-fhir/fhir-api-server/wiki/Verwerkersovereenkomst) — AVG template
+
 ## API Documentation
 
 Swagger UI is available at `http://localhost:3000/api` when the server is running.
@@ -312,7 +324,7 @@ An [Insomnia collection](insomnia-collection.json) is included with example requ
 | `BACKUP_DIR` | `./backups` | Directory for backup files |
 | `BACKUP_INTERVAL_MS` | `86400000` | Automated backup interval (24h). `0` = disabled |
 | `BACKUP_RETENTION_COUNT` | `7` | Max number of backups to retain |
-| `BACKUP_REMOTE_TYPE` | `none` | Off-site backup: `s3` or `azure` (requires SDK, see `docs/backup-recovery.md`) |
+| `BACKUP_REMOTE_TYPE` | `none` | Off-site backup: `s3` or `azure` (requires SDK, see [wiki](https://github.com/martijn-on-fhir/fhir-api-server/wiki/Backup-&-Recovery)) |
 | `BACKUP_S3_BUCKET` | - | S3 bucket name (when `BACKUP_REMOTE_TYPE=s3`) |
 | `BACKUP_S3_REGION` | - | S3 region (optional, uses AWS SDK default) |
 | `BACKUP_S3_PREFIX` | `` | S3 key prefix for backup files |
