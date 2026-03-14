@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.10.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.9.0...fhir-api-server-v0.10.0) (2026-03-14)
+
+
+### Features
+
+* add --scale parameter to load test seed script ([90e3d45](https://github.com/martijn-on-fhir/fhir-api-server/commit/90e3d45e6efbb241bae983e0d92de97bba8a2f0b))
+* add automated backup & recovery with mongodump ([fb59c8e](https://github.com/martijn-on-fhir/fhir-api-server/commit/fb59c8e780c2ea64839012c243612f95c6a197b5))
+* add FHIR Consent enforcement with deny-based access control ([91b7624](https://github.com/martijn-on-fhir/fhir-api-server/commit/91b7624c22ab4fb76246bc859251ab5b42441251))
+* add full operational stack (Loki, MongoDB exporter, alerting, runbook, DR plan) ([2ad4bf2](https://github.com/martijn-on-fhir/fhir-api-server/commit/2ad4bf255e12d0b8fadcf8cb82513da590a02f11))
+* add Grafana dashboard for FHIR API monitoring ([26e2f89](https://github.com/martijn-on-fhir/fhir-api-server/commit/26e2f89e6918bc9defe570cca2ee4cad8c0a42b5))
+* add Grafana to docker-compose with auto-provisioned dashboard ([3e6ff67](https://github.com/martijn-on-fhir/fhir-api-server/commit/3e6ff670d4b17ac78f8a263565945a4fe1fadcd1))
+* add Nginx TLS reverse proxy config and complete security review ([25d38e6](https://github.com/martijn-on-fhir/fhir-api-server/commit/25d38e6cbc35ef9e2af9cafc03797d96b48b49b4))
+* add off-site backup support for AWS S3 and Azure Blob Storage ([ee6c067](https://github.com/martijn-on-fhir/fhir-api-server/commit/ee6c0671085aba83b9f8d9bc1368d811839cc0f0))
+* add persistent MongoDB-backed job queue for bulk export ([fb250cf](https://github.com/martijn-on-fhir/fhir-api-server/commit/fb250cfa2d6d2bf35999f05c8a5c0af07259b5c1))
+* complete phase 2 observability items ([31814cd](https://github.com/martijn-on-fhir/fhir-api-server/commit/31814cd42252bc3c3795c8492087a1395815736a))
+* complete phase 2-3 (observability, security, compliance) ([e16c6a6](https://github.com/martijn-on-fhir/fhir-api-server/commit/e16c6a6af5abd6d9d31a70ae07be130a47d3c049))
+* complete phase 4 with admin index-stats and db-stats endpoints ([b90d929](https://github.com/martijn-on-fhir/fhir-api-server/commit/b90d9297c861036bade286227e5239e1dcc208f4))
+* load test with 15K resources — all thresholds passed ([7386b51](https://github.com/martijn-on-fhir/fhir-api-server/commit/7386b515ba755de4ab59a24c2261f3e346e7163b))
+
+
+### Bug Fixes
+
+* add FHIR API scrape target to Prometheus config ([ebfffb9](https://github.com/martijn-on-fhir/fhir-api-server/commit/ebfffb9cd3edf13a3b7caf380dfdb40b1cc24f1a))
+* use literal datasource UID in Grafana dashboard ([389fb05](https://github.com/martijn-on-fhir/fhir-api-server/commit/389fb05b5e6059f2e54dc42f17a18b28a572232a))
+
+
+### Documentation
+
+* add 7 new Insomnia requests for admin endpoints (156 total) ([d5d9782](https://github.com/martijn-on-fhir/fhir-api-server/commit/d5d9782270f4744ae76c6c3aeb173880ad2374eb))
+* add AVG verwerkersovereenkomst template ([76ae2ab](https://github.com/martijn-on-fhir/fhir-api-server/commit/76ae2ab671613ecf1b897e01a1a68ce8d8c59a27))
+* add NEN 7510 self-assessment and DPIA ([c666c4b](https://github.com/martijn-on-fhir/fhir-api-server/commit/c666c4b583a5c632956c74b8f3b3d0b9caac55e5))
+* remove Redis cache from production readiness plan ([1b7ee98](https://github.com/martijn-on-fhir/fhir-api-server/commit/1b7ee98071358c99507c32db3204b2067a1e4a48))
+* update production readiness plan — scrap GraphQL, mark P0-P3 complete ([d024d58](https://github.com/martijn-on-fhir/fhir-api-server/commit/d024d58206725485612fd0b87393fb2377885b0f))
+* update README with Grafana, consent, job queue and new env vars ([e87ecc6](https://github.com/martijn-on-fhir/fhir-api-server/commit/e87ecc6271f9ababcdb668606fec2d4883ee2282))
+
+
+### Tests
+
+* add backup/restore e2e tests with production-volume data ([3f569fb](https://github.com/martijn-on-fhir/fhir-api-server/commit/3f569fbec68fe631a33ae0eee99fa0fe9aca9983))
+
+
+### CI/CD
+
+* upgrade GitHub Actions to v5 for Node.js 24 compatibility ([b2bb0f6](https://github.com/martijn-on-fhir/fhir-api-server/commit/b2bb0f6b69a8004d381f09a67e67d457a143af1f))
+
 ## [0.9.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.8.0...fhir-api-server-v0.9.0) (2026-03-13)
 
 
