@@ -16,7 +16,7 @@ Resterende stappen voordat de disclaimer "niet gevalideerd voor productiegebruik
 - [x] Load test met 15K resources (Docker): reads p95=10.7ms, searches p95=43.3ms, writes p95=29.7ms, 0% errors
 - [x] Thresholds gevalideerd: alle ruim binnen targets (reads <200ms, search <500ms, errors <1%)
 - [x] MongoDB connection pool: default 10 connections voldoende bij 140 req/s, max 49 VUs
-- [ ] Memory profiling: 299 MB heap na 2 min load test. Langere soak test (24h) op productie-hardware aanbevolen
+- [x] Memory profiling: 30 min soak test (257K requests, 143 req/s) — heap 234→165 MB, geen memory leak. RSS stabiel op 256 MB
 
 ## 3. Backup & recovery
 

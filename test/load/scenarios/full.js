@@ -12,13 +12,15 @@ const ids = seedIds[0];
  * - searchers: moderate-frequency search queries
  * - writers: low-frequency creates and updates
  */
+const duration = __ENV.DURATION || '2m';
+
 export const options = {
   scenarios: {
     readers: {
       executor: 'constant-arrival-rate',
       rate: 100,
       timeUnit: '1s',
-      duration: '2m',
+      duration,
       preAllocatedVUs: 50,
       maxVUs: 200,
       exec: 'readScenario',
@@ -27,7 +29,7 @@ export const options = {
       executor: 'constant-arrival-rate',
       rate: 30,
       timeUnit: '1s',
-      duration: '2m',
+      duration,
       preAllocatedVUs: 30,
       maxVUs: 100,
       exec: 'searchScenario',
@@ -36,7 +38,7 @@ export const options = {
       executor: 'constant-arrival-rate',
       rate: 10,
       timeUnit: '1s',
-      duration: '2m',
+      duration,
       preAllocatedVUs: 20,
       maxVUs: 50,
       exec: 'writeScenario',
