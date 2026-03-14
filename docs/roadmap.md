@@ -82,10 +82,10 @@ Geschatte inspanning: middel. Verrijkt de FHIR-conformiteit.
 - [x] Redis service in docker-compose met healthcheck
 - [x] Gecentraliseerde configuratie via `config/app-config.json`
 
-### 8.3 Openstaand
-- [ ] Sticky sessions of stateless design voor bulk export
-- [ ] Tenant-specifieke conformance resources
-- [ ] Tenant-scoped rate limiting (per-tenant overrides)
+### 8.3 Stateless & tenant features ✅
+- [x] Stateless bulk export: polling-based job queue, GridFS NDJSON opslag, heartbeat, cursor streaming
+- [x] Tenant-specifieke conformance resources: auto-seed bij provisioning vanuit master database
+- [x] Tenant-scoped rate limiting: per-tenant buckets + config overrides (Redis/in-memory)
 
 ---
 
@@ -123,5 +123,5 @@ Geschatte inspanning: afhankelijk van budget en beschikbaarheid derden.
 | 7 — FHIR Operations | ~~Middel~~ Voltooid | $validate, Subscriptions, $member-match |
 | 8.1 — Tenant isolation | ~~Laag~~ Voltooid | Database-per-tenant, admin API, 22 e2e tests |
 | 8.2 — Schaalbaarheid | ~~Laag~~ Voltooid | Redis cache + rate limiting |
-| 8.3 — Openstaand | Laag | Stateless bulk export, tenant-scoped rate limiting |
+| 8.3 — Stateless & tenant features | ~~Laag~~ Voltooid | Stateless bulk export, tenant rate limiting, conformance seeding |
 | 9 — Extern | Laag | Budget-afhankelijk |
