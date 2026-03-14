@@ -1,5 +1,5 @@
 import { writeFile, readFile } from 'fs/promises';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
@@ -41,7 +41,8 @@ export class AdminService {
 
   /** Wipes all FHIR health data and imports from a snapshot file in fixtures/. Returns counts of imported documents. */
   async restore(filename: string): Promise<{ resources: number; history: number }> {
-    const filePath = join(FIXTURES_DIR, filename);
+    const sanitized = basename(filename);
+    const filePath = join(FIXTURES_DIR, sanitized);
     let data: any;
 
     try {

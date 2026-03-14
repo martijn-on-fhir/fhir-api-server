@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
@@ -95,7 +95,8 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
 
   /** Restore from a mongodump backup file. */
   async restoreBackup(filename: string): Promise<{ restoredFrom: string; restoredAt: string }> {
-    const filePath = join(BACKUP_DIR, filename);
+    const sanitized = basename(filename);
+    const filePath = join(BACKUP_DIR, sanitized);
 
     if (!existsSync(filePath)) {
       throw new Error(`Backup file not found: ${filename}`);

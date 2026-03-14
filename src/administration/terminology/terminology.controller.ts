@@ -21,9 +21,9 @@ export class TerminologyController {
     const isXml = format ? String(format).toLowerCase().includes('xml') : (req.headers.accept || '').includes('xml');
 
     if (isXml) {
-      res.status(statusCode).set('Content-Type', 'application/fhir+xml').send(fhirJsonToXml(resource));
+      res.status(statusCode).set('Content-Type', 'application/fhir+xml').set('X-Content-Type-Options', 'nosniff').end(fhirJsonToXml(resource));
     } else {
-      res.status(statusCode).set('Content-Type', 'application/fhir+json').json(resource);
+      res.status(statusCode).set('Content-Type', 'application/fhir+json').set('X-Content-Type-Options', 'nosniff').json(resource);
     }
   }
 

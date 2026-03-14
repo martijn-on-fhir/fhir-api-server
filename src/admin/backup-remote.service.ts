@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
-import { basename } from 'path';
+import { basename, resolve } from 'path';
 import { Injectable, Logger } from '@nestjs/common';
 
 /** Remote backup storage type. Configurable via BACKUP_REMOTE_TYPE env var. */
@@ -59,6 +59,13 @@ return this.listAzure();
 
   /** Download a backup from remote storage to a local path. */
   async download(remoteKey: string, localPath: string): Promise<void> {
+    const resolved = resolve(localPath);
+    const backupDir = resolve(process.env.BACKUP_DIR || 'backups');
+
+    if (!resolved.startsWith(backupDir)) {
+      throw new Error('Download path must be within the backup directory');
+    }
+
     if (REMOTE_TYPE === 's3') {
 return this.downloadFromS3(remoteKey, localPath);
 }
