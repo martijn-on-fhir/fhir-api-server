@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.6](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.5...fhir-api-server-v0.12.6) (2026-03-14)
+
+
+### Documentation
+
+* add roadmap with phases 6-9 ([5e379c4](https://github.com/martijn-on-fhir/fhir-api-server/commit/5e379c468b1833fcd82055e66a53fc031912f4c7))
+
 ## [0.12.5](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.4...fhir-api-server-v0.12.5) (2026-03-14)
 
 
