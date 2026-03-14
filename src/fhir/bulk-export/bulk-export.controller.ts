@@ -68,7 +68,8 @@ export class BulkExportController {
 
     // Complete — return the output manifest per Bulk Data IG
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const output = Object.entries(job.output).map(([type, ndjson]) => ({ type, url: `${baseUrl}/fhir/$export-output?_jobId=${job.id}&type=${type}`, count: ndjson.split('\n').length }));
+    const allTypes = { ...job.gridfsFiles, ...job.output };
+    const output = Object.keys(allTypes).map((type) => ({ type, url: `${baseUrl}/fhir/$export-output?_jobId=${job.id}&type=${type}`, count: job.outputCounts?.[type] || 0 }));
 
     return res.status(HttpStatus.OK).header('Expires', '0').json({
       transactionTime: job.transactionTime, request: job.request, requiresAccessToken: false,

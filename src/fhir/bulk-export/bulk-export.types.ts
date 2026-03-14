@@ -20,8 +20,12 @@ export interface BulkExportJob {
   since?: string;
   /** For group-level export. */
   groupId?: string;
-  /** Completed NDJSON data keyed by resourceType. */
+  /** Legacy: completed NDJSON data keyed by resourceType (inline in job document). */
   output: Record<string, string>;
+  /** Resource counts per type. */
+  outputCounts: Record<string, number>;
+  /** GridFS filenames keyed by resourceType. */
+  gridfsFiles: Record<string, string>;
   /** Error entries. */
   errors: { type: string; url: string }[];
   /** Percentage 0-100. */

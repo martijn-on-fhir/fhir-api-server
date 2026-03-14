@@ -44,6 +44,14 @@ export class Job extends Document {
   /** Job timeout in milliseconds. Default 5 minutes. */
   @Prop({ default: 300_000 })
   timeoutMs: number;
+
+  /** Instance ID that claimed this job for processing. */
+  @Prop()
+  lockedBy?: string;
+
+  /** Last heartbeat from the processing instance. Used to detect stalled jobs vs active processing. */
+  @Prop()
+  lastHeartbeat?: Date;
 }
 
 export const JobSchema: MongooseSchema = SchemaFactory.createForClass(Job);
