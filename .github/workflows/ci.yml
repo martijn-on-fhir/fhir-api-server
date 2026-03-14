@@ -47,6 +47,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run test:e2e
+      - run: npx jest --config ./test/jest-e2e-tenant.json --forceExit
 
   build:
     name: Build

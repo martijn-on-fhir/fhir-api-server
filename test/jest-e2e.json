@@ -3,6 +3,7 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "testPathIgnorePatterns": ["tenant-isolation"],
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest",
     "^.+\\.mjs$": "<rootDir>/esm-transformer.js"
