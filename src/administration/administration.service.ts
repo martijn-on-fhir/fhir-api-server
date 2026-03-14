@@ -38,7 +38,8 @@ export class AdministrationService {
     }
 
     if (params.name) {
-      filter.name = {$regex: params.name, $options: 'i'};
+      const safeName = params.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.name = {$regex: safeName, $options: 'i'};
     }
 
     if (params.version) {

@@ -102,10 +102,14 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       throw new Error(`Backup file not found: ${filename}`);
     }
 
+    if (!/^fhir-backup-[\w-]+\.gz$/.test(sanitized)) {
+      throw new Error(`Invalid backup filename: ${sanitized}`);
+    }
+
     const uri = this.getConnectionUri();
 
     try {
-      this.logger.warn(`Starting restore from ${filename}...`);
+      this.logger.warn(`Starting restore from ${sanitized}...`);
       execSync(`mongorestore --uri="${uri}" --archive="${filePath}" --gzip --drop`, { timeout: 600_000, stdio: 'pipe' });
       this.logger.log(`Restore complete from ${filename}`);
 

@@ -347,7 +347,8 @@ throw new NotFoundException(this.operationOutcome(`ConceptMap not found`, IssueT
 
     if (filter.op === 'regex') {
       try {
-        const regex = new RegExp(filter.value, 'i');
+        const safePattern = filter.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(safePattern, 'i');
 
         return concepts.filter((c) => regex.test(c.code) || regex.test(c.display || ''));
       } catch {
