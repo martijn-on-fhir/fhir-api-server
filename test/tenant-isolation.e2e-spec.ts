@@ -123,22 +123,31 @@ describe('Tenant Isolation (e2e)', () => {
       expect(res.body.name[0].family).toBe('TenantB');
     });
 
-    it('should create a Patient in the default database', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/fhir/Patient')
-        .send({ resourceType: 'Patient', name: [{ family: 'Default', given: ['Anna'] }] })
-        .expect(201);
-
-      expect(res.body.name[0].family).toBe('Default');
+    it('should reject /fhir requests without tenant identifier', async () => {
+      await request(app.getHttpServer())
+        .get('/fhir/Patient')
+        .expect(400);
     });
 
-    it('tenant A should only see its own Patient', async () => {
+    it('should accept /fhir requests with X-Tenant-Id header', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/fhir/Patient')
+        .set('X-Tenant-Id', TENANT_A)
+        .send({ resourceType: 'Patient', name: [{ family: 'ViaHeader', given: ['Test'] }] })
+        .expect(201);
+
+      expect(res.body.name[0].family).toBe('ViaHeader');
+    });
+
+    it('tenant A should see its own Patients (including header-created)', async () => {
       const res = await request(app.getHttpServer())
         .get(`/t/${TENANT_A}/fhir/Patient`)
         .expect(200);
 
-      expect(res.body.total).toBe(1);
-      expect(res.body.entry[0].resource.name[0].family).toBe('TenantA');
+      expect(res.body.total).toBe(2);
+      const families = res.body.entry.map((e: any) => e.resource.name[0].family);
+      expect(families).toContain('TenantA');
+      expect(families).toContain('ViaHeader');
     });
 
     it('tenant B should only see its own Patient', async () => {
@@ -148,17 +157,6 @@ describe('Tenant Isolation (e2e)', () => {
 
       expect(res.body.total).toBe(1);
       expect(res.body.entry[0].resource.name[0].family).toBe('TenantB');
-    });
-
-    it('default database should only see its own Patient', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/fhir/Patient')
-        .expect(200);
-
-      const families = res.body.entry.map((e: any) => e.resource.name?.[0]?.family);
-      expect(families).toContain('Default');
-      expect(families).not.toContain('TenantA');
-      expect(families).not.toContain('TenantB');
     });
 
     it('tenant A Patient should not be readable from tenant B', async () => {
@@ -184,13 +182,14 @@ describe('Tenant Isolation (e2e)', () => {
       expect(selfLink?.url).toContain(`/t/${TENANT_A}/fhir`);
     });
 
-    it('should not include tenant prefix in default database bundle', async () => {
+    it('should include tenant prefix when using X-Tenant-Id header', async () => {
       const res = await request(app.getHttpServer())
         .get('/fhir/Patient')
+        .set('X-Tenant-Id', TENANT_A)
         .expect(200);
 
       const selfLink = res.body.link?.find((l: any) => l.relation === 'self');
-      expect(selfLink?.url).not.toContain('/t/');
+      expect(selfLink?.url).toContain(`/t/${TENANT_A}/fhir`);
     });
   });
 
@@ -222,7 +221,7 @@ describe('Tenant Isolation (e2e)', () => {
         .get(`/t/${TENANT_A}/fhir/Patient`)
         .expect(200);
 
-      expect(res.body.total).toBe(1);
+      expect(res.body.total).toBe(2);
     });
 
     it('should decommission tenant B', async () => {
