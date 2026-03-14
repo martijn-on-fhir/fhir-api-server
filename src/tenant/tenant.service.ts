@@ -23,7 +23,8 @@ export class TenantService {
    * @param status - Optional status filter.
    */
   async findAll(status?: TenantStatus): Promise<TenantInfo[]> {
-    const filter = status ? { status } : {};
+    const validStatuses: TenantStatus[] = ['active', 'suspended', 'decommissioned'];
+    const filter = status && validStatuses.includes(status) ? { status: String(status) } : {};
 
     return this.tenantModel.find(filter).sort({ createdAt: -1 }).lean<TenantInfo[]>();
   }
@@ -34,7 +35,7 @@ export class TenantService {
    * @throws NotFoundException if not found.
    */
   async findById(id: string): Promise<TenantInfo> {
-    const tenant = await this.tenantModel.findOne({ id }).lean<TenantInfo>();
+    const tenant = await this.tenantModel.findOne({ id: String(id) }).lean<TenantInfo>();
 
     if (!tenant) {
       throw new NotFoundException(`Tenant ${id} not found`);
@@ -54,7 +55,8 @@ export class TenantService {
       throw new BadRequestException(`Invalid tenant ID format. Expected hex segments separated by dashes (e.g. 6edb-752-09a51b-4)`);
     }
 
-    const existing = await this.tenantModel.findOne({ id: data.id });
+    const sanitizedId = String(data.id);
+    const existing = await this.tenantModel.findOne({ id: sanitizedId });
 
     if (existing) {
       throw new ConflictException(`Tenant ${data.id} already exists`);
@@ -81,7 +83,7 @@ export class TenantService {
    */
   async suspend(id: string): Promise<TenantInfo> {
     const tenant = await this.tenantModel.findOneAndUpdate(
-      { id, status: 'active' },
+      { id: String(id), status: 'active' },
       { status: 'suspended' },
       { returnDocument: 'after' },
     ).lean<TenantInfo>();
@@ -101,7 +103,7 @@ export class TenantService {
    */
   async activate(id: string): Promise<TenantInfo> {
     const tenant = await this.tenantModel.findOneAndUpdate(
-      { id, status: 'suspended' },
+      { id: String(id), status: 'suspended' },
       { status: 'active' },
       { returnDocument: 'after' },
     ).lean<TenantInfo>();
@@ -121,7 +123,7 @@ export class TenantService {
    */
   async decommission(id: string): Promise<void> {
     const tenant = await this.tenantModel.findOneAndUpdate(
-      { id, status: { $ne: 'decommissioned' } },
+      { id: String(id), status: { $ne: 'decommissioned' } },
       { status: 'decommissioned' },
       { returnDocument: 'after' },
     );
