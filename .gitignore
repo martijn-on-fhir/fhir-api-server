@@ -67,3 +67,9 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Load test seed data
 test/load/.seed-ids.json
+
+# Claude Code local config
+.claude/
+
+# FHIR conformance import data (mounted as volume)
+/file-import/
