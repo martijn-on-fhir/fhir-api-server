@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.7](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.6...fhir-api-server-v0.12.7) (2026-03-14)
+
+
+### Bug Fixes
+
+* add delete_request_store to Loki config for newer versions ([178a965](https://github.com/martijn-on-fhir/fhir-api-server/commit/178a965eeb79c6203f504952aac5dd396a36c151))
+
 ## [0.12.6](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.5...fhir-api-server-v0.12.6) (2026-03-14)
 
 
