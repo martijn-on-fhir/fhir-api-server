@@ -8,12 +8,15 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongo:27017/fhir?replicaSet=rs0
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - REDIS_URL=redis://redis:6379
     volumes:
       - ./config/app-config.json:/app/config/app-config.json:ro
       - ./file-import:/app/file-import:ro
       - backups:/app/backups
     depends_on:
       mongo:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       otel-collector:
         condition: service_started
@@ -42,6 +45,19 @@ services:
       timeout: 10s
       retries: 5
       start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -145,6 +161,7 @@ services:
 
 volumes:
   mongo-data:
+  redis-data:
   prometheus-data:
   grafana-data:
   loki-data:

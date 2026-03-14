@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { AdminModule } from './admin/admin.module';
 import { AdministrationModule } from './administration/administration.module';
 import { AppController } from './app.controller';
@@ -29,19 +30,30 @@ const conditionalProviders = config.tenant.enabled
   ? [{ provide: APP_GUARD, useClass: TenantGuard }]
   : [];
 
+/** Configure ThrottlerModule with Redis storage when cache store is 'redis', otherwise in-memory. */
+const throttlerConfig = (): Parameters<typeof ThrottlerModule.forRoot>[0] => {
+  const throttlers = [{
+    name: 'short',
+    ttl: config.rateLimit.ttl * 1000,
+    limit: config.rateLimit.max,
+  }, {
+    name: 'long',
+    ttl: 600_000, // 10 minutes
+    limit: config.rateLimit.maxLong,
+  }];
+
+  if (config.cache.store === 'redis') {
+    return { throttlers, storage: new ThrottlerStorageRedisService(config.redis.url) };
+  }
+
+  return { throttlers };
+};
+
 /** Root application module. Configures MongoDB connection, health checks, logging, rate limiting and imports the FHIR module. */
 @Module({
   imports: [
     EventEmitterModule.forRoot(),
-    ThrottlerModule.forRoot([{
-      name: 'short',
-      ttl: config.rateLimit.ttl * 1000,
-      limit: config.rateLimit.max,
-    }, {
-      name: 'long',
-      ttl: 600_000, // 10 minutes
-      limit: config.rateLimit.maxLong,
-    }]),
+    ThrottlerModule.forRoot(throttlerConfig()),
     MongooseModule.forRoot(config.mongodb.uri, {
       maxPoolSize: config.mongodb.poolSize,
       minPoolSize: config.mongodb.minPoolSize,

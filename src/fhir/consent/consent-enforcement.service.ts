@@ -120,7 +120,7 @@ export class ConsentEnforcementService {
 
   /** Invalidate cached consent policy when a Consent resource changes. */
   @OnEvent('fhir.resource.changed')
-  handleConsentChange(event: FhirResourceEvent): void {
+  async handleConsentChange(event: FhirResourceEvent): Promise<void> {
     if (event.resourceType !== 'Consent') {
       return;
     }
@@ -129,7 +129,7 @@ export class ConsentEnforcementService {
 
     if (patientRef) {
       const patientId = patientRef.replace(/^(.*\/)?Patient\//, '');
-      this.cache.delete(`consent:policy:${patientId}`);
+      await this.cache.delete(`consent:policy:${patientId}`);
       this.logger.debug(`Invalidated consent policy cache for patient ${patientId}`);
     }
   }

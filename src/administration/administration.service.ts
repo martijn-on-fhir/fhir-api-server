@@ -74,7 +74,7 @@ export class AdministrationService {
   async findById(resourceType: string, id: string): Promise<ConformanceResource> {
     this.assertAllowedType(resourceType);
     const cacheKey = `conformance:${resourceType}:${id}`;
-    const cached = this.cacheService.get<ConformanceResource>(cacheKey);
+    const cached = await this.cacheService.get<ConformanceResource>(cacheKey);
 
     if (cached) {
 return cached;
@@ -88,7 +88,7 @@ return cached;
     }
 
     this.logger.log(`Read ${resourceType}/${id} (url: ${resource.url || 'n/a'})`);
-    this.cacheService.set(cacheKey, resource);
+    await this.cacheService.set(cacheKey, resource);
 
     return resource;
   }
@@ -110,7 +110,7 @@ return cached;
     const saved = await resource.save();
 
     this.logger.log(`Created ${resourceType}/${id} (url: ${body.url || 'n/a'})`);
-    this.invalidateConformanceCache(resourceType);
+    await this.invalidateConformanceCache(resourceType);
 
     return saved;
   }
@@ -134,7 +134,7 @@ return cached;
 
     const updated = await this.model.findOneAndUpdate({resourceType, id}, {...body, resourceType, id, meta}, {returnDocument: 'after', upsert: true}).exec();
     this.logger.log(`Updated ${resourceType}/${id} to version ${newVersionId} (url: ${body.url || 'n/a'})`);
-    this.invalidateConformanceCache(resourceType, id);
+    await this.invalidateConformanceCache(resourceType, id);
 
     return updated;
   }
@@ -156,7 +156,7 @@ return cached;
     }
 
     this.logger.log(`Deleted ${resourceType}/${id}`);
-    this.invalidateConformanceCache(resourceType, id);
+    await this.invalidateConformanceCache(resourceType, id);
   }
 
   /**
@@ -222,14 +222,14 @@ return cached;
   }
 
   /** Invalidates conformance-related caches after a mutation. Also clears CapabilityStatement and terminology caches. */
-  private invalidateConformanceCache(resourceType: string, id?: string): void {
-    this.cacheService.invalidateByPrefix(`conformance:${resourceType}`);
+  private async invalidateConformanceCache(resourceType: string, id?: string): Promise<void> {
+    await this.cacheService.invalidateByPrefix(`conformance:${resourceType}`);
 
     if (id) {
-this.cacheService.delete(`conformance:${resourceType}:${id}`);
+await this.cacheService.delete(`conformance:${resourceType}:${id}`);
 }
 
-    this.cacheService.invalidateByPrefix('capability:');
-    this.cacheService.invalidateByPrefix('terminology:');
+    await this.cacheService.invalidateByPrefix('capability:');
+    await this.cacheService.invalidateByPrefix('terminology:');
   }
 }

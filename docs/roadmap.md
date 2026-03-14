@@ -60,18 +60,32 @@ Geschatte inspanning: middel. Verrijkt de FHIR-conformiteit.
 
 ## Fase 8 — Multi-tenancy & Schaalbaarheid
 
-Geschatte inspanning: groot. Alleen als er meerdere afnemers komen.
+### 8.1 Tenant isolation ✅
+- [x] Configureerbare multi-tenancy via `config/app-config.json` (`tenant.enabled`)
+- [x] Database-per-tenant isolatie (elke tenant eigen database met eigen indexes)
+- [x] URL-based routing: `/t/:tenantId/fhir/...` met URL-rewriting middleware
+- [x] Header-based routing: `X-Tenant-Id` header op `/fhir/...` routes
+- [x] Guard: FHIR routes vereisen tenant identifier wanneer multi-tenancy aan staat
+- [x] Tenant admin API: `GET/POST/DELETE /admin/tenants`, suspend/activate lifecycle
+- [x] Tenant-aware model injection via REQUEST-scoped providers (alle FHIR services)
+- [x] `getBaseUrl()` tenant-prefix in bundle links en Location headers
+- [x] `tenantId` in audit- en correlatie-logs
+- [x] Idle connection cleanup (15 min) + graceful shutdown
+- [x] NoSQL injection bescherming op tenant queries
+- [x] 22 e2e tests (admin CRUD, data isolatie, base URL, lifecycle)
 
-### 8.1 Tenant isolation
-- [ ] Tenant ID in JWT claims
-- [ ] Database-level of collection-level isolation (zie `docs/multi-tenancy-plan.md`)
-- [ ] Tenant-scoped rate limiting
-- [ ] Tenant-specifieke conformance resources
+### 8.2 Horizontale schaalbaarheid ✅
+- [x] Redis als gedeelde cache (vervangt in-memory TTL cache)
+- [x] Redis-backed rate limiting via `@nest-lab/throttler-storage-redis`
+- [x] Dual-mode cache: instelbaar via `cache.store` (`"redis"` of `"memory"`)
+- [x] Automatische fallback naar in-memory bij Redis connection failure
+- [x] Redis service in docker-compose met healthcheck
+- [x] Gecentraliseerde configuratie via `config/app-config.json`
 
-### 8.2 Horizontale schaalbaarheid
-- [ ] Redis voor gedeelde cache (vervangt in-memory TTL cache)
-- [ ] Redis-backed rate limiting (cross-instance)
+### 8.3 Openstaand
 - [ ] Sticky sessions of stateless design voor bulk export
+- [ ] Tenant-specifieke conformance resources
+- [ ] Tenant-scoped rate limiting (per-tenant overrides)
 
 ---
 
@@ -105,9 +119,9 @@ Geschatte inspanning: afhankelijk van budget en beschikbaarheid derden.
 
 | Fase | Prioriteit | Reden |
 |------|-----------|-------|
-| 6 — Hardening & CI | Hoog | Laag risico, direct waardevol, geen externe afhankelijkheden |
-| 7.1 — $validate | ~~Hoog~~ Voltooid | Volledig geïmplementeerd met FhirValidationService |
-| 7.2 — Subscriptions | ~~Middel~~ Voltooid | rest-hook, retry, status tracking, e2e tests |
-| 7.3 — $member-match | ~~Laag~~ Voltooid | BSN/demographics matching met e2e tests |
-| 8 — Multi-tenancy | Laag | Pas bij meerdere afnemers |
+| 6 — Hardening & CI | ~~Hoog~~ Voltooid | CI, healthchecks, audit |
+| 7 — FHIR Operations | ~~Middel~~ Voltooid | $validate, Subscriptions, $member-match |
+| 8.1 — Tenant isolation | ~~Laag~~ Voltooid | Database-per-tenant, admin API, 22 e2e tests |
+| 8.2 — Schaalbaarheid | ~~Laag~~ Voltooid | Redis cache + rate limiting |
+| 8.3 — Openstaand | Laag | Stateless bulk export, tenant-scoped rate limiting |
 | 9 — Extern | Laag | Budget-afhankelijk |

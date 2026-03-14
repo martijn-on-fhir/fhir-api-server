@@ -25,7 +25,12 @@
     "consentCacheTtlMs": 60000
   },
   "cache": {
-    "ttlMs": 300000
+    "ttlMs": 300000,
+    "store": "redis"
+  },
+  "redis": {
+    "url": "redis://localhost:6379",
+    "keyPrefix": "fhir:"
   },
   "smart": {
     "enabled": false,

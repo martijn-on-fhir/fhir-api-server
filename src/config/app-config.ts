@@ -53,10 +53,19 @@ export interface AppConfig {
     /** Consent policy cache TTL in milliseconds. */
     consentCacheTtlMs: number;
   };
-  /** In-memory cache settings. */
+  /** Cache settings. Supports in-memory or Redis backend. */
   cache: {
     /** Default cache TTL in milliseconds. */
     ttlMs: number;
+    /** Cache backend: 'memory' or 'redis'. Default: 'redis'. */
+    store: 'memory' | 'redis';
+  };
+  /** Redis connection settings. Used by cache and rate limiting when store is 'redis'. */
+  redis: {
+    /** Redis connection URL. */
+    url: string;
+    /** Key prefix to namespace all keys. */
+    keyPrefix: string;
   };
   /** SMART on FHIR OAuth2 configuration. */
   smart: {
@@ -220,6 +229,12 @@ const loadConfig = (): AppConfig => {
 
     cache: {
       ttlMs: envInt('CACHE_TTL_MS') ?? fileConfig.cache?.ttlMs ?? 300000,
+      store: (env('CACHE_STORE') ?? fileConfig.cache?.store ?? 'redis') as 'memory' | 'redis',
+    },
+
+    redis: {
+      url: env('REDIS_URL') ?? fileConfig.redis?.url ?? 'redis://localhost:6379',
+      keyPrefix: env('REDIS_KEY_PREFIX') ?? fileConfig.redis?.keyPrefix ?? 'fhir:',
     },
 
     smart: {
