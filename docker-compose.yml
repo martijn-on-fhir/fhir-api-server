@@ -3,19 +3,13 @@ services:
     build: .
     ports:
       - "${PORT:-3000}:3000"
+    env_file:
+      - .env
     environment:
       - MONGODB_URI=mongodb://mongo:27017/fhir?replicaSet=rs0
-      - PORT=3000
-      - LOG_FORMAT=json
-      - CORS_ORIGIN=${CORS_ORIGIN:?Set CORS_ORIGIN to allowed origins (e.g. https://app.example.com)}
-      - BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-5mb}
-      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30000}
-      - OTEL_ENABLED=${OTEL_ENABLED:-true}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-false}
-      - MULTI_TENANT_ENABLED=${MULTI_TENANT_ENABLED:-false}
-      - TENANT_MAX_POOL_SIZE=${TENANT_MAX_POOL_SIZE:-5}
     volumes:
+      - ./config/app-config.json:/app/config/app-config.json:ro
       - ./file-import:/app/file-import:ro
       - backups:/app/backups
     depends_on:

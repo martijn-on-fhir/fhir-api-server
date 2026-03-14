@@ -1,29 +1,31 @@
 {
+  "port": 3000,
+  "corsOrigin": "*",
+  "logFormat": "",
+  "bodySizeLimit": "5mb",
+  "requestTimeout": 30000,
   "mongodb": {
-    "host": "localhost",
-    "port": 27017,
-    "database": "fhir",
-    "username": "",
-    "password": ""
+    "uri": "mongodb://localhost:27017/fhir",
+    "poolSize": 10,
+    "minPoolSize": 2,
+    "slowQueryMs": 100
   },
-  "terminology": {
-    "baseUrl": "https://terminologieserver.nl",
-    "authUrl": "https://terminologieserver.nl/authorisation/auth/realms/nictiz/protocol/openid-connect/token",
-    "user": "",
-    "password": "",
-    "clientId": "cli_client",
-    "grantType": "password"
+  "rateLimit": {
+    "disabled": false,
+    "ttl": 60,
+    "max": 5000,
+    "maxLong": 50000
   },
-  "server": {
-    "reindex": { "enabled": false },
-    "expunge": { "enabled": false },
-    "cascadeDelete": { "enabled": false },
-    "snapshot": { "enabled": false },
-    "restore": { "enabled": false }
+  "fhir": {
+    "maxCount": 1000,
+    "maxBundleEntries": 1000,
+    "maxIncludeResults": 1000,
+    "slowQueryThresholdMs": 500,
+    "auditRetentionDays": 365,
+    "consentCacheTtlMs": 60000
   },
-  "telemetry": {
-    "enabled": false,
-    "endpoint": "http://localhost:4318"
+  "cache": {
+    "ttlMs": 300000
   },
   "smart": {
     "enabled": false,
@@ -33,5 +35,70 @@
     "scopeClaim": "scope",
     "authorizeUrl": "",
     "tokenUrl": ""
+  },
+  "telemetry": {
+    "enabled": false,
+    "endpoint": "http://localhost:4318"
+  },
+  "tenant": {
+    "enabled": false,
+    "maxPoolSize": 5
+  },
+  "bulkExport": {
+    "maxConcurrent": 3,
+    "timeoutMs": 600000
+  },
+  "backup": {
+    "dir": "backups",
+    "intervalMs": 86400000,
+    "retentionCount": 7,
+    "remoteType": "none",
+    "s3": {
+      "bucket": "",
+      "prefix": "",
+      "region": ""
+    },
+    "azure": {
+      "connectionString": "",
+      "container": "",
+      "prefix": ""
+    }
+  },
+  "jobs": {
+    "retentionDays": 7
+  },
+  "server": {
+    "reindex": {
+      "enabled": false
+    },
+    "expunge": {
+      "enabled": false
+    },
+    "cascadeDelete": {
+      "enabled": false
+    },
+    "snapshot": {
+      "enabled": false
+    },
+    "restore": {
+      "enabled": false
+    },
+    "backup": {
+      "enabled": false
+    },
+    "backupRestore": {
+      "enabled": false
+    }
+  },
+  "terminology": {
+    "baseUrl": "",
+    "authUrl": "",
+    "user": "",
+    "password": "",
+    "clientId": "",
+    "grantType": "password"
+  },
+  "logging": {
+    "level": "info"
   }
 }

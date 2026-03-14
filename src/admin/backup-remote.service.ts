@@ -1,9 +1,10 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { basename, resolve } from 'path';
 import { Injectable, Logger } from '@nestjs/common';
+import { config } from '../config/app-config';
 
-/** Remote backup storage type. Configurable via BACKUP_REMOTE_TYPE env var. */
-const REMOTE_TYPE = (process.env.BACKUP_REMOTE_TYPE || 'none').toLowerCase();
+/** Remote backup storage type. Configured via centralized config. */
+const REMOTE_TYPE = config.backup.remoteType.toLowerCase();
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 /** Dynamically require an optional dependency. Throws a clear error if not installed. */
@@ -60,7 +61,7 @@ return this.listAzure();
   /** Download a backup from remote storage to a local path. */
   async download(remoteKey: string, localPath: string): Promise<void> {
     const resolved = resolve(localPath);
-    const backupDir = resolve(process.env.BACKUP_DIR || 'backups');
+    const backupDir = resolve(config.backup.dir);
 
     if (!resolved.startsWith(backupDir)) {
       throw new Error('Download path must be within the backup directory');
@@ -79,15 +80,15 @@ return this.downloadFromAzure(remoteKey, localPath);
 
   private async uploadToS3(filePath: string): Promise<{ remote: string; provider: string }> {
     const { S3Client, PutObjectCommand } = optionalRequire('@aws-sdk/client-s3');
-    const bucket = process.env.BACKUP_S3_BUCKET;
+    const bucket = config.backup.s3.bucket;
 
     if (!bucket) {
-throw new Error('BACKUP_S3_BUCKET is required when BACKUP_REMOTE_TYPE=s3');
+throw new Error('backup.s3.bucket is required when backup.remoteType=s3');
 }
 
-    const prefix = process.env.BACKUP_S3_PREFIX || '';
+    const prefix = config.backup.s3.prefix;
     const key = `${prefix}${basename(filePath)}`;
-    const region = process.env.BACKUP_S3_REGION;
+    const region = config.backup.s3.region;
     const client = new S3Client(region ? { region } : {});
 
     this.logger.log(`Uploading ${basename(filePath)} to s3://${bucket}/${key}...`);
@@ -99,14 +100,14 @@ throw new Error('BACKUP_S3_BUCKET is required when BACKUP_REMOTE_TYPE=s3');
 
   private async listS3(): Promise<{ key: string; size: number; lastModified: string }[]> {
     const { S3Client, ListObjectsV2Command } = optionalRequire('@aws-sdk/client-s3');
-    const bucket = process.env.BACKUP_S3_BUCKET;
+    const bucket = config.backup.s3.bucket;
 
     if (!bucket) {
 return [];
 }
 
-    const prefix = process.env.BACKUP_S3_PREFIX || '';
-    const region = process.env.BACKUP_S3_REGION;
+    const prefix = config.backup.s3.prefix;
+    const region = config.backup.s3.region;
     const client = new S3Client(region ? { region } : {});
     const response = await client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix }));
 
@@ -115,13 +116,13 @@ return [];
 
   private async downloadFromS3(remoteKey: string, localPath: string): Promise<void> {
     const { S3Client, GetObjectCommand } = optionalRequire('@aws-sdk/client-s3');
-    const bucket = process.env.BACKUP_S3_BUCKET;
+    const bucket = config.backup.s3.bucket;
 
     if (!bucket) {
-throw new Error('BACKUP_S3_BUCKET is required');
+throw new Error('backup.s3.bucket is required');
 }
 
-    const region = process.env.BACKUP_S3_REGION;
+    const region = config.backup.s3.region;
     const client = new S3Client(region ? { region } : {});
     const response = await client.send(new GetObjectCommand({ Bucket: bucket, Key: remoteKey }));
     const body = await response.Body?.transformToByteArray();
@@ -137,14 +138,14 @@ writeFileSync(localPath, body);
 
   private async uploadToAzure(filePath: string): Promise<{ remote: string; provider: string }> {
     const { BlobServiceClient } = optionalRequire('@azure/storage-blob');
-    const connectionString = process.env.BACKUP_AZURE_CONNECTION_STRING;
-    const containerName = process.env.BACKUP_AZURE_CONTAINER;
+    const connectionString = config.backup.azure.connectionString;
+    const containerName = config.backup.azure.container;
 
     if (!connectionString || !containerName) {
-throw new Error('BACKUP_AZURE_CONNECTION_STRING and BACKUP_AZURE_CONTAINER are required when BACKUP_REMOTE_TYPE=azure');
+throw new Error('backup.azure.connectionString and backup.azure.container are required when backup.remoteType=azure');
 }
 
-    const prefix = process.env.BACKUP_AZURE_PREFIX || '';
+    const prefix = config.backup.azure.prefix;
     const blobName = `${prefix}${basename(filePath)}`;
     const client = BlobServiceClient.fromConnectionString(connectionString);
     const container = client.getContainerClient(containerName);
@@ -160,14 +161,14 @@ throw new Error('BACKUP_AZURE_CONNECTION_STRING and BACKUP_AZURE_CONTAINER are r
 
   private async listAzure(): Promise<{ key: string; size: number; lastModified: string }[]> {
     const { BlobServiceClient } = optionalRequire('@azure/storage-blob');
-    const connectionString = process.env.BACKUP_AZURE_CONNECTION_STRING;
-    const containerName = process.env.BACKUP_AZURE_CONTAINER;
+    const connectionString = config.backup.azure.connectionString;
+    const containerName = config.backup.azure.container;
 
     if (!connectionString || !containerName) {
 return [];
 }
 
-    const prefix = process.env.BACKUP_AZURE_PREFIX || '';
+    const prefix = config.backup.azure.prefix;
     const client = BlobServiceClient.fromConnectionString(connectionString);
     const container = client.getContainerClient(containerName);
     const results: { key: string; size: number; lastModified: string }[] = [];
@@ -183,11 +184,11 @@ return [];
 
   private async downloadFromAzure(remoteKey: string, localPath: string): Promise<void> {
     const { BlobServiceClient } = optionalRequire('@azure/storage-blob');
-    const connectionString = process.env.BACKUP_AZURE_CONNECTION_STRING;
-    const containerName = process.env.BACKUP_AZURE_CONTAINER;
+    const connectionString = config.backup.azure.connectionString;
+    const containerName = config.backup.azure.container;
 
     if (!connectionString || !containerName) {
-throw new Error('BACKUP_AZURE_CONNECTION_STRING and BACKUP_AZURE_CONTAINER are required');
+throw new Error('backup.azure.connectionString and backup.azure.container are required');
 }
 
     const client = BlobServiceClient.fromConnectionString(connectionString);

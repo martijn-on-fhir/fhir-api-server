@@ -1,9 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { config } from '../config/app-config';
 
-/** Threshold in ms for MongoDB profiler slow queries. Configurable via MONGODB_SLOW_QUERY_MS env var. */
-const SLOW_QUERY_MS = parseInt(process.env.MONGODB_SLOW_QUERY_MS || '100', 10);
+/** Threshold in ms for MongoDB profiler slow queries. Configured via centralized config. */
+const SLOW_QUERY_MS = config.mongodb.slowQueryMs;
 
 /**
  * Configures MongoDB profiler level 1 (slow queries only) at application startup.

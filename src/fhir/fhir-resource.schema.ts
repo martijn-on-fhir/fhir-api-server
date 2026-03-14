@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { config } from '../config/app-config';
 
 /**
  * Mongoose schema for storing any FHIR R4 resource.
@@ -78,6 +79,5 @@ FhirResourceSchema.index({ resourceType: 1, 'encounter.reference': 1 });
 // BgZ: Coverage beneficiary reference
 FhirResourceSchema.index({ resourceType: 1, 'beneficiary.reference': 1 });
 
-// --- TTL index for AuditEvent retention (configurable via AUDIT_RETENTION_DAYS, default 365 days) ---
-const auditRetentionDays = parseInt(process.env.AUDIT_RETENTION_DAYS || '365', 10);
-FhirResourceSchema.index({ 'meta.lastUpdated': 1 }, { expireAfterSeconds: auditRetentionDays * 86400, partialFilterExpression: { resourceType: 'AuditEvent' } });
+// --- TTL index for AuditEvent retention (configured via centralized config, default 365 days) ---
+FhirResourceSchema.index({ 'meta.lastUpdated': 1 }, { expireAfterSeconds: config.fhir.auditRetentionDays * 86400, partialFilterExpression: { resourceType: 'AuditEvent' } });

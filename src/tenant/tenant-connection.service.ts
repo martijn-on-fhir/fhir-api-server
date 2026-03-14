@@ -1,12 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
+import { config } from '../config/app-config';
 import { FhirResourceHistory, FhirResourceHistorySchema } from '../fhir/fhir-resource-history.schema';
 import { FhirResource, FhirResourceSchema } from '../fhir/fhir-resource.schema';
 import { tenantDatabaseName } from './tenant.interfaces';
 
-/** Maximum connection pool size per tenant. Configurable via TENANT_MAX_POOL_SIZE. */
-const MAX_POOL_SIZE = parseInt(process.env.TENANT_MAX_POOL_SIZE || '5', 10);
+/** Maximum connection pool size per tenant. Configured via centralized config. */
+const MAX_POOL_SIZE = config.tenant.maxPoolSize;
 
 /** Idle timeout in ms before a tenant connection is closed. */
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes

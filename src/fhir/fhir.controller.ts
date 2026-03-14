@@ -1,20 +1,20 @@
-import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, Req, Res, HttpStatus, Inject, ForbiddenException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiHeader } from '@nestjs/swagger';
-import { Request, Response } from 'express';
-import { Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode } from 'fhir-models-r4';
-import { CacheService } from '../cache/cache.service';
-import { AuditEventService } from './audit/audit-event.service';
-import { buildCapabilityStatement } from './capability-statement.builder';
-import { ConsentEnforcementService } from './consent/consent-enforcement.service';
-import { COMPARTMENT_PARAMS } from './fhir.constants';
-import { FhirService } from './fhir.service';
-import { sanitizeSearchParams } from './search/sanitize';
-import { SearchParameterRegistry } from './search/search-parameter-registry.service';
-import { applySummary, applyElements } from './search/summary.utils';
-import { SmartConfig, SMART_CONFIG } from './smart/smart-config';
-import { FhirValidationPipe } from './validation/fhir-validation.pipe';
-import { FhirValidationService } from './validation/fhir-validation.service';
-import { fhirJsonToXml, fhirXmlToJson } from './xml/fhir-xml.utils';
+import {Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, Req, Res, HttpStatus, Inject, ForbiddenException} from '@nestjs/common';
+import {ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiHeader} from '@nestjs/swagger';
+import {Request, Response} from 'express';
+import {Bundle, BundleEntry, BundleEntryRequest, BundleEntryResponse, BundleEntrySearch, BundleLink, BundleType, HTTPVerb, OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType, SearchEntryMode} from 'fhir-models-r4';
+import {CacheService} from '../cache/cache.service';
+import {AuditEventService} from './audit/audit-event.service';
+import {buildCapabilityStatement} from './capability-statement.builder';
+import {ConsentEnforcementService} from './consent/consent-enforcement.service';
+import {COMPARTMENT_PARAMS} from './fhir.constants';
+import {FhirService} from './fhir.service';
+import {sanitizeSearchParams} from './search/sanitize';
+import {SearchParameterRegistry} from './search/search-parameter-registry.service';
+import {applySummary, applyElements} from './search/summary.utils';
+import {SmartConfig, SMART_CONFIG} from './smart/smart-config';
+import {FhirValidationPipe} from './validation/fhir-validation.pipe';
+import {FhirValidationService} from './validation/fhir-validation.service';
+import {fhirJsonToXml, fhirXmlToJson} from './xml/fhir-xml.utils';
 
 /**
  * Generic FHIR REST controller that handles all resource types via dynamic `:resourceType` routes.
@@ -28,7 +28,8 @@ export class FhirController {
    * @param validationPipe - Pipe that validates incoming resource bodies against FHIR R4 rules.
    */
   // eslint-disable-next-line max-len
-  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig, private readonly auditService: AuditEventService, private readonly cacheService: CacheService, private readonly consentService: ConsentEnforcementService) {}
+  constructor(private readonly fhirService: FhirService, private readonly validationPipe: FhirValidationPipe, private readonly validationService: FhirValidationService, private readonly searchRegistry: SearchParameterRegistry, @Inject(SMART_CONFIG) private readonly smartConfig: SmartConfig, private readonly auditService: AuditEventService, private readonly cacheService: CacheService, private readonly consentService: ConsentEnforcementService) {
+  }
 
   /**
    * Derives the FHIR base URL from the incoming request, respecting reverse proxy headers.
@@ -48,8 +49,8 @@ export class FhirController {
    * FHIR capabilities interaction. Returns a CapabilityStatement describing this server's supported resources, interactions and operations.
    */
   @Get('metadata')
-  @ApiOperation({ summary: 'CapabilityStatement', description: 'Returns the server CapabilityStatement describing supported resources, interactions and operations.' })
-  @ApiResponse({ status: 200, description: 'CapabilityStatement resource' })
+  @ApiOperation({summary: 'CapabilityStatement', description: 'Returns the server CapabilityStatement describing supported resources, interactions and operations.'})
+  @ApiResponse({status: 200, description: 'CapabilityStatement resource'})
   async metadata(@Req() req: Request, @Res() res: Response) {
 
     const baseUrl = this.getBaseUrl(req);
@@ -65,13 +66,13 @@ export class FhirController {
 
   /** FHIR system-level history. Returns a history Bundle across all resource types. */
   @Get('_history')
-  @ApiOperation({ summary: 'System History', description: 'Returns version history across all resource types.' })
-  @ApiQuery({ name: '_since', required: false, description: 'Only include versions created at or after this date' })
-  @ApiQuery({ name: '_count', required: false, type: Number })
-  @ApiResponse({ status: 200, description: 'Bundle (history)' })
+  @ApiOperation({summary: 'System History', description: 'Returns version history across all resource types.'})
+  @ApiQuery({name: '_since', required: false, description: 'Only include versions created at or after this date'})
+  @ApiQuery({name: '_count', required: false, type: Number})
+  @ApiResponse({status: 200, description: 'Bundle (history)'})
   async systemHistory(@Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
-    const { entries, total } = await this.fhirService.systemHistory(sanitizeSearchParams(queryParams));
+    const {entries, total} = await this.fhirService.systemHistory(sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
     return this.sendFhirResponse(res, req, this.buildHistoryBundle(entries, total, `${baseUrl}/_history`, baseUrl));
@@ -79,13 +80,13 @@ export class FhirController {
 
   /** FHIR $meta operation (system-level). Returns aggregated meta across all resources. */
   @Get('\\$meta')
-  @ApiOperation({ summary: '$meta (system)', description: 'Returns aggregated profiles, tags and security labels across all resources.' })
-  @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
+  @ApiOperation({summary: '$meta (system)', description: 'Returns aggregated profiles, tags and security labels across all resources.'})
+  @ApiResponse({status: 200, description: 'Parameters resource with Meta'})
   async metaSystem(@Req() req: Request, @Res() res: Response) {
 
     const meta = await this.fhirService.getAggregatedMeta();
 
-    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
+    this.sendFhirResponse(res, req, {resourceType: 'Parameters', parameter: [{name: 'return', valueMeta: meta}]});
   }
 
   /**
@@ -229,7 +230,7 @@ export class FhirController {
   }
 
   /** Extracts MemberPatient, OldCoverage, and NewCoverage from a Parameters resource body. */
-  private extractMemberMatchParams(body: any): {memberPatient?: any; oldCoverage?: any; newCoverage?: any} {
+  private extractMemberMatchParams(body: any): { memberPatient?: any; oldCoverage?: any; newCoverage?: any } {
     if (body?.resourceType !== 'Parameters' || !Array.isArray(body.parameter)) {
       return {};
     }
@@ -254,28 +255,28 @@ export class FhirController {
    * Always returns HTTP 200 with an OperationOutcome — validation errors are reported as issues, not HTTP errors.
    */
   @Post(':resourceType/\\$validate')
-  @ApiOperation({ summary: '$validate (type-level)', description: 'Validates a resource against the FHIR R4 spec and optionally a specific profile. Always returns HTTP 200.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiResponse({ status: 200, description: 'OperationOutcome with validation results' })
+  @ApiOperation({summary: '$validate (type-level)', description: 'Validates a resource against the FHIR R4 spec and optionally a specific profile. Always returns HTTP 200.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiResponse({status: 200, description: 'OperationOutcome with validation results'})
   async validateType(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     body = this.parseRequestBody(req);
-    const { resource, profile } = this.extractValidateParams(body);
+    const {resource, profile} = this.extractValidateParams(body);
 
     if (!resource) {
-      const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'No resource provided for validation' })] });
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'No resource provided for validation'})]});
 
       return this.sendFhirResponse(res, req, outcome);
     }
 
     if (!resource.resourceType) {
-      const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Missing required field: resourceType' })] });
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Required, diagnostics: 'Missing required field: resourceType'})]});
 
       return this.sendFhirResponse(res, req, outcome);
     }
 
     if (resource.resourceType !== resourceType) {
-      const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: `Resource type '${resource.resourceType}' does not match endpoint '${resourceType}'` })] });
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.Invalid, diagnostics: `Resource type '${resource.resourceType}' does not match endpoint '${resourceType}'`})]});
 
       return this.sendFhirResponse(res, req, outcome);
     }
@@ -289,14 +290,14 @@ export class FhirController {
    * Always returns HTTP 200 with an OperationOutcome.
    */
   @Post(':resourceType/:id/\\$validate')
-  @ApiOperation({ summary: '$validate (instance-level)', description: 'Validates a stored resource or provided body against a profile.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiResponse({ status: 200, description: 'OperationOutcome with validation results' })
+  @ApiOperation({summary: '$validate (instance-level)', description: 'Validates a stored resource or provided body against a profile.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiResponse({status: 200, description: 'OperationOutcome with validation results'})
   async validateInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     body = this.parseRequestBody(req);
-    const { resource: bodyResource, profile } = this.extractValidateParams(body);
+    const {resource: bodyResource, profile} = this.extractValidateParams(body);
 
     // Use provided resource or fall back to the stored one
     let resource = bodyResource;
@@ -304,7 +305,7 @@ export class FhirController {
     if (!resource) {
       const stored = await this.fhirService.findById(resourceType, id);
       const obj = stored.toObject ? stored.toObject() : stored;
-      const { _id, __v, ...fhirResource } = obj;
+      const {_id, __v, ...fhirResource} = obj;
 
       resource = fhirResource;
     }
@@ -403,14 +404,14 @@ export class FhirController {
 
   /** FHIR type-level history. Returns a history Bundle for all resources of a given type. */
   @Get(':resourceType/_history')
-  @ApiOperation({ summary: 'Type History', description: 'Returns version history for all resources of a given type.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiQuery({ name: '_since', required: false, description: 'Only include versions created at or after this date' })
-  @ApiQuery({ name: '_count', required: false, type: Number })
-  @ApiResponse({ status: 200, description: 'Bundle (history)' })
+  @ApiOperation({summary: 'Type History', description: 'Returns version history for all resources of a given type.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiQuery({name: '_since', required: false, description: 'Only include versions created at or after this date'})
+  @ApiQuery({name: '_count', required: false, type: Number})
+  @ApiResponse({status: 200, description: 'Bundle (history)'})
   async typeHistory(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
-    const { entries, total } = await this.fhirService.typeHistory(resourceType, sanitizeSearchParams(queryParams));
+    const {entries, total} = await this.fhirService.typeHistory(resourceType, sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
     return this.sendFhirResponse(res, req, this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/_history`, baseUrl));
@@ -418,57 +419,57 @@ export class FhirController {
 
   /** FHIR $meta operation (type-level). Returns aggregated meta for all resources of a given type. */
   @Get(':resourceType/\\$meta')
-  @ApiOperation({ summary: '$meta (type-level)', description: 'Returns aggregated profiles, tags and security labels for a resource type.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
+  @ApiOperation({summary: '$meta (type-level)', description: 'Returns aggregated profiles, tags and security labels for a resource type.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiResponse({status: 200, description: 'Parameters resource with Meta'})
   async metaType(@Param('resourceType') resourceType: string, @Req() req: Request, @Res() res: Response) {
 
     const meta = await this.fhirService.getAggregatedMeta(resourceType);
 
-    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: meta }] });
+    this.sendFhirResponse(res, req, {resourceType: 'Parameters', parameter: [{name: 'return', valueMeta: meta}]});
   }
 
   /** FHIR $meta operation (instance-level). Returns the meta element for a specific resource. */
   @Get(':resourceType/:id/\\$meta')
-  @ApiOperation({ summary: '$meta (instance-level)', description: 'Returns the meta element for a specific resource.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiResponse({ status: 200, description: 'Parameters resource with Meta' })
+  @ApiOperation({summary: '$meta (instance-level)', description: 'Returns the meta element for a specific resource.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiResponse({status: 200, description: 'Parameters resource with Meta'})
   async metaInstance(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.fhirService.findById(resourceType, id);
 
-    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: resource.meta }] });
+    this.sendFhirResponse(res, req, {resourceType: 'Parameters', parameter: [{name: 'return', valueMeta: resource.meta}]});
   }
 
   /** FHIR $meta-add operation. Adds profiles, tags and security labels to a resource's meta. */
   @Post(':resourceType/:id/\\$meta-add')
-  @ApiOperation({ summary: '$meta-add', description: 'Adds profiles, tags and security labels to a resource.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiResponse({ status: 200, description: 'Parameters resource with updated Meta' })
+  @ApiOperation({summary: '$meta-add', description: 'Adds profiles, tags and security labels to a resource.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiResponse({status: 200, description: 'Parameters resource with updated Meta'})
   async metaAdd(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     body = this.parseRequestBody(req);
     const inputMeta = body?.resourceType === 'Parameters' ? body.parameter?.find((p: any) => p.name === 'meta')?.valueMeta : body;
     const updatedMeta = await this.fhirService.metaAdd(resourceType, id, inputMeta || {});
 
-    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: updatedMeta }] });
+    this.sendFhirResponse(res, req, {resourceType: 'Parameters', parameter: [{name: 'return', valueMeta: updatedMeta}]});
   }
 
   /** FHIR $meta-delete operation. Removes profiles, tags and security labels from a resource's meta. */
   @Post(':resourceType/:id/\\$meta-delete')
-  @ApiOperation({ summary: '$meta-delete', description: 'Removes profiles, tags and security labels from a resource.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiResponse({ status: 200, description: 'Parameters resource with updated Meta' })
+  @ApiOperation({summary: '$meta-delete', description: 'Removes profiles, tags and security labels from a resource.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiResponse({status: 200, description: 'Parameters resource with updated Meta'})
   async metaDelete(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     body = this.parseRequestBody(req);
     const inputMeta = body?.resourceType === 'Parameters' ? body.parameter?.find((p: any) => p.name === 'meta')?.valueMeta : body;
     const updatedMeta = await this.fhirService.metaDelete(resourceType, id, inputMeta || {});
 
-    this.sendFhirResponse(res, req, { resourceType: 'Parameters', parameter: [{ name: 'return', valueMeta: updatedMeta }] });
+    this.sendFhirResponse(res, req, {resourceType: 'Parameters', parameter: [{name: 'return', valueMeta: updatedMeta}]});
   }
 
   /**
@@ -477,26 +478,26 @@ export class FhirController {
    * Supports _since, _count, _type parameters.
    */
   @Get(':resourceType/:id/\\$everything')
-  @ApiOperation({ summary: '$everything', description: 'Returns the resource and all resources that reference it (Patient compartment).' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiQuery({ name: '_since', required: false, description: 'Only include resources updated since this date' })
-  @ApiQuery({ name: '_count', required: false, type: Number, description: 'Maximum number of results' })
-  @ApiQuery({ name: '_type', required: false, description: 'Comma-separated list of resource types to include' })
-  @ApiResponse({ status: 200, description: 'Bundle (searchset) with all related resources' })
+  @ApiOperation({summary: '$everything', description: 'Returns the resource and all resources that reference it (Patient compartment).'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiQuery({name: '_since', required: false, description: 'Only include resources updated since this date'})
+  @ApiQuery({name: '_count', required: false, type: Number, description: 'Maximum number of results'})
+  @ApiQuery({name: '_type', required: false, description: 'Comma-separated list of resource types to include'})
+  @ApiResponse({status: 200, description: 'Bundle (searchset) with all related resources'})
   async everything(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
     const params = sanitizeSearchParams(queryParams);
-    const { resources, total } = await this.fhirService.everything(resourceType, id, params);
+    const {resources, total} = await this.fhirService.everything(resourceType, id, params);
     const baseUrl = this.getBaseUrl(req);
 
     const entries = resources.map((r: any) => {
       const fhir = this.toFhirJson(r, baseUrl);
 
-      return new BundleEntry({ fullUrl: `${baseUrl}/${fhir.resourceType}/${fhir.id}`, resource: fhir });
+      return new BundleEntry({fullUrl: `${baseUrl}/${fhir.resourceType}/${fhir.id}`, resource: fhir});
     });
 
-    const bundle = new Bundle({ type: BundleType.Searchset, total, link: [new BundleLink({ relation: 'self', url: `${baseUrl}/${resourceType}/${id}/$everything` })], entry: entries });
+    const bundle = new Bundle({type: BundleType.Searchset, total, link: [new BundleLink({relation: 'self', url: `${baseUrl}/${resourceType}/${id}/$everything`})], entry: entries});
 
     this.sendFhirResponse(res, req, bundle);
   }
@@ -510,17 +511,17 @@ export class FhirController {
    * @param res - The Express response.
    */
   @Get(':resourceType')
-  @ApiOperation({ summary: 'Search', description: 'Search for resources of a given type. Returns a Bundle of type searchset.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiQuery({ name: '_id', required: false, description: 'Filter by logical id' })
-  @ApiQuery({ name: '_sort', required: false, description: 'Sort fields (comma-separated, prefix with - for descending)' })
-  @ApiQuery({ name: '_count', required: false, description: 'Maximum number of results', type: Number })
-  @ApiQuery({ name: '_offset', required: false, description: 'Offset for pagination', type: Number })
-  @ApiQuery({ name: '_summary', required: false, description: 'Return summary: true, text, data, count, false' })
-  @ApiQuery({ name: '_elements', required: false, description: 'Comma-separated list of elements to include' })
-  @ApiQuery({ name: '_include', required: false, description: 'Include referenced resources (format: SourceType:searchParam[:targetType])' })
-  @ApiQuery({ name: '_revinclude', required: false, description: 'Reverse include (format: SourceType:searchParam[:targetType])' })
-  @ApiResponse({ status: 200, description: 'Bundle (searchset)' })
+  @ApiOperation({summary: 'Search', description: 'Search for resources of a given type. Returns a Bundle of type searchset.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiQuery({name: '_id', required: false, description: 'Filter by logical id'})
+  @ApiQuery({name: '_sort', required: false, description: 'Sort fields (comma-separated, prefix with - for descending)'})
+  @ApiQuery({name: '_count', required: false, description: 'Maximum number of results', type: Number})
+  @ApiQuery({name: '_offset', required: false, description: 'Offset for pagination', type: Number})
+  @ApiQuery({name: '_summary', required: false, description: 'Return summary: true, text, data, count, false'})
+  @ApiQuery({name: '_elements', required: false, description: 'Comma-separated list of elements to include'})
+  @ApiQuery({name: '_include', required: false, description: 'Include referenced resources (format: SourceType:searchParam[:targetType])'})
+  @ApiQuery({name: '_revinclude', required: false, description: 'Reverse include (format: SourceType:searchParam[:targetType])'})
+  @ApiResponse({status: 200, description: 'Bundle (searchset)'})
   async search(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
     return this.executeSearch(resourceType, queryParams, req, res);
@@ -528,28 +529,28 @@ export class FhirController {
 
   /** FHIR search via POST (application/x-www-form-urlencoded). Equivalent to GET search. */
   @Post(':resourceType/_search')
-  @ApiOperation({ summary: 'Search (POST)', description: 'Search via POST with form-encoded parameters. Equivalent to GET search.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiResponse({ status: 200, description: 'Bundle (searchset)' })
+  @ApiOperation({summary: 'Search (POST)', description: 'Search via POST with form-encoded parameters. Equivalent to GET search.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiResponse({status: 200, description: 'Bundle (searchset)'})
   async searchPost(@Param('resourceType') resourceType: string, @Body() body: Record<string, string>, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
     // Merge query string and body params (body takes precedence)
-    const mergedParams = { ...queryParams, ...body };
+    const mergedParams = {...queryParams, ...body};
 
     return this.executeSearch(resourceType, mergedParams, req, res);
   }
 
   /** FHIR instance-level history. Returns all versions of a specific resource. */
   @Get(':resourceType/:id/_history')
-  @ApiOperation({ summary: 'Instance History', description: 'Returns version history for a specific resource instance.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiQuery({ name: '_since', required: false, description: 'Only include versions created at or after this date' })
-  @ApiQuery({ name: '_count', required: false, type: Number })
-  @ApiResponse({ status: 200, description: 'Bundle (history)' })
+  @ApiOperation({summary: 'Instance History', description: 'Returns version history for a specific resource instance.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiQuery({name: '_since', required: false, description: 'Only include versions created at or after this date'})
+  @ApiQuery({name: '_count', required: false, type: Number})
+  @ApiResponse({status: 200, description: 'Bundle (history)'})
   async instanceHistory(@Param('resourceType') resourceType: string, @Param('id') id: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
-    const { entries, total } = await this.fhirService.instanceHistory(resourceType, id, sanitizeSearchParams(queryParams));
+    const {entries, total} = await this.fhirService.instanceHistory(resourceType, id, sanitizeSearchParams(queryParams));
     const baseUrl = this.getBaseUrl(req);
 
     return this.sendFhirResponse(res, req, this.buildHistoryBundle(entries, total, `${baseUrl}/${resourceType}/${id}/_history`, baseUrl));
@@ -557,20 +558,20 @@ export class FhirController {
 
   /** FHIR vRead interaction. Returns a specific version of a resource. */
   @Get(':resourceType/:id/_history/:versionId')
-  @ApiOperation({ summary: 'vRead', description: 'Read a specific version of a resource from history.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiParam({ name: 'versionId', example: '1' })
-  @ApiResponse({ status: 200, description: 'The FHIR resource at the requested version' })
-  @ApiResponse({ status: 404, description: 'Version not found' })
-  @ApiResponse({ status: 410, description: 'Resource was deleted at this version' })
+  @ApiOperation({summary: 'vRead', description: 'Read a specific version of a resource from history.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiParam({name: 'versionId', example: '1'})
+  @ApiResponse({status: 200, description: 'The FHIR resource at the requested version'})
+  @ApiResponse({status: 404, description: 'Version not found'})
+  @ApiResponse({status: 410, description: 'Resource was deleted at this version'})
   async vRead(@Param('resourceType') resourceType: string, @Param('id') id: string, @Param('versionId') versionId: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.fhirService.vRead(resourceType, id, versionId);
 
-    if (this.checkConditionalRead(req, res, { versionId, lastUpdated: resource.meta?.lastUpdated || new Date().toISOString() })) {
-return;
-}
+    if (this.checkConditionalRead(req, res, {versionId, lastUpdated: resource.meta?.lastUpdated || new Date().toISOString()})) {
+      return;
+    }
 
     const baseUrl = this.getBaseUrl(req);
     this.auditService.recordAudit('vread', resourceType, id, req);
@@ -620,11 +621,11 @@ return;
    * @param res - The Express response. Includes `ETag` header with the current versionId.
    */
   @Get(':resourceType/:id')
-  @ApiOperation({ summary: 'Read', description: 'Read a single resource by logical id.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiResponse({ status: 200, description: 'The FHIR resource' })
-  @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
+  @ApiOperation({summary: 'Read', description: 'Read a single resource by logical id.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiResponse({status: 200, description: 'The FHIR resource'})
+  @ApiResponse({status: 404, description: 'OperationOutcome (not found)'})
   async read(@Param('resourceType') resourceType: string, @Param('id') id: string, @Req() req: Request, @Res() res: Response) {
 
     const resource = await this.fhirService.findById(resourceType, id);
@@ -636,8 +637,8 @@ return;
     await this.assertConsentAccess(resourceType, id, req);
 
     if (this.checkConditionalRead(req, res, resource.meta)) {
-return;
-}
+      return;
+    }
 
     const baseUrl = this.getBaseUrl(req);
     const fhir = this.toFhirJson(resource, baseUrl);
@@ -651,13 +652,13 @@ return;
    * Returns 201 Created with `Location` and `ETag` headers.
    */
   @Post(':resourceType')
-  @ApiOperation({ summary: 'Create', description: 'Create a new resource. Validates the body and assigns a server-generated id. Supports conditional create via If-None-Exist header.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiHeader({ name: 'If-None-Exist', required: false, description: 'Conditional create: search params (e.g. identifier=system|value)' })
-  @ApiResponse({ status: 201, description: 'Created resource with Location and ETag headers' })
-  @ApiResponse({ status: 200, description: 'Existing resource found (conditional create)' })
-  @ApiResponse({ status: 400, description: 'OperationOutcome (validation error)' })
-  @ApiResponse({ status: 409, description: 'OperationOutcome (multiple matches)' })
+  @ApiOperation({summary: 'Create', description: 'Create a new resource. Validates the body and assigns a server-generated id. Supports conditional create via If-None-Exist header.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiHeader({name: 'If-None-Exist', required: false, description: 'Conditional create: search params (e.g. identifier=system|value)'})
+  @ApiResponse({status: 201, description: 'Created resource with Location and ETag headers'})
+  @ApiResponse({status: 200, description: 'Existing resource found (conditional create)'})
+  @ApiResponse({status: 400, description: 'OperationOutcome (validation error)'})
+  @ApiResponse({status: 409, description: 'OperationOutcome (multiple matches)'})
   async create(@Param('resourceType') resourceType: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     body = this.parseRequestBody(req);
@@ -671,7 +672,7 @@ return;
     if (ifNoneExist) {
       const searchParams = this.parseSearchString(ifNoneExist);
       searchParams.resourceType = resourceType;
-      const { resource, created } = await this.fhirService.conditionalCreate(resourceType, body, searchParams, undefined, req);
+      const {resource, created} = await this.fhirService.conditionalCreate(resourceType, body, searchParams, undefined, req);
 
       if (!created) {
         res.set('ETag', `W/"${resource.meta.versionId}"`);
@@ -695,19 +696,19 @@ return;
    * Creates if 0 matches, updates if 1, errors if multiple.
    */
   @Put(':resourceType')
-  @ApiOperation({ summary: 'Conditional Update', description: 'Conditional update: creates if 0 matches, updates if 1, errors if multiple.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiResponse({ status: 200, description: 'Updated resource' })
-  @ApiResponse({ status: 201, description: 'Created resource (no match found)' })
-  @ApiResponse({ status: 409, description: 'OperationOutcome (multiple matches)' })
+  @ApiOperation({summary: 'Conditional Update', description: 'Conditional update: creates if 0 matches, updates if 1, errors if multiple.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiResponse({status: 200, description: 'Updated resource'})
+  @ApiResponse({status: 201, description: 'Created resource (no match found)'})
+  @ApiResponse({status: 409, description: 'OperationOutcome (multiple matches)'})
   async conditionalUpdate(@Param('resourceType') resourceType: string, @Body() body: any, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
     body = this.parseRequestBody(req);
     await this.validationPipe.transform(body);
 
     const baseUrl = this.getBaseUrl(req);
-    const searchParams = { ...queryParams, resourceType };
-    const { resource, created } = await this.fhirService.conditionalUpdate(resourceType, body, searchParams, undefined, req);
+    const searchParams = {...queryParams, resourceType};
+    const {resource, created} = await this.fhirService.conditionalUpdate(resourceType, body, searchParams, undefined, req);
 
     if (created) {
       res.set('Location', `${baseUrl}/${resourceType}/${resource.id}`).set('ETag', `W/"${resource.meta.versionId}"`);
@@ -724,14 +725,14 @@ return;
    * Supports If-Match header for optimistic locking.
    */
   @Put(':resourceType/:id')
-  @ApiOperation({ summary: 'Update', description: 'Update an existing resource. Validates the body and increments versionId. Supports If-Match for optimistic locking.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiParam({ name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444' })
-  @ApiHeader({ name: 'If-Match', required: false, description: 'Optimistic locking: W/"versionId"' })
-  @ApiResponse({ status: 200, description: 'Updated resource with ETag header' })
-  @ApiResponse({ status: 400, description: 'OperationOutcome (validation error)' })
-  @ApiResponse({ status: 404, description: 'OperationOutcome (not found)' })
-  @ApiResponse({ status: 412, description: 'OperationOutcome (version conflict)' })
+  @ApiOperation({summary: 'Update', description: 'Update an existing resource. Validates the body and increments versionId. Supports If-Match for optimistic locking.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiParam({name: 'id', example: '1d5c8c6c-1405-4c69-80d0-3f1734451444'})
+  @ApiHeader({name: 'If-Match', required: false, description: 'Optimistic locking: W/"versionId"'})
+  @ApiResponse({status: 200, description: 'Updated resource with ETag header'})
+  @ApiResponse({status: 400, description: 'OperationOutcome (validation error)'})
+  @ApiResponse({status: 404, description: 'OperationOutcome (not found)'})
+  @ApiResponse({status: 412, description: 'OperationOutcome (version conflict)'})
   async update(@Param('resourceType') resourceType: string, @Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
 
     body = this.parseRequestBody(req);
@@ -794,14 +795,14 @@ return;
 
   /** FHIR conditional delete: DELETE /ResourceType?search-params */
   @Delete(':resourceType')
-  @ApiOperation({ summary: 'Conditional Delete', description: 'Delete resources matching search criteria.' })
-  @ApiParam({ name: 'resourceType', example: 'Patient' })
-  @ApiResponse({ status: 200, description: 'OperationOutcome (success)' })
+  @ApiOperation({summary: 'Conditional Delete', description: 'Delete resources matching search criteria.'})
+  @ApiParam({name: 'resourceType', example: 'Patient'})
+  @ApiResponse({status: 200, description: 'OperationOutcome (success)'})
   async conditionalDelete(@Param('resourceType') resourceType: string, @Query() queryParams: Record<string, string>, @Req() req: Request, @Res() res: Response) {
 
-    const searchParams = { ...queryParams, resourceType };
+    const searchParams = {...queryParams, resourceType};
     const count = await this.fhirService.conditionalDelete(resourceType, searchParams, undefined, req);
-    const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Conditionally deleted ${count} ${resourceType} resource(s)` })] });
+    const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Conditionally deleted ${count} ${resourceType} resource(s)`})]});
 
     this.sendFhirResponse(res, req, outcome);
   }
@@ -826,10 +827,10 @@ return;
       const deleted = await this.fhirService.cascadeDelete(resourceType, id, undefined, req);
 
       if (prefer.return === 'minimal') {
- res.status(HttpStatus.NO_CONTENT).end();
+        res.status(HttpStatus.NO_CONTENT).end();
 
- return; 
-}
+        return;
+      }
 
       const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `Cascade deleted ${deleted} resource(s) including ${resourceType}/${id}`})]});
 
@@ -839,10 +840,10 @@ return;
     await this.fhirService.delete(resourceType, id, undefined, req);
 
     if (prefer.return === 'minimal') {
- res.status(HttpStatus.NO_CONTENT).end();
+      res.status(HttpStatus.NO_CONTENT).end();
 
- return; 
-}
+      return;
+    }
 
     const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: `${resourceType}/${id} successfully deleted`})]});
     this.sendFhirResponse(res, req, outcome);
@@ -867,16 +868,16 @@ return;
       const resource = params.find((p: any) => p.name === 'resource')?.resource;
       const profile = params.find((p: any) => p.name === 'profile')?.valueUri;
 
-      return { resource, profile };
+      return {resource, profile};
     }
 
     const profile = body?.meta?.profile?.[0];
 
-    return { resource: body, profile };
+    return {resource: body, profile};
   }
 
   /** Extracts $expunge parameters from a FHIR Parameters resource body. */
-  private extractExpungeParams(body: any): {expungeDeletedResources?: boolean; expungeOldVersions?: boolean; expungeEverything?: boolean; limit?: number} {
+  private extractExpungeParams(body: any): { expungeDeletedResources?: boolean; expungeOldVersions?: boolean; expungeEverything?: boolean; limit?: number } {
     if (!body || body.resourceType !== 'Parameters') {
       return {expungeDeletedResources: true};
     }
@@ -897,15 +898,15 @@ return;
   private validationResultToOutcome(result: { valid: boolean; issues: { severity: string; message: string; path?: string }[] }): OperationOutcome {
 
     if (result.valid || result.issues.length === 0) {
-      return new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: 'Validation successful' })] });
+      return new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics: 'Validation successful'})]});
     }
 
-    const severityMap: Record<string, IssueSeverity> = { error: IssueSeverity.Error, warning: IssueSeverity.Warning, information: IssueSeverity.Information };
+    const severityMap: Record<string, IssueSeverity> = {error: IssueSeverity.Error, warning: IssueSeverity.Warning, information: IssueSeverity.Information};
     const issues = result.issues.map((i) => new OperationOutcomeIssue({
       severity: severityMap[i.severity] || IssueSeverity.Information, code: i.severity === 'error' ? IssueType.Invalid : IssueType.Informational, diagnostics: i.message, expression: i.path ? [i.path] : undefined,
     }));
 
-    return new OperationOutcome({ issue: issues });
+    return new OperationOutcome({issue: issues});
   }
 
   /** Shared search execution for GET and POST _search. */
@@ -920,15 +921,15 @@ return;
     // Consent enforcement: exclude resources denied by patient consent directives
     await this.applyConsentFilter(resourceType, params, req);
 
-    const { resources, total, included, warnings } = await this.fhirService.search(resourceType, params);
+    const {resources, total, included, warnings} = await this.fhirService.search(resourceType, params);
 
     // Prefer: handling=strict → reject unknown search parameters with 400
     const prefer = this.parsePrefer(req);
 
     if (prefer.handling === 'strict' && warnings.length > 0) {
-      const issues = warnings.map((w) => new OperationOutcomeIssue({ severity: IssueSeverity.Error, code: IssueType.NotFound, diagnostics: w }));
+      const issues = warnings.map((w) => new OperationOutcomeIssue({severity: IssueSeverity.Error, code: IssueType.NotFound, diagnostics: w}));
 
-      return this.sendFhirResponse(res, req, new OperationOutcome({ issue: issues }), HttpStatus.BAD_REQUEST);
+      return this.sendFhirResponse(res, req, new OperationOutcome({issue: issues}), HttpStatus.BAD_REQUEST);
     }
 
     const baseUrl = this.getBaseUrl(req);
@@ -937,11 +938,11 @@ return;
 
     // _summary=count returns only total, no entries
     if (summary === 'count') {
-      const bundle = new Bundle({ type: BundleType.Searchset, total, link: [new BundleLink({ relation: 'self', url: selfUrl })] });
+      const bundle = new Bundle({type: BundleType.Searchset, total, link: [new BundleLink({relation: 'self', url: selfUrl})]});
 
       if (total === undefined) {
-delete (bundle as any).total;
-}
+        delete (bundle as any).total;
+      }
 
       return this.sendFhirResponse(res, req, bundle);
     }
@@ -960,48 +961,48 @@ delete (bundle as any).total;
     };
 
     // Primary results with search.mode = 'match'
-    const entries: any[] = resources.map((r) => new BundleEntry({ fullUrl: `${baseUrl}/${r.resourceType}/${r.id}`, resource: transformResource(r), search: new BundleEntrySearch({ mode: SearchEntryMode.Match }) }));
+    const entries: any[] = resources.map((r) => new BundleEntry({fullUrl: `${baseUrl}/${r.resourceType}/${r.id}`, resource: transformResource(r), search: new BundleEntrySearch({mode: SearchEntryMode.Match})}));
 
     // Included resources with search.mode = 'include'
     for (const r of included) {
-      entries.push(new BundleEntry({ fullUrl: `${baseUrl}/${r.resourceType}/${r.id}`, resource: transformResource(r), search: new BundleEntrySearch({ mode: SearchEntryMode.Include }) }));
+      entries.push(new BundleEntry({fullUrl: `${baseUrl}/${r.resourceType}/${r.id}`, resource: transformResource(r), search: new BundleEntrySearch({mode: SearchEntryMode.Include})}));
     }
 
     // Search outcome: unknown/unsupported parameters as OperationOutcome with search.mode = 'outcome'
     if (warnings.length > 0) {
-      const issues = warnings.map((w) => new OperationOutcomeIssue({ severity: IssueSeverity.Warning, code: IssueType.NotFound, diagnostics: w }));
-      entries.push(new BundleEntry({ resource: new OperationOutcome({ issue: issues }), search: new BundleEntrySearch({ mode: SearchEntryMode.Outcome }) }));
+      const issues = warnings.map((w) => new OperationOutcomeIssue({severity: IssueSeverity.Warning, code: IssueType.NotFound, diagnostics: w}));
+      entries.push(new BundleEntry({resource: new OperationOutcome({issue: issues}), search: new BundleEntrySearch({mode: SearchEntryMode.Outcome})}));
     }
 
     // Pagination links (FHIR spec: self, first, previous, next, last)
     const count = params._count ? parseInt(params._count, 10) : 10;
     const offset = params._offset ? parseInt(params._offset, 10) : 0;
-    const paginationParams = { ...params, _count: String(count) };
-    const links = [new BundleLink({ relation: 'self', url: selfUrl })];
-    links.push(new BundleLink({ relation: 'first', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: '0' }) }));
+    const paginationParams = {...params, _count: String(count)};
+    const links = [new BundleLink({relation: 'self', url: selfUrl})];
+    links.push(new BundleLink({relation: 'first', url: this.buildSelfUrl(baseUrl, resourceType, {...paginationParams, _offset: '0'})}));
 
     if (offset > 0) {
       const prevOffset = Math.max(0, offset - count);
-      links.push(new BundleLink({ relation: 'previous', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(prevOffset) }) }));
+      links.push(new BundleLink({relation: 'previous', url: this.buildSelfUrl(baseUrl, resourceType, {...paginationParams, _offset: String(prevOffset)})}));
     }
 
     if (total !== undefined && offset + count < total) {
-      links.push(new BundleLink({ relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(offset + count) }) }));
+      links.push(new BundleLink({relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, {...paginationParams, _offset: String(offset + count)})}));
     } else if (total === undefined && resources.length === count) {
       // Heuristic: if we got exactly _count results, there are probably more
-      links.push(new BundleLink({ relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(offset + count) }) }));
+      links.push(new BundleLink({relation: 'next', url: this.buildSelfUrl(baseUrl, resourceType, {...paginationParams, _offset: String(offset + count)})}));
     }
 
     if (total !== undefined && total > 0) {
       const lastOffset = Math.max(0, Math.floor((total - 1) / count) * count);
-      links.push(new BundleLink({ relation: 'last', url: this.buildSelfUrl(baseUrl, resourceType, { ...paginationParams, _offset: String(lastOffset) }) }));
+      links.push(new BundleLink({relation: 'last', url: this.buildSelfUrl(baseUrl, resourceType, {...paginationParams, _offset: String(lastOffset)})}));
     }
 
-    const bundle = new Bundle({ type: BundleType.Searchset, total, link: links, entry: entries });
+    const bundle = new Bundle({type: BundleType.Searchset, total, link: links, entry: entries});
 
     if (total === undefined) {
-delete (bundle as any).total;
-}
+      delete (bundle as any).total;
+    }
 
     this.auditService.recordAudit('search', resourceType, null, req);
 
@@ -1025,7 +1026,7 @@ delete (bundle as any).total;
   private toFhirJson(doc: any, baseUrl: string): any {
 
     const obj = doc.toObject ? doc.toObject() : doc;
-    const { _id, __v, ...fhirResource } = obj;
+    const {_id, __v, ...fhirResource} = obj;
 
     return this.resolveReferences(fhirResource, baseUrl);
   }
@@ -1050,12 +1051,12 @@ delete (bundle as any).total;
   private buildHistoryBundle(entries: any[], total: number, selfUrl: string, baseUrl: string): Bundle {
 
     const bundleEntries = entries.map((entry) => {
-      const { _id, __v, request, response, _deleted, ...resource } = entry;
+      const {_id, __v, request, response, _deleted, ...resource} = entry;
       const fullUrl = `${baseUrl}/${entry.resourceType}/${entry.id}`;
       const bundleEntry: any = {
         fullUrl,
-        request: request ? new BundleEntryRequest({ method: this.toHttpVerb(request.method), url: request.url }) : undefined,
-        response: response ? new BundleEntryResponse({ status: response.status, etag: response.etag, lastModified: response.lastModified }) : undefined,
+        request: request ? new BundleEntryRequest({method: this.toHttpVerb(request.method), url: request.url}) : undefined,
+        response: response ? new BundleEntryResponse({status: response.status, etag: response.etag, lastModified: response.lastModified}) : undefined,
       };
 
       // Only include the resource body for non-deleted entries
@@ -1066,12 +1067,12 @@ delete (bundle as any).total;
       return new BundleEntry(bundleEntry);
     });
 
-    return new Bundle({ type: BundleType.History, total, link: [new BundleLink({ relation: 'self', url: selfUrl })], entry: bundleEntries });
+    return new Bundle({type: BundleType.History, total, link: [new BundleLink({relation: 'self', url: selfUrl})], entry: bundleEntries});
   }
 
   /** Maps HTTP method string to fhir-models-r4 HTTPVerb enum. */
   private toHttpVerb(method: string): HTTPVerb {
-    const map: Record<string, HTTPVerb> = { GET: HTTPVerb.GET, POST: HTTPVerb.POST, PUT: HTTPVerb.PUT, DELETE: HTTPVerb.DELETE };
+    const map: Record<string, HTTPVerb> = {GET: HTTPVerb.GET, POST: HTTPVerb.POST, PUT: HTTPVerb.PUT, DELETE: HTTPVerb.DELETE};
 
     return map[method] || HTTPVerb.GET;
   }
@@ -1087,8 +1088,8 @@ delete (bundle as any).total;
       const f = String(format).toLowerCase();
 
       if (f.includes('xml') || f === 'xml') {
-return 'xml';
-}
+        return 'xml';
+      }
 
       return 'json';
     }
@@ -1096,8 +1097,8 @@ return 'xml';
     const accept = req.headers.accept || '';
 
     if (accept.includes('application/fhir+xml') || accept.includes('application/xml')) {
-return 'xml';
-}
+      return 'xml';
+    }
 
     return 'json';
   }
@@ -1249,7 +1250,7 @@ return 'xml';
     // Merge with existing compartment filter or set new one
     if (params._consentExclusion) {
       const existing = JSON.parse(params._consentExclusion);
-      params._consentExclusion = JSON.stringify({ $and: [existing, exclusion] });
+      params._consentExclusion = JSON.stringify({$and: [existing, exclusion]});
     } else {
       params._consentExclusion = JSON.stringify(exclusion);
     }
@@ -1286,7 +1287,7 @@ return 'xml';
 
     // Patient resource: restrict to the patient's own record
     if (resourceType === 'Patient') {
-      params._compartmentFilter = JSON.stringify({ id: patientId });
+      params._compartmentFilter = JSON.stringify({id: patientId});
 
       return;
     }
@@ -1303,10 +1304,10 @@ return 'xml';
       const resolved = this.searchRegistry.resolvePaths(resourceType, param);
       const mongoPath = (resolved?.paths[0] || param) + '.reference';
 
-      return { [mongoPath]: patientRef };
+      return {[mongoPath]: patientRef};
     });
 
-    const filter = refConditions.length === 1 ? refConditions[0] : { $or: refConditions };
+    const filter = refConditions.length === 1 ? refConditions[0] : {$or: refConditions};
     params._compartmentFilter = JSON.stringify(filter);
   }
 
@@ -1314,8 +1315,8 @@ return 'xml';
     const header = req.headers.prefer as string;
 
     if (!header) {
-return {};
-}
+      return {};
+    }
 
     const result: Record<string, string> = {};
 
@@ -1323,8 +1324,8 @@ return {};
       const [key, value] = part.split('=');
 
       if (key && value) {
-result[key.trim()] = value.trim();
-}
+        result[key.trim()] = value.trim();
+      }
     }
 
     return result;
@@ -1338,13 +1339,13 @@ result[key.trim()] = value.trim();
     const prefer = this.parsePrefer(req);
 
     if (prefer.return === 'minimal') {
- res.status(statusCode === HttpStatus.CREATED ? HttpStatus.CREATED : HttpStatus.NO_CONTENT).end();
+      res.status(statusCode === HttpStatus.CREATED ? HttpStatus.CREATED : HttpStatus.NO_CONTENT).end();
 
- return; 
-}
+      return;
+    }
 
     if (prefer.return === 'OperationOutcome') {
-      const outcome = new OperationOutcome({ issue: [new OperationOutcomeIssue({ severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics })] });
+      const outcome = new OperationOutcome({issue: [new OperationOutcomeIssue({severity: IssueSeverity.Information, code: IssueType.Informational, diagnostics})]});
 
       return this.sendFhirResponse(res, req, outcome, statusCode);
     }
@@ -1365,10 +1366,10 @@ result[key.trim()] = value.trim();
       const etag = ifNoneMatch.replace(/^W\//, '').replace(/"/g, '');
 
       if (etag === meta.versionId) {
- res.status(304).end();
+        res.status(304).end();
 
- return true; 
-}
+        return true;
+      }
     }
 
     const ifModifiedSince = req.headers['if-modified-since'] as string;
@@ -1377,10 +1378,10 @@ result[key.trim()] = value.trim();
       const sinceDate = new Date(ifModifiedSince);
 
       if (!isNaN(sinceDate.getTime()) && new Date(meta.lastUpdated) <= sinceDate) {
- res.status(304).end();
+        res.status(304).end();
 
- return true; 
-}
+        return true;
+      }
     }
 
     return false;

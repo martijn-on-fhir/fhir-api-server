@@ -5,6 +5,7 @@ import * as jsonpatch from 'fast-json-patch';
 import {OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType} from 'fhir-models-r4';
 import {Model, ClientSession} from 'mongoose';
 import {Histogram} from 'prom-client';
+import {config} from '../config/app-config';
 import {FhirResourceHistory} from './fhir-resource-history.schema';
 import {FhirResource} from './fhir-resource.schema';
 import {FHIR_RESOURCE_MODEL, FHIR_HISTORY_MODEL} from './fhir.constants';
@@ -19,11 +20,11 @@ import {FhirResourceEvent} from './subscriptions/subscription.types';
  * Service responsible for all FHIR resource persistence operations.
  * Handles CRUD, search, version history and meta operations against MongoDB.
  */
-/** Threshold in ms above which search queries are logged as slow. Configurable via SLOW_QUERY_THRESHOLD_MS. */
-const SLOW_QUERY_THRESHOLD_MS = parseInt(process.env.SLOW_QUERY_THRESHOLD_MS || '500', 10);
+/** Threshold in ms above which search queries are logged as slow. Configured via centralized config. */
+const SLOW_QUERY_THRESHOLD_MS = config.fhir.slowQueryThresholdMs;
 
-/** Maximum allowed value for _count parameter. Configurable via MAX_COUNT env var. */
-const MAX_COUNT = parseInt(process.env.MAX_COUNT || '1000', 10);
+/** Maximum allowed value for _count parameter. Configured via centralized config. */
+const MAX_COUNT = config.fhir.maxCount;
 
 /** Clamps a _count value to be between 0 and MAX_COUNT. */
 const clampCount = (raw: string | undefined, defaultValue: number): number => {

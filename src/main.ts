@@ -6,6 +6,7 @@ import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
 import * as express from 'express';
 import helmet from 'helmet';
 import {AppModule} from './app.module';
+import {config} from './config/app-config';
 import {FhirExceptionFilter} from './fhir/filters/fhir-exception.filter';
 import {TimeoutInterceptor} from './fhir/interceptors/timeout.interceptor';
 import {JsonLoggerService} from './logging/json-logger.service';
@@ -21,7 +22,7 @@ const {version} = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'),
 /** Bootstraps the NestJS application with FHIR-specific middleware and global filters. */
 const bootstrap = async () => {
 
-  const useJsonLogger = process.env.LOG_FORMAT === 'json';
+  const useJsonLogger = config.logFormat === 'json';
   const app = await NestFactory.create<NestExpressApplication>(AppModule, useJsonLogger ? {logger: new JsonLoggerService()} : {});
 
   // Express v5 uses 'simple' query parser by default — use 'extended' for nested object/array support (e.g. ?filter[name]=John)
@@ -33,7 +34,7 @@ const bootstrap = async () => {
   }));
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: config.corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'If-Match', 'If-None-Exist', 'If-None-Match', 'If-Modified-Since',
       'Prefer', 'X-Forwarded-Proto', 'X-Forwarded-Host', 'Tenant'],
@@ -41,14 +42,14 @@ const bootstrap = async () => {
     credentials: true,
   });
 
-  const jsonLimit = process.env.BODY_SIZE_LIMIT || '5mb';
+  const jsonLimit = config.bodySizeLimit;
   app.use(express.json({type: ['application/json', 'application/fhir+json', 'application/json-patch+json'], limit: jsonLimit}));
   app.use(express.text({type: ['application/fhir+xml', 'application/xml'], limit: jsonLimit}));
   app.use(express.raw({type: ['application/octet-stream'], limit: '50mb'}));
   app.use(express.urlencoded({extended: true, limit: jsonLimit}));
 
   // Tenant URL rewriting must run before NestJS route matching
-  if (process.env.MULTI_TENANT_ENABLED === 'true') {
+  if (config.tenant.enabled) {
     const tenantMiddleware = new TenantMiddleware();
     app.use(tenantMiddleware.use.bind(tenantMiddleware));
   }
@@ -63,8 +64,7 @@ const bootstrap = async () => {
 
   app.enableShutdownHooks();
 
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(config.port);
 }
 
 bootstrap();

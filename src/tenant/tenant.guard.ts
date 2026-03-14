@@ -1,5 +1,6 @@
 import { BadRequestException, CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
+import { config } from '../config/app-config';
 import { TenantService } from './tenant.service';
 
 /**
@@ -13,7 +14,7 @@ export class TenantGuard implements CanActivate {
   constructor(private readonly tenantService: TenantService) {}
 
   /** Whether multi-tenancy is enabled. */
-  private readonly multiTenantEnabled = process.env.MULTI_TENANT_ENABLED === 'true';
+  private readonly multiTenantEnabled = config.tenant.enabled;
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     if (!this.multiTenantEnabled) {

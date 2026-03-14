@@ -4,16 +4,17 @@ import { basename, join } from 'path';
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { config } from '../config/app-config';
 import { BackupRemoteService } from './backup-remote.service';
 
-/** Backup directory. Configurable via BACKUP_DIR env var. */
-const BACKUP_DIR = process.env.BACKUP_DIR || join(process.cwd(), 'backups');
+/** Backup directory. Configured via centralized config. */
+const BACKUP_DIR = config.backup.dir.startsWith('/') || config.backup.dir.includes(':') ? config.backup.dir : join(process.cwd(), config.backup.dir);
 
-/** Backup schedule interval in ms. Configurable via BACKUP_INTERVAL_MS env var. Default: 24 hours. 0 = disabled. */
-const BACKUP_INTERVAL_MS = parseInt(process.env.BACKUP_INTERVAL_MS || '86400000', 10);
+/** Backup schedule interval in ms. Configured via centralized config. Default: 24 hours. 0 = disabled. */
+const BACKUP_INTERVAL_MS = config.backup.intervalMs;
 
-/** Max number of backups to retain. Configurable via BACKUP_RETENTION_COUNT env var. Default: 7. */
-const BACKUP_RETENTION_COUNT = parseInt(process.env.BACKUP_RETENTION_COUNT || '7', 10);
+/** Max number of backups to retain. Configured via centralized config. Default: 7. */
+const BACKUP_RETENTION_COUNT = config.backup.retentionCount;
 
 /**
  * Automated MongoDB backup service.

@@ -1,15 +1,16 @@
 import { Inject, Injectable, Logger, NotFoundException, OnModuleInit, HttpException } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { config } from '../../config/app-config';
 import { JobQueueService } from '../../job-queue/job-queue.service';
 import { FhirResource } from '../fhir-resource.schema';
 import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { BulkExportJob } from './bulk-export.types';
 
-/** Maximum concurrent bulk export jobs. Configurable via MAX_CONCURRENT_EXPORTS env var. */
-const MAX_CONCURRENT_EXPORTS = parseInt(process.env.MAX_CONCURRENT_EXPORTS || '3', 10);
+/** Maximum concurrent bulk export jobs. Configured via centralized config. */
+const MAX_CONCURRENT_EXPORTS = config.bulkExport.maxConcurrent;
 
-/** Bulk export job timeout in ms. Configurable via BULK_EXPORT_TIMEOUT_MS env var. Default 10 minutes. */
-const EXPORT_TIMEOUT_MS = parseInt(process.env.BULK_EXPORT_TIMEOUT_MS || '600000', 10);
+/** Bulk export job timeout in ms. Configured via centralized config. Default 10 minutes. */
+const EXPORT_TIMEOUT_MS = config.bulkExport.timeoutMs;
 
 /**
  * Service for FHIR Bulk Data Export ($export).

@@ -8,6 +8,7 @@ import { AdministrationModule } from './administration/administration.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CacheModule } from './cache/cache.module';
+import { config } from './config/app-config';
 import { FhirModule } from './fhir/fhir.module';
 import { FhirThrottlerGuard } from './fhir/guards/fhir-throttler.guard';
 import { SmartAuthGuard } from './fhir/guards/smart-auth.guard';
@@ -20,14 +21,11 @@ import { ResilienceModule } from './resilience/resilience.module';
 import { TenantGuard } from './tenant/tenant.guard';
 import { TenantModule } from './tenant/tenant.module';
 
-/** Whether multi-tenancy is enabled via environment variable. */
-const MULTI_TENANT_ENABLED = process.env.MULTI_TENANT_ENABLED === 'true';
-
 /** Conditionally include TenantModule only when multi-tenancy is enabled. */
-const conditionalImports = MULTI_TENANT_ENABLED ? [TenantModule] : [];
+const conditionalImports = config.tenant.enabled ? [TenantModule] : [];
 
 /** Conditionally register TenantGuard only when multi-tenancy is enabled. */
-const conditionalProviders = MULTI_TENANT_ENABLED
+const conditionalProviders = config.tenant.enabled
   ? [{ provide: APP_GUARD, useClass: TenantGuard }]
   : [];
 
@@ -37,16 +35,16 @@ const conditionalProviders = MULTI_TENANT_ENABLED
     EventEmitterModule.forRoot(),
     ThrottlerModule.forRoot([{
       name: 'short',
-      ttl: parseInt(process.env.RATE_LIMIT_TTL || '60', 10) * 1000,
-      limit: parseInt(process.env.RATE_LIMIT_MAX || '5000', 10),
+      ttl: config.rateLimit.ttl * 1000,
+      limit: config.rateLimit.max,
     }, {
       name: 'long',
       ttl: 600_000, // 10 minutes
-      limit: parseInt(process.env.RATE_LIMIT_MAX_LONG || '50000', 10),
+      limit: config.rateLimit.maxLong,
     }]),
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/fhir', {
-      maxPoolSize: parseInt(process.env.MONGODB_POOL_SIZE || '10', 10),
-      minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE || '2', 10),
+    MongooseModule.forRoot(config.mongodb.uri, {
+      maxPoolSize: config.mongodb.poolSize,
+      minPoolSize: config.mongodb.minPoolSize,
     }),
     CacheModule,
     FhirModule,

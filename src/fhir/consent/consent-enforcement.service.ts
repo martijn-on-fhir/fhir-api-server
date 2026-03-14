@@ -2,12 +2,13 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Model } from 'mongoose';
 import { CacheService } from '../../cache/cache.service';
+import { config } from '../../config/app-config';
 import { FhirResource } from '../fhir-resource.schema';
 import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { FhirResourceEvent } from '../subscriptions/subscription.types';
 
-/** Consent policy cache TTL in ms. Configurable via CONSENT_CACHE_TTL_MS env var. Default 60 seconds. */
-const CONSENT_CACHE_TTL = parseInt(process.env.CONSENT_CACHE_TTL_MS || '60000', 10);
+/** Consent policy cache TTL in ms. Configured via centralized config. Default 60 seconds. */
+const CONSENT_CACHE_TTL = config.fhir.consentCacheTtlMs;
 
 /** Parsed consent policy for a patient — flattened from active Consent resources. */
 export interface ConsentPolicy {

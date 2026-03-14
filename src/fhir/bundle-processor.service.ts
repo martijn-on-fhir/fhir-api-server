@@ -2,11 +2,12 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { OperationOutcome, OperationOutcomeIssue, IssueSeverity, IssueType } from 'fhir-models-r4';
 import { Connection } from 'mongoose';
+import { config } from '../config/app-config';
 import { FhirService } from './fhir.service';
 import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 
-/** Maximum allowed entries in a batch or transaction Bundle. Configurable via MAX_BUNDLE_ENTRIES env var. */
-const MAX_BUNDLE_ENTRIES = parseInt(process.env.MAX_BUNDLE_ENTRIES || '1000', 10);
+/** Maximum allowed entries in a batch or transaction Bundle. Configured via centralized config. */
+const MAX_BUNDLE_ENTRIES = config.fhir.maxBundleEntries;
 
 /**
  * Processes FHIR Bundle resources of type batch and transaction.

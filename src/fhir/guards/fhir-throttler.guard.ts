@@ -1,6 +1,7 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
 import { Request } from 'express';
+import { config } from '../../config/app-config';
 
 /**
  * Custom ThrottlerGuard that returns a FHIR-conformant OperationOutcome on rate limit exceeded.
@@ -26,7 +27,7 @@ return `sub:${user.sub}`;
 
   /** Skips rate limiting for health/metrics endpoints and when RATE_LIMIT_DISABLED is set. */
   protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
-    if (process.env.RATE_LIMIT_DISABLED === 'true') {
+    if (config.rateLimit.disabled) {
 return true;
 }
 

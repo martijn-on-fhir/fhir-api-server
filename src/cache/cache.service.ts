@@ -1,7 +1,8 @@
 import {Injectable, Logger} from '@nestjs/common';
+import {config} from '../config/app-config';
 
-/** Default cache TTL in milliseconds. Configurable via CACHE_TTL_MS env var (default 300000 = 5 min). */
-const DEFAULT_TTL_MS = parseInt(process.env.CACHE_TTL_MS || '300000', 10);
+/** Default cache TTL in milliseconds. Configured via centralized config (default 300000 = 5 min). */
+const DEFAULT_TTL_MS = config.cache.ttlMs;
 
 interface CacheEntry<T> {
   value: T;

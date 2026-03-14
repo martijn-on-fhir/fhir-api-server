@@ -4,6 +4,7 @@ import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Request } from 'express';
 import { Model } from 'mongoose';
 import { CacheModule } from '../cache/cache.module';
+import { config } from '../config/app-config';
 import { JobQueueModule } from '../job-queue/job-queue.module';
 import { TenantConnectionService } from '../tenant/tenant-connection.service';
 import { TenantModule } from '../tenant/tenant.module';
@@ -31,8 +32,8 @@ import { FhirValidationPipe } from './validation/fhir-validation.pipe';
 import { FhirValidationService } from './validation/fhir-validation.service';
 
 
-/** Whether multi-tenancy is enabled via environment variable. */
-const MULTI_TENANT_ENABLED = process.env.MULTI_TENANT_ENABLED === 'true';
+/** Whether multi-tenancy is enabled via centralized config. */
+const MULTI_TENANT_ENABLED = config.tenant.enabled;
 
 /**
  * Build the model providers based on multi-tenancy mode.

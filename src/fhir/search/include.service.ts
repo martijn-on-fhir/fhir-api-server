@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { config } from '../../config/app-config';
 import { FhirResource } from '../fhir-resource.schema';
 import { FHIR_RESOURCE_MODEL } from '../fhir.constants';
 import { SearchParameterRegistry } from './search-parameter-registry.service';
 
-/** Maximum number of included resources returned per search. Configurable via MAX_INCLUDE_RESULTS env var. */
-const MAX_INCLUDE_RESULTS = parseInt(process.env.MAX_INCLUDE_RESULTS || '1000', 10);
+/** Maximum number of included resources returned per search. Configured via centralized config. */
+const MAX_INCLUDE_RESULTS = config.fhir.maxIncludeResults;
 
 /** Parsed _include or _revinclude directive. */
 interface IncludeDirective {

@@ -2,13 +2,14 @@ import { randomUUID } from 'crypto';
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { config } from '../config/app-config';
 import { Job, JobStatus } from './job.schema';
 
 /** How often to check for timed-out jobs (ms). */
 const TIMEOUT_CHECK_INTERVAL = 60_000;
 
-/** Default retention for completed/cancelled/error jobs (days). Configurable via JOB_RETENTION_DAYS. */
-const RETENTION_DAYS = parseInt(process.env.JOB_RETENTION_DAYS || '7', 10);
+/** Default retention for completed/cancelled/error jobs (days). Configured via centralized config. */
+const RETENTION_DAYS = config.jobs.retentionDays;
 
 /**
  * Generic MongoDB-backed job queue.

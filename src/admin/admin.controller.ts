@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { IssueSeverity, IssueType, OperationOutcome, OperationOutcomeIssue } from 'fhir-models-r4';
+import { config } from '../config/app-config';
 import { AdminService } from './admin.service';
 import { BackupRemoteService } from './backup-remote.service';
 import { BackupService } from './backup.service';
@@ -111,11 +112,11 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'List of remote backup files' })
   async listRemoteBackups(@Res() res: Response) {
     if (!this.backupRemote.isEnabled()) {
-      return res.status(HttpStatus.OK).json({ enabled: false, message: 'Remote backup not configured. Set BACKUP_REMOTE_TYPE to s3 or azure.', backups: [] });
+      return res.status(HttpStatus.OK).json({ enabled: false, message: 'Remote backup not configured. Set backup.remoteType to s3 or azure.', backups: [] });
     }
 
     const backups = await this.backupRemote.listRemote();
-    res.status(HttpStatus.OK).json({ enabled: true, provider: process.env.BACKUP_REMOTE_TYPE, backups });
+    res.status(HttpStatus.OK).json({ enabled: true, provider: config.backup.remoteType, backups });
   }
 
   /** Download a backup from remote storage and restore it. */
@@ -131,7 +132,7 @@ export class AdminController {
 
     try {
       const localFilename = body.remoteKey.split('/').pop() || 'remote-backup.gz';
-      const localPath = `${process.env.BACKUP_DIR || './backups'}/${localFilename}`;
+      const localPath = `${config.backup.dir}/${localFilename}`;
       await this.backupRemote.download(body.remoteKey, localPath);
       const result = await this.backupService.restoreBackup(localFilename);
       res.status(HttpStatus.OK).set('Content-Type', 'application/fhir+json').json(new OperationOutcome({
