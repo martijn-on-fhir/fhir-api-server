@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.1...fhir-api-server-v0.12.2) (2026-03-14)
+
+
+### Documentation
+
+* update application flow diagram to v0.12.0 ([789ee06](https://github.com/martijn-on-fhir/fhir-api-server/commit/789ee0656abb88a9b76b18f5964a1e18ca593bbf))
+
 ## [0.12.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.0...fhir-api-server-v0.12.1) (2026-03-14)
 
 
