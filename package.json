@@ -60,7 +60,7 @@
     "@types/node": "^20.3.1",
     "@types/opossum": "^8.1.9",
     "@types/supertest": "^6.0.0",
-    "eslint": "^8.57.1",
+    "eslint": "^10.0.3",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsdoc": "^62.7.1",
     "eslint-plugin-prefer-arrow": "^1.2.3",
