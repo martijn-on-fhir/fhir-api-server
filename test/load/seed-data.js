@@ -1,12 +1,17 @@
 /**
  * Seed script for load testing. Run with Node.js before starting k6.
- * Usage: node test/load/seed-data.js [baseUrl]
+ * Usage: node test/load/seed-data.js [baseUrl] [--scale N]
  *
- * Creates 100 patients, 10 practitioners, 5 organizations, and 1000 observations.
+ * Default (scale=1): 100 patients, 10 practitioners, 5 organizations, 1000 observations, 200 encounters, 200 conditions (~1500 total).
+ * Scale=10: 1000 patients, 100 practitioners, 50 organizations, 10000 observations, 2000 encounters, 2000 conditions (~15000 total).
+ * Scale=100: ~150000 total resources (for production-volume testing).
+ *
  * Writes created resource IDs to test/load/.seed-ids.json for use by k6 scenarios.
  */
 
-const BASE_URL = process.argv[2] || 'http://localhost:3000';
+const scaleIdx = process.argv.indexOf('--scale');
+const SCALE = scaleIdx >= 0 ? parseInt(process.argv[scaleIdx + 1], 10) : 1;
+const BASE_URL = process.argv.find((a) => a.startsWith('http')) || 'http://localhost:3000';
 const FHIR_URL = `${BASE_URL}/fhir`;
 
 const HEADERS = {'Content-Type': 'application/fhir+json', 'Accept': 'application/fhir+json'};
@@ -46,13 +51,25 @@ async function post(resourceType, body, retries = 5) {
   return res.json();
 }
 
+const COUNTS = { organizations: 5 * SCALE, practitioners: 10 * SCALE, patients: 100 * SCALE, encounters: 200 * SCALE, observations: 1000 * SCALE, conditions: 200 * SCALE };
+
+/** Post resources in parallel batches for faster seeding at high scale. */
+async function postBatch(resourceType, bodies, ids, batchSize = 10) {
+  for (let i = 0; i < bodies.length; i += batchSize) {
+    const batch = bodies.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map((b) => post(resourceType, b)));
+    for (const r of results) ids.push(r.id);
+  }
+}
+
 async function seed() {
-  console.log(`Seeding data to ${FHIR_URL}...`);
+  const total = Object.values(COUNTS).reduce((a, b) => a + b, 0);
+  console.log(`Seeding data to ${FHIR_URL} (scale=${SCALE}, ~${total} resources)...`);
   const ids = {patients: [], practitioners: [], organizations: [], observations: [], encounters: [], conditions: []};
 
   // Organizations
-  console.log('Creating 5 organizations...');
-  for (let i = 0; i < 5; i++) {
+  console.log(`Creating ${COUNTS.organizations} organizations...`);
+  for (let i = 0; i < COUNTS.organizations; i++) {
     const org = await post('Organization', {
       resourceType: 'Organization', name: `Ziekenhuis ${i + 1}`, active: true,
       identifier: [{system: 'http://fhir.nl/fhir/NamingSystem/agb', value: `${10000000 + i}`}],
@@ -62,8 +79,8 @@ async function seed() {
   }
 
   // Practitioners
-  console.log('Creating 10 practitioners...');
-  for (let i = 0; i < 10; i++) {
+  console.log(`Creating ${COUNTS.practitioners} practitioners...`);
+  for (let i = 0; i < COUNTS.practitioners; i++) {
     const prac = await post('Practitioner', {
       resourceType: 'Practitioner', active: true,
       name: [{family: pick(FAMILY_NAMES), given: [pick(GIVEN_NAMES)], prefix: ['Dr.']}],
@@ -73,8 +90,8 @@ async function seed() {
   }
 
   // Patients
-  console.log('Creating 100 patients...');
-  for (let i = 0; i < 100; i++) {
+  console.log(`Creating ${COUNTS.patients} patients...`);
+  for (let i = 0; i < COUNTS.patients; i++) {
     const patient = await post('Patient', {
       resourceType: 'Patient', active: true,
       name: [{family: pick(FAMILY_NAMES), given: [pick(GIVEN_NAMES)]}],
@@ -84,12 +101,12 @@ async function seed() {
       managingOrganization: {reference: `Organization/${pick(ids.organizations)}`},
     });
     ids.patients.push(patient.id);
-    if ((i + 1) % 25 === 0) console.log(`  ${i + 1}/100 patients`);
+    if ((i + 1) % (COUNTS.patients / 4) === 0) console.log(`  ${i + 1}/${COUNTS.patients} patients`);
   }
 
   // Encounters
-  console.log('Creating 200 encounters...');
-  for (let i = 0; i < 200; i++) {
+  console.log(`Creating ${COUNTS.encounters} encounters...`);
+  for (let i = 0; i < COUNTS.encounters; i++) {
     const enc = await post('Encounter', {
       resourceType: 'Encounter', status: pick(['finished', 'in-progress', 'planned']),
       class: {system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: pick(['AMB', 'IMP', 'EMER']), display: 'ambulatory'},
@@ -99,12 +116,12 @@ async function seed() {
       serviceProvider: {reference: `Organization/${pick(ids.organizations)}`},
     });
     ids.encounters.push(enc.id);
-    if ((i + 1) % 50 === 0) console.log(`  ${i + 1}/200 encounters`);
+    if ((i + 1) % (COUNTS.encounters / 4) === 0) console.log(`  ${i + 1}/${COUNTS.encounters} encounters`);
   }
 
   // Observations
-  console.log('Creating 1000 observations...');
-  for (let i = 0; i < 1000; i++) {
+  console.log(`Creating ${COUNTS.observations} observations...`);
+  for (let i = 0; i < COUNTS.observations; i++) {
     const code = pick(OBSERVATION_CODES);
     const obs = await post('Observation', {
       resourceType: 'Observation', status: 'final',
@@ -116,11 +133,11 @@ async function seed() {
       valueQuantity: {value: Math.round(Math.random() * 200 * 10) / 10, unit: 'mg/dL', system: 'http://unitsofmeasure.org', code: 'mg/dL'},
     });
     ids.observations.push(obs.id);
-    if ((i + 1) % 200 === 0) console.log(`  ${i + 1}/1000 observations`);
+    if ((i + 1) % (COUNTS.observations / 5) === 0) console.log(`  ${i + 1}/${COUNTS.observations} observations`);
   }
 
   // Conditions
-  console.log('Creating 200 conditions...');
+  console.log(`Creating ${COUNTS.conditions} conditions...`);
   const conditionCodes = [
     {system: 'http://snomed.info/sct', code: '73211009', display: 'Diabetes mellitus'},
     {system: 'http://snomed.info/sct', code: '38341003', display: 'Hypertensive disorder'},
@@ -128,7 +145,7 @@ async function seed() {
     {system: 'http://snomed.info/sct', code: '44054006', display: 'Diabetes mellitus type 2'},
     {system: 'http://snomed.info/sct', code: '13645005', display: 'Chronic obstructive lung disease'},
   ];
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < COUNTS.conditions; i++) {
     const code = pick(conditionCodes);
     const cond = await post('Condition', {
       resourceType: 'Condition', clinicalStatus: {coding: [{system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active'}]},
@@ -139,7 +156,7 @@ async function seed() {
       onsetDateTime: randomDate(2020, 2025),
     });
     ids.conditions.push(cond.id);
-    if ((i + 1) % 50 === 0) console.log(`  ${i + 1}/200 conditions`);
+    if ((i + 1) % (COUNTS.conditions / 4) === 0) console.log(`  ${i + 1}/${COUNTS.conditions} conditions`);
   }
 
   // Write IDs to file for k6

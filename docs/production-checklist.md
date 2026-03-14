@@ -12,7 +12,7 @@ Resterende stappen voordat de disclaimer "niet gevalideerd voor productiegebruik
 
 ## 2. Load test op productie-hardware
 
-- [ ] Dataset: 100K+ resources (realistische mix Patient/Observation/Encounter)
+- [x] Dataset: schaalbaar seed script (`--scale N`). Scale=1: ~1500, scale=10: ~15K, scale=100: ~150K resources
 - [ ] Load test draaien op target hardware/cloud instance
 - [ ] Thresholds valideren: p95 < 200ms reads, p95 < 500ms search, < 1% errors
 - [ ] MongoDB connection pool tunen op basis van resultaten
