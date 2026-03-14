@@ -15,8 +15,10 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return server info', () => {
+      const info = appController.getInfo();
+      expect(info.name).toBe('FHIR R4 API Server');
+      expect(info.fhirVersion).toBe('4.0.1');
     });
   });
 });
