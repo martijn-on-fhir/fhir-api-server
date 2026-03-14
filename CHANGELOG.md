@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.3](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.2...fhir-api-server-v0.12.3) (2026-03-14)
+
+
+### Bug Fixes
+
+* patch file-type vulnerability via npm override (21.3.0 → 21.3.2) ([df383a8](https://github.com/martijn-on-fhir/fhir-api-server/commit/df383a8c60158ac95b77124d7f3bf8de6f246c07))
+* resolve CodeQL security alerts (permissions, path injection, XSS) ([3aec4e4](https://github.com/martijn-on-fhir/fhir-api-server/commit/3aec4e4c33eec7f40ca513289b6d77bf611be4ec))
+
 ## [0.12.2](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.1...fhir-api-server-v0.12.2) (2026-03-14)
 
 
