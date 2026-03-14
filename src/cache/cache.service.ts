@@ -1,4 +1,5 @@
 import {Injectable, Logger, OnModuleDestroy, OnModuleInit} from '@nestjs/common';
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import Redis from 'ioredis';
 import {config} from '../config/app-config';
 
@@ -39,8 +40,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       this.redis = new Redis(config.redis.url, {
         keyPrefix: config.redis.keyPrefix,
         lazyConnect: true,
-        maxRetriesPerRequest: 3,
-        retryStrategy: (times) => Math.min(times * 200, 2000),
+        connectTimeout: 3000,
+        maxRetriesPerRequest: 1,
+        retryStrategy: (times) => (times > 1 ? null : 500),
       });
 
       await this.redis.connect();
