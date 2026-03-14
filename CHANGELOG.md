@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.5](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.4...fhir-api-server-v0.12.5) (2026-03-14)
+
+
+### Bug Fixes
+
+* use execFileSync to prevent command injection in backup service ([ef29744](https://github.com/martijn-on-fhir/fhir-api-server/commit/ef297440f35a3d6580247756d93918c6c6d5afad))
+
 ## [0.12.4](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.12.3...fhir-api-server-v0.12.4) (2026-03-14)
 
 
