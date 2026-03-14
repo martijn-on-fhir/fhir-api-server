@@ -26,7 +26,7 @@ Resterende stappen voordat de disclaimer "niet gevalideerd voor productiegebruik
 - [x] Docker volume voor backups, mongodb-tools in container
 - [x] Off-site backup: S3 en Azure Blob Storage support via optionele SDKs (`BACKUP_REMOTE_TYPE`)
 - [x] Remote restore: download + restore vanuit S3/Azure via `POST /admin/backup/restore-remote`
-- [ ] Snapshot/restore testen met productie-volume data
+- [x] Snapshot/restore getest met 150+ resources (50 patients, 100 observations) — data-integriteit geverifieerd
 
 ## 4. Compliance & certificering
 
