@@ -33,6 +33,9 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect((res) => {
+        expect(res.body.name).toBe('FHIR R4 API Server');
+        expect(res.body.fhirVersion).toBe('4.0.1');
+      });
   });
 });
