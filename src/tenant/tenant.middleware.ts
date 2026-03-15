@@ -1,6 +1,6 @@
-import { Injectable, NestMiddleware } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
-import { TENANT_ID_PATTERN } from './tenant.interfaces';
+import {Injectable, NestMiddleware} from '@nestjs/common';
+import {Request, Response, NextFunction} from 'express';
+import {TENANT_ID_PATTERN} from './tenant.interfaces';
 
 /**
  * Middleware that extracts the tenant ID from:
@@ -12,6 +12,7 @@ import { TENANT_ID_PATTERN } from './tenant.interfaces';
  */
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {
+
   /** Regex to match /t/:tenantId/ at the start of the URL path. */
   private readonly tenantUrlPattern = /^\/t\/([a-f0-9]+-[a-f0-9]+-[a-f0-9]+-[a-f0-9]+)(\/.*)?$/;
 

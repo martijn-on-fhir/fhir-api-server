@@ -141,6 +141,11 @@ export interface AppConfig {
     backup: { enabled: boolean };
     /** POST /admin/backup/restore — restore from mongodump backup. */
     backupRestore: { enabled: boolean };
+    /**
+     * Enable/disable OpenAPI documentation generation and serving.
+     * When enabled, Swagger UI will be available at /api.
+     */
+    openapi: { enabled: boolean; serverUrl: string };
   };
   /** Terminology server connection settings. */
   terminology: {
@@ -291,6 +296,10 @@ const loadConfig = (): AppConfig => {
       restore: { enabled: envBool('SERVER_RESTORE_ENABLED') ?? fileConfig.server?.restore?.enabled ?? false },
       backup: { enabled: envBool('SERVER_BACKUP_ENABLED') ?? fileConfig.server?.backup?.enabled ?? false },
       backupRestore: { enabled: envBool('SERVER_BACKUP_RESTORE_ENABLED') ?? fileConfig.server?.backupRestore?.enabled ?? false },
+      openapi: {
+        enabled: envBool('SERVER_OPENAPI_ENABLED') ?? fileConfig.server?.openapi?.enabled ?? false,
+        serverUrl: env('SERVER_OPENAPI_SERVER_URL') ?? fileConfig.server?.openapi?.serverUrl ?? '',
+      },
     },
 
     terminology: {

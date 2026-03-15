@@ -28,10 +28,14 @@ const RETENTION_DAYS = config.jobs.retentionDays;
 export class JobQueueService implements OnModuleInit, OnModuleDestroy {
 
   private readonly logger = new Logger(JobQueueService.name);
+
   /** Unique identifier for this server instance, used for job locking. */
   private readonly instanceId = `${hostname()}-${process.pid}-${randomUUID().slice(0, 8)}`;
+
   private timeoutInterval: ReturnType<typeof setInterval>;
+
   private pollInterval: ReturnType<typeof setInterval>;
+
   /** Registered processors keyed by jobType. */
   private readonly processors = new Map<string, (jobId: string) => Promise<void>>();
 
@@ -66,6 +70,7 @@ export class JobQueueService implements OnModuleInit, OnModuleDestroy {
 
   /** Create a new job with status 'accepted'. */
   async createJob(jobType: string, params: Record<string, any> = {}, timeoutMs = 300_000): Promise<Job> {
+
     const job = await this.jobModel.create({ jobId: randomUUID(), jobType, status: 'accepted' as JobStatus, params, timeoutMs });
     this.logger.log(`Job created: ${job.jobId} (${jobType})`);
 
@@ -79,6 +84,7 @@ export class JobQueueService implements OnModuleInit, OnModuleDestroy {
 
   /** Atomically claim a job: accepted → in-progress with lock. Returns false if already claimed. */
   async claimJob(jobId: string): Promise<boolean> {
+
     const result = await this.jobModel.findOneAndUpdate(
       { jobId, status: 'accepted' },
       { $set: { status: 'in-progress', startedAt: new Date(), lockedBy: this.instanceId, lastHeartbeat: new Date() } },
@@ -94,6 +100,7 @@ export class JobQueueService implements OnModuleInit, OnModuleDestroy {
 
   /** Update job progress and optionally merge partial results. */
   async updateProgress(jobId: string, progress: number, partialResult?: Record<string, any>): Promise<void> {
+
     const update: Record<string, any> = { progress, lastHeartbeat: new Date() };
 
     if (partialResult) {

@@ -57,10 +57,19 @@ const bootstrap = async () => {
   app.useGlobalFilters(new FhirExceptionFilter());
   app.useGlobalInterceptors(app.get(MetricsInterceptor), new TimeoutInterceptor());
 
-  const swaggerConfig = new DocumentBuilder().setTitle('FHIR R4 API Server').setDescription('FHIR R4 REST API met nl-core profiel ondersteuning en validatie via fhir-validator-mx').setVersion(version || '0.0.0').addServer('http://localhost:3000', 'Local development').build();
+  if(config.server.openapi.enabled){
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api', app, document);
+    const swaggerConfig = new DocumentBuilder()
+    .setTitle('FHIR R4 API Server')
+    .setDescription('FHIR R4 REST API met nl-core profiel ondersteuning en validatie via fhir-validator-mx')
+    .setVersion(version || '0.0.0')
+    .addServer(config.server.openapi.serverUrl || `http://localhost:${config.port}`, 'Local development')
+    .build();
+
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api', app, document);
+  }
+
 
   app.enableShutdownHooks();
 
