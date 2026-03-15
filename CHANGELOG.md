@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.16.0...fhir-api-server-v0.17.0) (2026-03-15)
+
+
+### Features
+
+* configurable OpenAPI server URL and conditional Swagger setup ([3bef542](https://github.com/martijn-on-fhir/fhir-api-server/commit/3bef5420e12f09f83bbd42cfb8633e83cc5ef795))
+
 ## [0.16.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.15.0...fhir-api-server-v0.16.0) (2026-03-14)
 
 
