@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.17.0...fhir-api-server-v0.17.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* prevent NoSQL injection in job-queue queries (CodeQL alert [#43](https://github.com/martijn-on-fhir/fhir-api-server/issues/43)) ([2e9e02c](https://github.com/martijn-on-fhir/fhir-api-server/commit/2e9e02c78ff6da39790a278faab852560e19bd76))
+
 ## [0.17.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.16.0...fhir-api-server-v0.17.0) (2026-03-15)
 
 
