@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.16.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.15.0...fhir-api-server-v0.16.0) (2026-03-14)
+
+
+### Features
+
+* add Redis for shared cache and cross-instance rate limiting (phase 8.2) ([3588323](https://github.com/martijn-on-fhir/fhir-api-server/commit/3588323e8d5d27c55163832798058741925f3c2d))
+* stateless bulk export with polling-based job queue and GridFS (phase 8.3) ([46101dc](https://github.com/martijn-on-fhir/fhir-api-server/commit/46101dc5ebc12426510a81de3414457c25e25524))
+* tenant-scoped rate limiting and conformance resource seeding (phase 8.3) ([f40bde7](https://github.com/martijn-on-fhir/fhir-api-server/commit/f40bde7b732312c2dd2ed73376ff4aa04bc79439))
+
+
+### Bug Fixes
+
+* reduce Redis connect timeout and suppress naming-convention lint error ([aee7064](https://github.com/martijn-on-fhir/fhir-api-server/commit/aee7064942438e04486d42d091423451deffb23d))
+* set tenant and cache defaults for CI compatibility ([456ce9a](https://github.com/martijn-on-fhir/fhir-api-server/commit/456ce9a85e67d35decc7e6f678fb3baea9239883))
+
+
+### Documentation
+
+* mark phase 8.3 as completed in roadmap ([4ef59d8](https://github.com/martijn-on-fhir/fhir-api-server/commit/4ef59d89e7ffe8960fb1ff0de1946a04ce7322de))
+
 ## [0.15.0](https://github.com/martijn-on-fhir/fhir-api-server/compare/fhir-api-server-v0.14.1...fhir-api-server-v0.15.0) (2026-03-14)
 
 
