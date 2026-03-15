@@ -79,14 +79,14 @@ export class JobQueueService implements OnModuleInit, OnModuleDestroy {
 
   /** Find a job by jobId. */
   async getJob(jobId: string): Promise<Job | null> {
-    return this.jobModel.findOne({ jobId }).exec();
+    return this.jobModel.findOne({ jobId: { $eq: jobId } }).exec();
   }
 
   /** Atomically claim a job: accepted → in-progress with lock. Returns false if already claimed. */
   async claimJob(jobId: string): Promise<boolean> {
 
     const result = await this.jobModel.findOneAndUpdate(
-      { jobId, status: 'accepted' },
+      { jobId: { $eq: jobId }, status: 'accepted' },
       { $set: { status: 'in-progress', startedAt: new Date(), lockedBy: this.instanceId, lastHeartbeat: new Date() } },
     ).exec();
 
@@ -95,7 +95,7 @@ export class JobQueueService implements OnModuleInit, OnModuleDestroy {
 
   /** Updates the heartbeat timestamp for an in-progress job to prevent false timeout. */
   async heartbeat(jobId: string): Promise<void> {
-    await this.jobModel.updateOne({ jobId, status: 'in-progress' }, { $set: { lastHeartbeat: new Date() } }).exec();
+    await this.jobModel.updateOne({ jobId: { $eq: jobId }, status: 'in-progress' }, { $set: { lastHeartbeat: new Date() } }).exec();
   }
 
   /** Update job progress and optionally merge partial results. */
@@ -109,31 +109,31 @@ export class JobQueueService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    await this.jobModel.updateOne({ jobId }, { $set: update }).exec();
+    await this.jobModel.updateOne({ jobId: { $eq: jobId } }, { $set: update }).exec();
   }
 
   /** Mark a job as complete with final result data. */
   async completeJob(jobId: string, result: Record<string, any>): Promise<void> {
-    await this.jobModel.updateOne({ jobId }, { $set: { status: 'complete', result, progress: 100, completedAt: new Date() } }).exec();
+    await this.jobModel.updateOne({ jobId: { $eq: jobId } }, { $set: { status: 'complete', result, progress: 100, completedAt: new Date() } }).exec();
     this.logger.log(`Job completed: ${jobId}`);
   }
 
   /** Mark a job as failed with error details. */
   async failJob(jobId: string, jobErrors: any[]): Promise<void> {
-    await this.jobModel.updateOne({ jobId }, { $set: { status: 'error', jobErrors, completedAt: new Date() } }).exec();
+    await this.jobModel.updateOne({ jobId: { $eq: jobId } }, { $set: { status: 'error', jobErrors, completedAt: new Date() } }).exec();
     this.logger.warn(`Job failed: ${jobId}`);
   }
 
   /** Atomically cancel a job. Returns false if job is already in a terminal state. */
   async cancelJob(jobId: string): Promise<boolean> {
-    const result = await this.jobModel.findOneAndUpdate({ jobId, status: { $in: ['accepted', 'in-progress'] } }, { $set: { status: 'cancelled', completedAt: new Date() } }).exec();
+    const result = await this.jobModel.findOneAndUpdate({ jobId: { $eq: jobId }, status: { $in: ['accepted', 'in-progress'] } }, { $set: { status: 'cancelled', completedAt: new Date() } }).exec();
 
     return result !== null;
   }
 
   /** Check if a job has been cancelled (used during processing to bail out early). */
   async isCancelled(jobId: string): Promise<boolean> {
-    const job = await this.jobModel.findOne({ jobId }, { status: 1 }).lean().exec();
+    const job = await this.jobModel.findOne({ jobId: { $eq: jobId } }, { status: 1 }).lean().exec();
 
     return job?.status === 'cancelled';
   }
@@ -182,7 +182,7 @@ export class JobQueueService implements OnModuleInit, OnModuleDestroy {
 
     for (const job of stalledJobs) {
       if (job.startedAt && now - job.startedAt.getTime() > job.timeoutMs) {
-        await this.jobModel.updateOne({ jobId: job.jobId, status: 'in-progress' }, { $set: { status: 'error', completedAt: new Date(), jobErrors: [{ type: 'OperationOutcome', diagnostics: `Job timed out after ${job.timeoutMs}ms` }] } }).exec();
+        await this.jobModel.updateOne({ jobId: { $eq: job.jobId }, status: 'in-progress' }, { $set: { status: 'error', completedAt: new Date(), jobErrors: [{ type: 'OperationOutcome', diagnostics: `Job timed out after ${job.timeoutMs}ms` }] } }).exec();
         this.logger.warn(`Job timed out: ${job.jobId} (${job.jobType})`);
       }
     }
